@@ -1,7 +1,7 @@
 nodeca.convert
 ==============
 
-[![Build Status](https://travis-ci.org/nodeca/nodeca.convert.svg?branch=master)](https://travis-ci.org/nodeca/nodeca.convert)
+[![Build Status](https://travis-ci.org/nodeca/nodeca.vbconvert.svg?branch=master)](https://travis-ci.org/nodeca/nodeca.vbconvert)
 
 Convert forum database from vBulletin to Nodeca.
 

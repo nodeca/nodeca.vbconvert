@@ -1,5 +1,5 @@
 menus:
   admin:
     navbar:
-      convert:
-        to: admin.convert.index
+      vbconvert:
+        to: admin.vbconvert.index

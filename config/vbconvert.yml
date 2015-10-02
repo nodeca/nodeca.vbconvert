@@ -1,0 +1,15 @@
+vbconvert:
+
+  # Connection details for mysql
+  database:
+    connectionLimit: 10
+    host: localhost
+    user: root
+    password: password
+    database: vb
+
+  # Usergroup mapping
+  usergroups:
+    guests: 1
+    administrators: 6
+    members: 11

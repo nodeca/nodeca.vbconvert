@@ -1,8 +1,9 @@
 {
-  "name"            : "nodeca.convert",
-  "description"     : "Nodeca DB converter",
+  "name"            : "nodeca.vbconvert",
+  "description"     : "vB to Nodeca DB converter",
   "version"         : "0.0.1",
-  "keywords"        : ["nodeca", "convert"],
+  "keywords"        : [ "nodeca" ],
   "license"         : "MIT",
-  "repository"      : "nodeca/nodeca.convert"
+  "repository"      : "nodeca/nodeca.vbconvert",
+  "dependencies"    : { "mysql": "^2.9" }
 }
