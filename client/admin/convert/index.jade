@@ -1,0 +1,8 @@
+#content
+  != self.partial('@admin.core.blocks.sidebar_menu')
+
+  .main
+    != self.partial('@admin.core.blocks.breadcrumbs')
+
+    h1
+      p: a.btn.btn-primary(href=self.link_to('admin.convert.rebuild')) #{self.t('rebuild_posts')}

@@ -1,0 +1,5 @@
+menus:
+  admin:
+    navbar:
+      convert:
+        to: admin.convert.index

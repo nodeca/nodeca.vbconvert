@@ -1,0 +1,8 @@
+{
+  "name"            : "nodeca.convert",
+  "description"     : "Nodeca DB converter",
+  "version"         : "0.0.1",
+  "keywords"        : ["nodeca", "convert"],
+  "license"         : "MIT",
+  "repository"      : "nodeca/nodeca.convert"
+}
