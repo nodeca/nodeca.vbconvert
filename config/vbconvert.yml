@@ -1,15 +1,10 @@
 vbconvert:
 
   # Connection details for mysql
-  database:
-    connectionLimit: 10
-    host: localhost
-    user: root
-    password: password
-    database: vb
+  #database: 'mysql://username@password:host/database'
 
   # Usergroup mapping
   usergroups:
     guests: 1
+    members: 2
     administrators: 6
-    members: 11

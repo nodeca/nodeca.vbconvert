@@ -4,11 +4,20 @@
 'use strict';
 
 var async    = require('async');
-var fstools  = require('fs-tools');
-var path     = require('path');
 
 
 ////////////////////////////////////////////////////////////////////////////////
+
+
+module.exports.parserParameters  = {
+  addHelp:      true,
+  help:         'import data from vBulletin',
+  description:  'Import data from vBulletin'
+};
+
+
+module.exports.commandLineArguments = [
+];
 
 
 module.exports.run = function (N, args, callback) {

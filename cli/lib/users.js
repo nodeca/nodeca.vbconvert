@@ -3,20 +3,22 @@
 
 'use strict';
 
-var async = require('async');
+var async    = require('async');
+var mongoose = require('mongoose');
 
 
 module.exports = function (N, callback) {
-  N.models.users.UserGroup.find().lean(true).exec(function (err, usergroups) {
+  /* eslint-disable max-nested-callbacks */
+  N.models.vbconvert.UserGroupMapping.find().lean(true).exec(function (err, usergroups) {
     if (err) {
       callback(err);
       return;
     }
 
-    var id_by_title = {};
+    var mongoid = {};
 
     usergroups.forEach(function (usergroup) {
-      id_by_title[usergroup.short_name] = usergroup._id;
+      mongoid[usergroup.mysql] = usergroup.mongo;
     });
 
     N.vbconvert.getConnection(function (err, conn) {
@@ -25,8 +27,11 @@ module.exports = function (N, callback) {
         return;
       }
 
-      conn.query('SELECT userid,title,username,email,ipaddress,joindate,lastactivity,posts,field5,field6,title ' +
-          'FROM user JOIN userfield USING(`userid`) JOIN usergroup USING(`usergroupid`)', function (err, rows) {
+      conn.query('SELECT userid,usergroupid,membergroupids,username,email,' +
+          'ipaddress,joindate,lastactivity,posts,field5 as firstname,' +
+          'field6 as lastname ' +
+          'FROM user JOIN userfield USING(`userid`) ' +
+          'ORDER BY userid ASC', function (err, rows) {
 
         if (err) {
           conn.release();
@@ -34,28 +39,43 @@ module.exports = function (N, callback) {
           return;
         }
 
-        var builtin_groups = Object.keys(N.config.vbconvert.usergroups).map(function (k) {
-          return N.config.vbconvert.usergroups[k];
-        });
-
         async.each(rows, function (row, next) {
-          var user = new N.models.users.User();
+          N.models.users.User.findOne({ hid: row.userid }, function (err, existing_user) {
+            if (err) {
+              next(err);
+              return;
+            }
 
-          user.hid = row.userid; // does it make sense to save old ids?
-          user.nick = row.username;
-          user.email = row.email;
-          user.joined_ts = new Date(row.joindate * 1000);
-          user.joined_ip = row.ipaddress;
-          user.last_active_ts = new Date(row.lastactivity * 1000);
-          user.post_count = row.posts; // should we re-count it?
-          user.usergroups = [ id_by_title[row.title] ];
+            if (existing_user) {
+              // user with this id is already imported
+              next();
+              return;
+            }
 
-          user.first_name = row.field5;
-          user.last_name = row.field6;
+            var user = new N.models.users.User();
 
-          user.save(next);
+            user._id = new mongoose.Types.ObjectId(row.joindate);
+            user.hid = row.userid;
+            user.nick = row.username;
+            user.email = row.email;
+            user.joined_ts = new Date(row.joindate * 1000);
+            user.joined_ip = row.ipaddress;
+            user.last_active_ts = new Date(row.lastactivity * 1000);
+            user.post_count = row.posts;
+            user.usergroups = [ mongoid[row.usergroupid] ];
 
-        }, function () {
+            if (row.membergroupids) {
+              user.usergroups = user.usergroups.concat(row.membergroupids.split(',').map(function (id) {
+                return mongoid[id];
+              }));
+            }
+
+            user.first_name = row.firstname;
+            user.last_name = row.lastname;
+
+            user.save(next);
+          });
+        }, function (err) {
           if (err) {
             conn.release();
             callback(err);
@@ -69,4 +89,4 @@ module.exports = function (N, callback) {
       });
     });
   });
-}
+};

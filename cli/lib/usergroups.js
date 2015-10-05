@@ -3,6 +3,7 @@
 
 'use strict';
 
+var _     = require('lodash');
 var async = require('async');
 
 
@@ -20,23 +21,56 @@ module.exports = function (N, callback) {
         return;
       }
 
-      var builtin_groups = Object.keys(N.config.vbconvert.usergroups).map(function (k) {
-        return N.config.vbconvert.usergroups[k];
-      });
+      var mapping = _.invert(N.config.vbconvert.usergroups);
 
       async.each(rows, function (row, next) {
-        if (builtin_groups.indexOf(row.usergroupid) !== -1) {
-          next();
+        if (typeof mapping[row.usergroupid] !== 'undefined') {
+          N.models.users.UserGroup.findIdByName(mapping[row.usergroupid], function (err, id) {
+            if (err) {
+              next(err);
+              return;
+            }
+
+            new N.models.vbconvert.UserGroupMapping({
+              mysql: row.usergroupid,
+              mongo: id
+            }).save(function (err) {
+              // ignore duplicate key errors
+              if (err && err.code !== 11000) {
+                next(err);
+                return;
+              }
+
+              next();
+            });
+          });
+
           return;
         }
 
         var usergroup = new N.models.users.UserGroup({
-          short_name: row.title,
+          short_name: row.title
         });
 
-        usergroup.save(next);
+        new N.models.vbconvert.UserGroupMapping({
+          mysql: row.usergroupid,
+          mongo: usergroup._id
+        }).save(function (err) {
+          if (err && err.code === 11000) {
+            // duplicate key error, means usergroup is already imported
+            next();
+            return;
+          }
 
-      }, function () {
+          if (err) {
+            next(err);
+            return;
+          }
+
+          usergroup.save(next);
+        });
+
+      }, function (err) {
         if (err) {
           conn.release();
           callback(err);
@@ -49,4 +83,4 @@ module.exports = function (N, callback) {
       });
     });
   });
-}
+};
