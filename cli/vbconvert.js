@@ -26,7 +26,7 @@ module.exports.run = function (N, args, callback) {
       return;
     }
 
-    async.map(modules, function (fn, next) {
+    async.mapSeries(modules, function (fn, next) {
       fn(N, next);
     }, function (err) {
       if (err) {

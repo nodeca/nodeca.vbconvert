@@ -5,6 +5,6 @@
 
 
 module.exports = function (N, callback) {
-  console.log('Post conversion finished');
+  N.logger.info('Post conversion finished');
   callback();
 }

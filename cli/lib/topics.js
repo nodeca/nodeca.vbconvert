@@ -5,6 +5,6 @@
 
 
 module.exports = function (N, callback) {
-  console.log('Topic conversion finished');
+  N.logger.info('Topic conversion finished');
   callback();
 }

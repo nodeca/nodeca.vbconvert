@@ -15,6 +15,7 @@ module.exports = function (N, callback) {
 
     conn.query('SELECT usergroupid, title FROM usergroup', function (err, rows) {
       if (err) {
+        conn.release();
         callback(err);
         return;
       }
@@ -26,22 +27,24 @@ module.exports = function (N, callback) {
       async.each(rows, function (row, next) {
         if (builtin_groups.indexOf(row.usergroupid) !== -1) {
           next();
+          return;
         }
 
         var usergroup = new N.models.users.UserGroup({
-          short_name: rows.title,
+          short_name: row.title,
         });
 
         usergroup.save(next);
 
       }, function () {
         if (err) {
+          conn.release();
           callback(err);
           return;
         }
 
         conn.release();
-        console.log('UserGroup conversion finished');
+        N.logger.info('UserGroup conversion finished');
         callback();
       });
     });
