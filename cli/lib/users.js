@@ -82,9 +82,22 @@ module.exports = function (N, callback) {
             return;
           }
 
-          conn.release();
-          N.logger.info('User conversion finished');
-          callback();
+          N.models.core.Increment.update(
+            { key: 'user' },
+            { $set: { value: rows[rows.length - 1].userid } },
+            { upsert: true },
+            function (err) {
+              if (err) {
+                conn.release();
+                callback(err);
+                return;
+              }
+
+              conn.release();
+              N.logger.info('User conversion finished');
+              callback();
+            }
+          );
         });
       });
     });
