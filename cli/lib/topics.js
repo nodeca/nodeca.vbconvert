@@ -9,11 +9,6 @@ var mongoose = require('mongoose');
 
 
 module.exports = function (N, callback) {
-  /* not ready yet */
-  /* eslint-disable no-unreachable */
-  callback();
-  return;
-
   var maxid = 0;
 
   /* eslint-disable max-nested-callbacks */
@@ -45,7 +40,7 @@ module.exports = function (N, callback) {
             return;
           }
 
-          conn.query('SELECT threadid,forumid,title,dateline FROM thread ' +
+          conn.query('SELECT threadid,forumid,title,views,dateline FROM thread ' +
               'WHERE forumid = ? ORDER BY threadid ASC',
               [ forum.forumid ],
               function (err, rows) {
@@ -67,13 +62,14 @@ module.exports = function (N, callback) {
 
               bulk.find({ hid: row.threadid }).upsert().update({
                 $setOnInsert: {
-                  _id:      new mongoose.Types.ObjectId(row.dateline),
-                  title:    row.title,
-                  hid:      row.threadid,
-                  section:  section._id,
-                  st:       N.models.forum.Topic.statuses.OPEN,
-                  cache:    {},
-                  cache_hb: {}
+                  _id:         new mongoose.Types.ObjectId(row.dateline),
+                  title:       row.title,
+                  hid:         row.threadid,
+                  section:     section._id,
+                  st:          N.models.forum.Topic.statuses.OPEN,
+                  views_count: row.views,
+                  cache:       {},
+                  cache_hb:    {}
                 }
               });
             });
