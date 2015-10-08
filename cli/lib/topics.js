@@ -4,8 +4,9 @@
 'use strict';
 
 
-var async    = require('async');
-var mongoose = require('mongoose');
+var async       = require('async');
+var mongoose    = require('mongoose');
+var ProgressBar = require('progress');
 
 
 module.exports = function (N, callback) {
@@ -25,7 +26,18 @@ module.exports = function (N, callback) {
         return;
       }
 
+      var bar = new ProgressBar(' creating topics :current/:total [:bar] :percent', {
+        complete: '=',
+        incomplete: ' ',
+        width: 40,
+        clear: true,
+        total: forums.length,
+        renderThrottle: 300
+      });
+
       async.eachSeries(forums, function (forum, next) {
+        bar.tick();
+
         N.models.forum.Section.findOne({ hid: forum.forumid })
             .lean(true)
             .exec(function (err, section) {
@@ -78,6 +90,8 @@ module.exports = function (N, callback) {
           });
         });
       }, function (err) {
+        bar.terminate();
+
         if (err) {
           conn.release();
           callback(err);

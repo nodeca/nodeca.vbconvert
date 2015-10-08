@@ -5,5 +5,5 @@
   "keywords"        : [ "nodeca" ],
   "license"         : "MIT",
   "repository"      : "nodeca/nodeca.vbconvert",
-  "dependencies"    : { "mysql": "^2.9" }
+  "dependencies"    : { "mysql": "^2.9", "progress": "^1.1.8" }
 }

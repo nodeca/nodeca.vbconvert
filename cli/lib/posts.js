@@ -4,8 +4,9 @@
 'use strict';
 
 
-var async    = require('async');
-var mongoose = require('mongoose');
+var async       = require('async');
+var mongoose    = require('mongoose');
+var ProgressBar = require('progress');
 
 
 // Get a giant hash { hid: _id } with all registered users
@@ -53,7 +54,18 @@ module.exports = function (N, callback) {
           return;
         }
 
+        var bar = new ProgressBar(' filling topics :current/:total [:bar] :percent', {
+          complete: '=',
+          incomplete: ' ',
+          width: 40,
+          clear: true,
+          total: threads.length,
+          renderThrottle: 300
+        });
+
         async.eachSeries(threads, function (thread, next) {
+          bar.tick();
+
           N.models.forum.Topic.findOne({ hid: thread.threadid })
               .select('_id')
               .lean(true)
@@ -143,6 +155,8 @@ module.exports = function (N, callback) {
             });
           });
         }, function (err) {
+          bar.terminate();
+
           if (err) {
             conn.release();
             callback(err);

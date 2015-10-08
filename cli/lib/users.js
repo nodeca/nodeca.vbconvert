@@ -3,8 +3,9 @@
 
 'use strict';
 
-var async    = require('async');
-var mongoose = require('mongoose');
+var async       = require('async');
+var mongoose    = require('mongoose');
+var ProgressBar = require('progress');
 
 
 module.exports = function (N, callback) {
@@ -33,13 +34,24 @@ module.exports = function (N, callback) {
           'FROM user JOIN userfield USING(`userid`) ' +
           'ORDER BY userid ASC', function (err, rows) {
 
+        var bar = new ProgressBar(' creating users :current/:total [:bar] :percent', {
+          complete: '=',
+          incomplete: ' ',
+          width: 40,
+          clear: true,
+          total: rows.length,
+          renderThrottle: 300
+        });
+
         if (err) {
           conn.release();
           callback(err);
           return;
         }
 
-        async.each(rows, function (row, next) {
+        async.eachSeries(rows, function (row, next) {
+          bar.tick();
+
           N.models.users.User.findOne({ hid: row.userid }, function (err, existing_user) {
             if (err) {
               next(err);
@@ -76,6 +88,8 @@ module.exports = function (N, callback) {
             user.save(next);
           });
         }, function (err) {
+          bar.terminate();
+
           if (err) {
             conn.release();
             callback(err);
