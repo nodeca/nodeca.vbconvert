@@ -8,3 +8,7 @@ vbconvert:
     guests: 1
     members: 2
     administrators: 6
+
+  sections:
+    hide: [ 42, 102, 114 ]
+    ignore: [ 117 ]

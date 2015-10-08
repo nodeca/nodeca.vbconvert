@@ -40,6 +40,11 @@ module.exports = function (N, callback) {
             return;
           }
 
+          if (!section) {
+            next();
+            return;
+          }
+
           conn.query('SELECT threadid,forumid,title,dateline FROM thread ' +
               'WHERE forumid = ? ORDER BY threadid ASC',
               [ forum.forumid ],
@@ -94,7 +99,7 @@ module.exports = function (N, callback) {
             }
 
             conn.release();
-            N.logger.info('Topic conversion finished');
+            N.logger.info('Topic import finished');
             callback();
           }
         );

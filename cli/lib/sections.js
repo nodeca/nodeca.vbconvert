@@ -25,6 +25,14 @@ module.exports = function (N, callback) {
       // Create sections
       //
       async.each(rows, function (row, next) {
+        if (N.config.vbconvert.sections &&
+            N.config.vbconvert.sections.ignore &&
+            N.config.vbconvert.sections.ignore.indexOf(row.forumid) !== -1) {
+
+          next();
+          return;
+        }
+
         N.models.forum.Section.findOne({ hid: row.forumid }, function (err, existing_section) {
           if (err) {
             next(err);
@@ -94,7 +102,7 @@ module.exports = function (N, callback) {
               }
 
               conn.release();
-              N.logger.info('Section conversion finished');
+              N.logger.info('Section import finished');
               callback();
             }
           );

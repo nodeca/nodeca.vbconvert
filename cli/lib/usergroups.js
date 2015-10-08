@@ -78,7 +78,7 @@ module.exports = function (N, callback) {
         }
 
         conn.release();
-        N.logger.info('UserGroup conversion finished');
+        N.logger.info('UserGroup import finished');
         callback();
       });
     });

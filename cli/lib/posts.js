@@ -39,6 +39,11 @@ module.exports = function (N, callback) {
             return;
           }
 
+          if (!topic) {
+            next();
+            return;
+          }
+
           conn.query('SELECT pagetext,dateline,ipaddress FROM post ' +
               'WHERE threadid = ? ORDER BY postid ASC',
               [ thread.threadid ],
@@ -84,7 +89,7 @@ module.exports = function (N, callback) {
         }
 
         conn.release();
-        N.logger.info('Post conversion finished');
+        N.logger.info('Post import finished');
         callback();
       });
     });

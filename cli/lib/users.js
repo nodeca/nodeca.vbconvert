@@ -94,7 +94,7 @@ module.exports = function (N, callback) {
               }
 
               conn.release();
-              N.logger.info('User conversion finished');
+              N.logger.info('User import finished');
               callback();
             }
           );
