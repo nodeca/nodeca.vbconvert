@@ -55,7 +55,7 @@ module.exports = function (N, callback) {
             return;
           }
 
-          async.eachSeries(rows, function (row, next) {
+          async.eachLimit(rows, 50, function (row, next) {
             bar.tick();
 
             N.models.users.User.findOne({ hid: row.userid }, function (err, existing_user) {
