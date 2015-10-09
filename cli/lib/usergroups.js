@@ -16,7 +16,6 @@ module.exports = function (N, callback) {
 
     conn.query('SELECT usergroupid, title FROM usergroup', function (err, rows) {
       if (err) {
-        conn.release();
         callback(err);
         return;
       }
@@ -72,7 +71,6 @@ module.exports = function (N, callback) {
 
       }, function (err) {
         if (err) {
-          conn.release();
           callback(err);
           return;
         }

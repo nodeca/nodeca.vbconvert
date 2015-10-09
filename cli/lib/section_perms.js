@@ -24,7 +24,6 @@ module.exports = function (N, callback) {
 
       conn.query('SELECT forumid FROM forum ORDER BY forumid ASC', function (err, forums) {
         if (err) {
-          conn.release();
           callback(err);
           return;
         }
@@ -69,14 +68,12 @@ module.exports = function (N, callback) {
           });
         }, function (err) {
           if (err) {
-            conn.release();
             callback(err);
             return;
           }
 
           SectionUsergroupStore.updateInherited(function (err) {
             if (err) {
-              conn.release();
               callback(err);
               return;
             }

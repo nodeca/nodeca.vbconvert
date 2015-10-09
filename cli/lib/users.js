@@ -3,9 +3,9 @@
 
 'use strict';
 
-var async       = require('async');
-var mongoose    = require('mongoose');
-var ProgressBar = require('progress');
+var async    = require('async');
+var mongoose = require('mongoose');
+var progress = require('./_progressbar');
 
 
 module.exports = function (N, callback) {
@@ -28,90 +28,98 @@ module.exports = function (N, callback) {
         return;
       }
 
-      conn.query('SELECT userid,usergroupid,membergroupids,username,email,' +
-          'ipaddress,joindate,lastactivity,posts,field5 as firstname,' +
-          'field6 as lastname ' +
-          'FROM user JOIN userfield USING(`userid`) ' +
-          'ORDER BY userid ASC', function (err, rows) {
-
-        var bar = new ProgressBar(' creating users :current/:total [:bar] :percent', {
-          complete: '=',
-          incomplete: ' ',
-          width: 40,
-          clear: true,
-          total: rows.length,
-          renderThrottle: 300
-        });
+      conn.query('SELECT value FROM setting WHERE varname = "globalignore" LIMIT 1',
+          function (err, rows) {
 
         if (err) {
-          conn.release();
           callback(err);
           return;
         }
 
-        async.eachSeries(rows, function (row, next) {
-          bar.tick();
+        var hellbanned_ids = [];
 
-          N.models.users.User.findOne({ hid: row.userid }, function (err, existing_user) {
-            if (err) {
-              next(err);
-              return;
-            }
+        if (rows.length) {
+          hellbanned_ids = rows[0].value.split(' ').map(Number);
+        }
 
-            if (existing_user) {
-              // user with this id is already imported
-              next();
-              return;
-            }
+        conn.query('SELECT userid,usergroupid,membergroupids,username,email,' +
+            'ipaddress,joindate,lastactivity,posts,field5 as firstname,' +
+            'field6 as lastname ' +
+            'FROM user JOIN userfield USING(`userid`) ' +
+            'ORDER BY userid ASC', function (err, rows) {
 
-            var user = new N.models.users.User();
-
-            user._id = new mongoose.Types.ObjectId(row.joindate);
-            user.hid = row.userid;
-            user.nick = row.username;
-            user.email = row.email;
-            user.joined_ts = new Date(row.joindate * 1000);
-            user.joined_ip = row.ipaddress;
-            user.last_active_ts = new Date(row.lastactivity * 1000);
-            user.post_count = row.posts;
-            user.usergroups = [ mongoid[row.usergroupid] ];
-
-            if (row.membergroupids) {
-              user.usergroups = user.usergroups.concat(row.membergroupids.split(',').map(function (id) {
-                return mongoid[id];
-              }));
-            }
-
-            user.first_name = row.firstname;
-            user.last_name = row.lastname;
-
-            user.save(next);
-          });
-        }, function (err) {
-          bar.terminate();
+          var bar = progress(' creating users :current/:total [:bar] :percent', rows.length);
 
           if (err) {
-            conn.release();
             callback(err);
             return;
           }
 
-          N.models.core.Increment.update(
-            { key: 'user' },
-            { $set: { value: rows[rows.length - 1].userid } },
-            { upsert: true },
-            function (err) {
+          async.eachSeries(rows, function (row, next) {
+            bar.tick();
+
+            N.models.users.User.findOne({ hid: row.userid }, function (err, existing_user) {
               if (err) {
-                conn.release();
-                callback(err);
+                next(err);
                 return;
               }
 
-              conn.release();
-              N.logger.info('User import finished');
-              callback();
+              if (existing_user) {
+                // user with this id is already imported
+                next();
+                return;
+              }
+
+              var user = new N.models.users.User();
+
+              user._id = new mongoose.Types.ObjectId(row.joindate);
+              user.hid = row.userid;
+              user.nick = row.username;
+              user.email = row.email;
+              user.joined_ts = new Date(row.joindate * 1000);
+              user.joined_ip = row.ipaddress;
+              user.last_active_ts = new Date(row.lastactivity * 1000);
+              user.post_count = row.posts;
+              user.first_name = row.firstname;
+              user.last_name = row.lastname;
+              user.usergroups = [ mongoid[row.usergroupid] ];
+
+              if (row.membergroupids) {
+                user.usergroups = user.usergroups.concat(row.membergroupids.split(',').map(function (id) {
+                  return mongoid[id];
+                }));
+              }
+
+              if (hellbanned_ids.indexOf(row.userid) !== -1) {
+                user.hb = true;
+              }
+
+              user.save(next);
+            });
+          }, function (err) {
+            bar.terminate();
+
+            if (err) {
+              callback(err);
+              return;
             }
-          );
+
+            N.models.core.Increment.update(
+              { key: 'user' },
+              { $set: { value: rows[rows.length - 1].userid } },
+              { upsert: true },
+              function (err) {
+                if (err) {
+                  callback(err);
+                  return;
+                }
+
+                conn.release();
+                N.logger.info('User import finished');
+                callback();
+              }
+            );
+          });
         });
       });
     });
