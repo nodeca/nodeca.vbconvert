@@ -11,6 +11,7 @@ var progress = require('./_progressbar');
 
 
 module.exports = function (N, callback) {
+  /* eslint-disable max-nested-callbacks */
   var users, sections, conn;
 
   // Get a { hid: { _id, hb } } mapping for all registered users
@@ -153,7 +154,16 @@ module.exports = function (N, callback) {
           // topic hadn't been imported last time, remove all posts and try again
           N.models.forum.Post.find({ topic: old_topic._id })
                              .remove()
-                             .exec(callback);
+                             .exec(function (err) {
+            if (err) {
+              callback(err);
+              return;
+            }
+
+            N.models.vbconvert.PostMapping.find({ topic_id: old_topic._id })
+                                          .remove()
+                                          .exec(callback);
+          });
         }
       );
     }
@@ -162,7 +172,7 @@ module.exports = function (N, callback) {
     // Fetch posts from this thread from SQL
     //
     function fetch_posts(callback) {
-      conn.query('SELECT pagetext,dateline,ipaddress,userid,visible ' +
+      conn.query('SELECT postid,parentid,pagetext,dateline,ipaddress,userid,visible ' +
           'FROM post WHERE threadid = ? ORDER BY postid ASC',
           [ thread.threadid ],
           function (err, rows) {
@@ -189,7 +199,9 @@ module.exports = function (N, callback) {
     // Bulk-store posts into mongodb
     //
     function import_posts(callback) {
-      var bulk = N.models.forum.Post.collection.initializeOrderedBulkOp();
+      var posts_by_id = {};
+      var post_bulk = N.models.forum.Post.collection.initializeOrderedBulkOp();
+      var map_bulk  = N.models.vbconvert.PostMapping.collection.initializeOrderedBulkOp();
       var cache = topic.cache = {
         post_count: 0
       };
@@ -201,8 +213,9 @@ module.exports = function (N, callback) {
         var id   = new mongoose.Types.ObjectId(post.dateline);
         var ts   = new Date(post.dateline * 1000);
         var user = users[post.userid] || {};
+        var hid  = i + 1;
 
-        if (i === 0) {
+        if (hid === 1) {
           cache_hb.first_post = id;
           cache_hb.first_ts   = ts;
           cache_hb.first_user = user._id;
@@ -217,7 +230,7 @@ module.exports = function (N, callback) {
         cache_hb.last_ts   = ts;
         cache_hb.last_user = user._id;
 
-        if (!user.hb || i === 0) {
+        if (!user.hb || hid === 1) {
           cache.post_count++;
           cache.last_post = id;
           cache.last_ts   = ts;
@@ -227,7 +240,7 @@ module.exports = function (N, callback) {
         var new_post = {
           _id:    id,
           topic:  topic._id,
-          hid:    i + 1,
+          hid:    hid,
           ts:     ts,
           html:   post.pagetext,
           ip:     post.ipaddress,
@@ -251,10 +264,32 @@ module.exports = function (N, callback) {
           delete new_post.ste;
         }
 
-        bulk.insert(new_post);
+        // process replies if they are in the same topic
+        if (post.parentid && posts_by_id[post.parentid]) {
+          new_post.to      = posts_by_id[post.parentid]._id;
+          new_post.to_user = posts_by_id[post.parentid].user;
+          new_post.to_phid = posts_by_id[post.parentid].hid;
+        }
+
+        posts_by_id[post.postid] = new_post;
+
+        post_bulk.insert(new_post);
+        map_bulk.insert({
+          mysql_id: post.postid,
+          topic_id: topic._id,
+          post_hid: hid,
+          text:     post.pagetext
+        });
       });
 
-      bulk.execute(callback);
+      post_bulk.execute(function (err) {
+        if (err) {
+          callback(err);
+          return;
+        }
+
+        map_bulk.execute(callback);
+      });
     }
 
 
@@ -314,7 +349,7 @@ module.exports = function (N, callback) {
         return;
       }
 
-      var bar = progress(' filling topics :current/:total [:bar] :percent', rows.length);
+      var bar = progress(' topics :current/:total [:bar] :percent', rows.length);
 
       async.eachLimit(rows, 50, function (row, callback) {
         bar.tick();
@@ -338,11 +373,93 @@ module.exports = function (N, callback) {
   }
 
 
+  // Link posts that reply to a different topic
+  //
+  function link_foreign_replies(callback) {
+    conn.query('SELECT post.postid,post.parentid ' +
+        'FROM post JOIN post AS parent ' +
+        'ON (post.parentid = parent.postid AND post.threadid != parent.threadid)',
+        function (err, rows) {
+
+      if (err) {
+        callback(err);
+        return;
+      }
+
+      async.eachLimit(rows, 50, function (row, callback) {
+        N.models.vbconvert.PostMapping.findOne({ mysql_id: row.postid })
+            .lean(true)
+            .exec(function (err, post_mapping) {
+
+          if (err) {
+            callback(err);
+            return;
+          }
+
+          N.models.vbconvert.PostMapping.findOne({ mysql_id: row.parentid })
+              .lean(true)
+              .exec(function (err, parent_post_mapping) {
+
+            if (err) {
+              callback(err);
+              return;
+            }
+
+            N.models.forum.Post.findOne({
+              topic: parent_post_mapping.topic_id,
+              hid: parent_post_mapping.post_hid
+            }).lean(true).exec(function (err, post) {
+              if (err) {
+                callback(err);
+                return;
+              }
+
+              N.models.forum.Topic.findById(post.topic)
+                  .lean(true)
+                  .exec(function (err, topic) {
+
+                if (err) {
+                  callback(err);
+                  return;
+                }
+
+                N.models.forum.Section.findById(topic.section)
+                    .lean(true)
+                    .exec(function (err, section) {
+
+                  if (err) {
+                    callback(err);
+                    return;
+                  }
+
+                  N.models.forum.Post.update({
+                    topic: post_mapping.topic_id,
+                    hid: post_mapping.post_hid
+                  }, {
+                    $set: {
+                      to: post._id,
+                      to_user: post.user,
+                      to_phid: post.hid,
+                      to_thid: topic.hid,
+                      to_fhid: section.hid
+                    }
+                  }, callback);
+                });
+              });
+            });
+          });
+        });
+      }, callback);
+    });
+  }
+
+
   async.series([
     get_users,
     get_sections,
     get_connection,
-    import_all_topics
+    import_all_topics,
+    link_foreign_replies
   ], function (err) {
     if (err) {
       callback(err);

@@ -26,7 +26,8 @@ module.exports.run = function (N, args, callback) {
     require('./lib/users'),
     require('./lib/sections'),
     require('./lib/section_perms'),
-    require('./lib/topics')
+    require('./lib/topics'),
+    require('./lib/section_cache')
   ];
 
   N.wire.emit([ 'init:models' ], N, function (err) {

@@ -48,7 +48,7 @@ module.exports = function (N, callback) {
             'FROM user JOIN userfield USING(`userid`) ' +
             'ORDER BY userid ASC', function (err, rows) {
 
-          var bar = progress(' creating users :current/:total [:bar] :percent', rows.length);
+          var bar = progress(' users :current/:total [:bar] :percent', rows.length);
 
           if (err) {
             callback(err);
