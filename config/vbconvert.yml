@@ -15,4 +15,7 @@ vbconvert:
     ignore: [ 117 ]
 
   # Path to the folder where attachments are stored in
-  files: '/tmp/files'
+  files: '/tmp/www/uploads/posts'
+
+  # Path to the folder with avatar original pictures ("big" ones)
+  avatars: '/tmp/www/custombigprofilepics'
