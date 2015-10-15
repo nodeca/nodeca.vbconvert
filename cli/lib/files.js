@@ -51,15 +51,41 @@ module.exports = function (N, callback) {
             }
 
             async.eachSeries(rows, function (row, next) {
-              N.models.users.MediaInfo.createFile({
-                album_id: void 0, // TODO
-                user_id:  (user || {})._id,
-                name:     row.filename,
-                ext:      row.extension,
-                path:     path.join(N.config.vbconvert.files,
-                                    String(userid).split('').join('/'),
-                                    row.filedataid + '.attach')
-              }, next);
+              N.models.vbconvert.FileMapping.findOne(
+                  { mysql: row.filedataid },
+                  function (err, file_mapping) {
+
+                if (err) {
+                  next(err);
+                  return;
+                }
+
+                if (file_mapping) {
+                  // already imported
+                  next();
+                  return;
+                }
+
+                N.models.users.MediaInfo.createFile({
+                  album_id: void 0, // TODO
+                  user_id:  (user || {})._id,
+                  name:     row.filename,
+                  ext:      row.extension,
+                  path:     path.join(N.config.vbconvert.files,
+                                      String(userid).split('').join('/'),
+                                      row.filedataid + '.attach')
+                }, function (err, media) {
+                  if (err) {
+                    next(err);
+                    return;
+                  }
+
+                  new N.models.vbconvert.FileMapping({
+                    mysql: row.filedataid,
+                    mongo: media._id
+                  }).save(next);
+                });
+              });
             }, next);
           });
         });
