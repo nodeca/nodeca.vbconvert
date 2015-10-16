@@ -6,6 +6,7 @@
 var async    = require('async');
 var mongoose = require('mongoose');
 var progress = require('./_progressbar');
+var ALBUM    = 8; // content type for albums
 
 
 module.exports = function (N, callback) {
@@ -73,9 +74,9 @@ module.exports = function (N, callback) {
                 }
 
                 conn.query('SELECT dateline ' +
-                    'FROM attachment WHERE contenttypeid = 8 AND contentid = ? ' +
+                    'FROM attachment WHERE contenttypeid = ? AND contentid = ? ' +
                     'ORDER BY dateline ASC',
-                    [ rows.albumid ],
+                    [ ALBUM, row.albumid ],
                     function (err, datelines) {
 
                   if (err) {

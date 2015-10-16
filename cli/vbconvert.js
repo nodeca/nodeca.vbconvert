@@ -28,8 +28,8 @@ module.exports.run = function (N, args, callback) {
     require('./lib/section_perms'),
     require('./lib/topics'),
     require('./lib/section_cache'),
-    require('./lib/files'),
     require('./lib/albums'),
+    require('./lib/files'),
     require('./lib/avatars')
   ];
 
