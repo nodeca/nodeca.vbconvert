@@ -8,6 +8,7 @@ var _        = require('lodash');
 var async    = require('async');
 var mongoose = require('mongoose');
 var progress = require('./_progressbar');
+var POST     = 1; // content type for posts
 
 
 module.exports = function (N, callback) {
@@ -172,9 +173,11 @@ module.exports = function (N, callback) {
     // Fetch posts from this thread from SQL
     //
     function fetch_posts(callback) {
-      conn.query('SELECT postid,parentid,pagetext,dateline,ipaddress,userid,visible ' +
-          'FROM post WHERE threadid = ? ORDER BY postid ASC',
-          [ thread.threadid ],
+      conn.query('SELECT postid,parentid,pagetext,dateline,ipaddress,userid,visible,' +
+          'GROUP_CONCAT(vote) AS votes,GROUP_CONCAT(fromuserid) AS casters ' +
+          'FROM post LEFT JOIN votes ON post.postid = votes.targetid AND votes.contenttypeid = ? ' +
+          'WHERE threadid = ? ORDER BY postid ASC',
+          [ POST, thread.threadid ],
           function (err, rows) {
 
         if (err) {
@@ -247,6 +250,21 @@ module.exports = function (N, callback) {
           user:   user._id
         };
 
+        new_post.votes = 0;
+        new_post.votes_hb = 0;
+
+        _.zip((post.casters || '').split(','), (post.votes || '').split(',')).forEach(function (arr) {
+          if (arr[0] && arr[1]) {
+            if (users[arr[0]]) {
+              new_post.votes_hb += Number(arr[1]);
+
+              if (!users[arr[0]].hb) {
+                new_post.votes += Number(arr[1]);
+              }
+            }
+          }
+        });
+
         if (user.hb) {
           new_post.st  = N.models.forum.Post.statuses.HB;
           new_post.ste = N.models.forum.Post.statuses.VISIBLE;
@@ -277,6 +295,7 @@ module.exports = function (N, callback) {
         map_bulk.insert({
           mysql_id: post.postid,
           topic_id: topic._id,
+          post_id:  new_post._id,
           post_hid: hid,
           text:     post.pagetext
         });

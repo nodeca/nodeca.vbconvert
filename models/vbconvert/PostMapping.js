@@ -10,6 +10,7 @@ module.exports = function (N, collectionName) {
   var PostMapping = new Schema({
     mysql_id: Number,
     topic_id: Schema.Types.ObjectId,
+    post_id:  Schema.Types.ObjectId,
     post_hid: Number,
 
     // original post text as it was in vb (with bbcode)
