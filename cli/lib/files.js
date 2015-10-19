@@ -17,7 +17,7 @@ module.exports = function (N, callback) {
       return;
     }
 
-    conn.query('SELECT userid FROM filedata GROUP BY userid ORDER BY userid ASC',
+    conn.query('SELECT userid FROM filedata GROUP BY userid ORDER BY userid ASC ',
         function (err, userids) {
 
       if (err) {

@@ -173,10 +173,10 @@ module.exports = function (N, callback) {
     // Fetch posts from this thread from SQL
     //
     function fetch_posts(callback) {
-      conn.query('SELECT postid,parentid,pagetext,dateline,ipaddress,userid,visible,' +
+      conn.query('SELECT threadid,postid,parentid,pagetext,dateline,ipaddress,userid,visible,' +
           'GROUP_CONCAT(vote) AS votes,GROUP_CONCAT(fromuserid) AS casters ' +
           'FROM post LEFT JOIN votes ON post.postid = votes.targetid AND votes.contenttypeid = ? ' +
-          'WHERE threadid = ? ORDER BY postid ASC',
+          'WHERE threadid = ? GROUP BY postid ORDER BY postid ASC',
           [ POST, thread.threadid ],
           function (err, rows) {
 
@@ -186,6 +186,7 @@ module.exports = function (N, callback) {
         }
 
         if (rows.length === 0) {
+          // empty topic, e.g. http://forum.rcdesign.ru/f90/thread121809.html
           err = new Error('no posts in this topic');
           err.code = 'NOOP';
           callback(err);

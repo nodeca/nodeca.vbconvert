@@ -3,6 +3,7 @@
 
 'use strict';
 
+var _           = require('lodash');
 var async       = require('async');
 var fs          = require('fs');
 var gm          = require('gm');
@@ -13,7 +14,13 @@ var resize      = require('nodeca.users/models/users/_lib/resize');
 
 
 module.exports = function (N, callback) {
-  var config = resizeParse(N.config.users.avatars);
+  var config     = resizeParse(N.config.users.avatars);
+  var min_width  = _.reduce(config.resize, function (acc, obj) {
+                     return Math.max(acc, obj.width);
+                   }, 0);
+  var min_height = _.reduce(config.resize, function (acc, obj) {
+                     return Math.max(acc, obj.height);
+                   }, 0);
 
   /* eslint-disable max-nested-callbacks */
   N.vbconvert.getConnection(function (err, conn) {
@@ -51,6 +58,13 @@ module.exports = function (N, callback) {
 
           if (user.avatar_id) {
             // already imported
+            next();
+            return;
+          }
+
+          if (row.sel_width < min_width || row.sel_height < min_height) {
+            // 1. avatar removed (both sel_width and sel_height are zero)
+            // 2. avatar is too small and we can't scale it up while preserving aspect ratio
             next();
             return;
           }
