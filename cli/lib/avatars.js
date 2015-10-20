@@ -8,19 +8,25 @@ var async       = require('async');
 var fs          = require('fs');
 var gm          = require('gm');
 var path        = require('path');
-var progress    = require('./_progressbar');
+var progress    = require('./progressbar');
 var resizeParse = require('nodeca.users/server/_lib/resize_parse');
-var resize      = require('nodeca.users/models/users/_lib/resize');
+
+// resize_sharp is a drop-in replacement for resize in nodeca.users,
+// so you can comment out one or the other to switch between
+// gm and sharp libraries
+//
+var resize = require('nodeca.users/models/users/_lib/resize');
+// var resize = require('./resize_sharp');
 
 
 module.exports = function (N, callback) {
   var config     = resizeParse(N.config.users.avatars);
   var min_width  = _.reduce(config.resize, function (acc, obj) {
-                     return Math.max(acc, obj.width);
-                   }, 0);
+    return Math.max(acc, obj.width);
+  }, 0);
   var min_height = _.reduce(config.resize, function (acc, obj) {
-                     return Math.max(acc, obj.height);
-                   }, 0);
+    return Math.max(acc, obj.height);
+  }, 0);
 
   /* eslint-disable max-nested-callbacks */
   N.vbconvert.getConnection(function (err, conn) {

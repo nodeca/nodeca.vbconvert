@@ -5,7 +5,7 @@
 
 var async    = require('async');
 var mongoose = require('mongoose');
-var progress = require('./_progressbar');
+var progress = require('./progressbar');
 var POST     = 1; // content type for posts
 
 
@@ -54,7 +54,7 @@ module.exports = function (N, callback) {
 
       get_users(function (err) {
         if (err) {
-          next(err);
+          callback(err);
           return;
         }
 

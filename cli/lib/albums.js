@@ -5,7 +5,7 @@
 
 var async    = require('async');
 var mongoose = require('mongoose');
-var progress = require('./_progressbar');
+var progress = require('./progressbar');
 var ALBUM    = 8; // content type for albums
 
 

@@ -7,7 +7,7 @@
 var _        = require('lodash');
 var async    = require('async');
 var mongoose = require('mongoose');
-var progress = require('./_progressbar');
+var progress = require('./progressbar');
 var POST     = 1; // content type for posts
 
 

@@ -5,7 +5,7 @@
 
 var async    = require('async');
 var mongoose = require('mongoose');
-var progress = require('./_progressbar');
+var progress = require('./progressbar');
 
 
 module.exports = function (N, callback) {
