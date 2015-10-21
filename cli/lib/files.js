@@ -31,10 +31,12 @@ module.exports = function (N, callback) {
                              String(filedata.filedataowner).split('').join('/'),
                              filedata.filedataid + '.attach');
 
-    media._id      = new mongoose.Types.ObjectId(filedata.dateline);
-    media.user_id  = user._id;
-    media.album_id = album_id;
-    media.ts       = new Date(filedata.dateline * 1000);
+    media._id         = new mongoose.Types.ObjectId(filedata.dateline);
+    media.user_id     = user._id;
+    media.album_id    = album_id;
+    media.ts          = new Date(filedata.dateline * 1000);
+    media.file_name   = filedata.filename;
+    media.description = filedata.caption;
 
     var supportedImageFormats = [ 'bmp', 'gif', 'jpg', 'jpeg', 'png' ];
 
@@ -61,7 +63,6 @@ module.exports = function (N, callback) {
           media.type      = N.models.users.MediaInfo.types.BINARY;
           media.media_id  = info.id;
           media.file_size = stats.size;
-          media.file_name = filedata.filename;
 
           media.save(function (err) {
             if (err) {
@@ -198,7 +199,7 @@ module.exports = function (N, callback) {
                 album_ids[0] = { id: def_album._id };
 
                 conn.query('SELECT filedata.userid AS filedataowner,' +
-                    'filedataid,attachmentid,extension,filename,' +
+                    'filedataid,attachmentid,extension,filename,caption,' +
                     'contentid,contenttypeid,attachment.dateline ' +
                     'FROM filedata JOIN attachment USING(filedataid) ' +
                     'WHERE attachment.userid = ? ORDER BY attachmentid ASC',
@@ -241,10 +242,11 @@ module.exports = function (N, callback) {
                           return;
                         }
 
-                        new N.models.vbconvert.FileMapping({
-                          mysql: row.attachmentid,
-                          mongo: media._id
-                        }).save(function (err) {
+                        N.models.users.UserExtra.update(
+                            { user_id: media.user_id },
+                            { $inc: { media_size: media.file_size } },
+                            function (err) {
+
                           if (err) {
                             next(err);
                             return;
@@ -267,7 +269,10 @@ module.exports = function (N, callback) {
                               return;
                             }
 
-                            next();
+                            new N.models.vbconvert.FileMapping({
+                              mysql: row.attachmentid,
+                              mongo: media._id
+                            }).save(next);
                           });
                         });
                       });
