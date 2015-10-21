@@ -104,8 +104,6 @@ module.exports = function (N, callback) {
                     album.last_ts = new Date(row.lastpicturedate * 1000);
                   }
 
-                  album.count = datelines.length;
-
                   new N.models.vbconvert.AlbumMapping({
                     mysql: row.albumid,
                     mongo: album._id

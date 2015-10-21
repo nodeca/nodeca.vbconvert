@@ -252,19 +252,16 @@ module.exports = function (N, callback) {
 
                           var album = album_ids[row.contenttypeid === ALBUM ? row.contentid : 0];
 
+                          var updateData = { $inc: { count: 1 } };
+
                           // only set cover if:
                           //  1. cover info doesn't exist in mysql (last image will be the cover)
                           //  2. cover exist and is equal to current row
-                          if (album.cover && album.cover !== row.attachmentid) {
-                            next();
-                            return;
+                          if (!album.cover || album.cover === row.attachmentid) {
+                            updateData.$set = { cover_id: media.media_id };
                           }
 
-                          N.models.users.Album.update({ _id: album.id }, {
-                            $set: {
-                              cover_id: media.media_id
-                            }
-                          }, function (err) {
+                          N.models.users.Album.update({ _id: album.id }, updateData, function (err) {
                             if (err) {
                               next(err);
                               return;
