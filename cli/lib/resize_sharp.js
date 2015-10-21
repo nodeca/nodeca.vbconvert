@@ -32,7 +32,6 @@
 var gm_resize = require('nodeca.users/models/users/_lib/resize');
 
 var async    = require('async');
-var sharp    = require('sharp');
 var fstools  = require('fs-tools');
 var Mongoose = require('mongoose');
 var mimoza   = require('mimoza');
@@ -69,7 +68,7 @@ function createPreview(path, resizeConfig, imageType, callback) {
     // To determine output image type, we must specify file extention
     var tmpFilePath = fstools.tmpdir() + '.' + outType;
 
-    var gmInstance = sharp(path);
+    var gmInstance = require('sharp')(path);
 
     // Set quality only for jpeg image
     if (outType === 'jpeg') {
@@ -247,7 +246,7 @@ module.exports = function (src, options, callback) {
       previews[resizeConfigKey] = data;
 
       // Get real size after resize
-      sharp(data.path).metadata(function (err, imgSz) {
+      require('sharp')(data.path).metadata(function (err, imgSz) {
         if (err) {
           next(err);
           return;

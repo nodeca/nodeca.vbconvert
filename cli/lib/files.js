@@ -28,12 +28,13 @@ module.exports = function (N, callback) {
   function createFile(filedata, user, album_id, callback) {
     var media    = new N.models.users.MediaInfo();
     var filepath = path.join(N.config.vbconvert.files,
-                             String(user.hid).split('').join('/'),
+                             String(filedata.filedataowner).split('').join('/'),
                              filedata.filedataid + '.attach');
 
-    media._id      = new mongoose.Types.ObjectId();
+    media._id      = new mongoose.Types.ObjectId(filedata.dateline);
     media.user_id  = user._id;
     media.album_id = album_id;
+    media.ts       = new Date(filedata.dateline * 1000);
 
     var supportedImageFormats = [ 'bmp', 'gif', 'jpg', 'jpeg', 'png' ];
 
@@ -196,10 +197,11 @@ module.exports = function (N, callback) {
 
                 album_ids[0] = { id: def_album._id };
 
-                conn.query('SELECT attachmentid,filedataid,extension,filename,' +
+                conn.query('SELECT filedata.userid AS filedataowner,' +
+                    'filedataid,attachmentid,extension,filename,' +
                     'contentid,contenttypeid,attachment.dateline ' +
-                    'FROM filedata LEFT JOIN attachment USING(filedataid) ' +
-                    'WHERE filedata.userid = ? ORDER BY filedataid ASC',
+                    'FROM filedata JOIN attachment USING(filedataid) ' +
+                    'WHERE attachment.userid = ? ORDER BY attachmentid ASC',
                     [ userid ],
                     function (err, rows) {
 
@@ -215,7 +217,7 @@ module.exports = function (N, callback) {
                     }
 
                     N.models.vbconvert.FileMapping.findOne(
-                        { mysql: row.filedataid },
+                        { mysql: row.attachmentid },
                         function (err, file_mapping) {
 
                       if (err) {
@@ -233,12 +235,14 @@ module.exports = function (N, callback) {
 
                       createFile(row, user, albumid, function (err, media) {
                         if (err) {
-                          next(err);
+                          // some files are considered corrupted by gm, we should log those
+                          N.logger.warn('File import: ' + err.message);
+                          next();
                           return;
                         }
 
                         new N.models.vbconvert.FileMapping({
-                          mysql: row.filedataid,
+                          mysql: row.attachmentid,
                           mongo: media._id
                         }).save(function (err) {
                           if (err) {
@@ -248,7 +252,10 @@ module.exports = function (N, callback) {
 
                           var album = album_ids[row.contenttypeid === ALBUM ? row.contentid : 0];
 
-                          if (album.cover !== row.attachmentid) {
+                          // only set cover if:
+                          //  1. cover info doesn't exist in mysql (last image will be the cover)
+                          //  2. cover exist and is equal to current row
+                          if (album.cover && album.cover !== row.attachmentid) {
                             next();
                             return;
                           }
