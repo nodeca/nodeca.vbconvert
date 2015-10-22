@@ -55,8 +55,11 @@ module.exports = function (N, callback) {
             return;
           }
 
-          async.eachLimit(rows, 50, function (row, next) {
-            bar.tick();
+          async.eachLimit(rows, 50, function (row, callback) {
+            function next() {
+              bar.tick();
+              callback.apply(null, arguments);
+            }
 
             N.models.users.User.findOne({ hid: row.userid }, function (err, existing_user) {
               if (err) {

@@ -372,8 +372,10 @@ module.exports = function (N, callback) {
       var bar = progress(' topics :current/:total [:bar] :percent', rows.length);
 
       async.eachLimit(rows, 50, function (row, callback) {
-        bar.tick();
-        import_topic(row.threadid, callback);
+        import_topic(row.threadid, function () {
+          bar.tick();
+          callback.apply(null, arguments);
+        });
       }, function (err) {
         if (err) {
           callback(err);

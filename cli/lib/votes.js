@@ -42,110 +42,120 @@ module.exports = function (N, callback) {
       return;
     }
 
-    conn.query('SELECT fromuserid FROM votes GROUP BY fromuserid ORDER BY fromuserid ASC',
-        function (err, userids) {
-
+    conn.query('SELECT count(*) AS count FROM votes', function (err, rows) {
       if (err) {
         callback(err);
         return;
       }
 
-      var bar = progress(' voters :current/:total [:bar] :percent', userids.length);
+      var bar = progress(' votes :current/:total [:bar] :percent', rows[0].count);
 
-      get_users(function (err) {
+      conn.query('SELECT fromuserid FROM votes GROUP BY fromuserid ORDER BY fromuserid ASC',
+          function (err, userids) {
+
         if (err) {
           callback(err);
           return;
         }
 
-        async.eachLimit(userids, 50, function (row, next) {
-          bar.tick();
-
-          if (!users[row.fromuserid]) {
-            // ignore votes casted by deleted users
-            next();
+        get_users(function (err) {
+          if (err) {
+            callback(err);
             return;
           }
 
-          conn.query('SELECT targetid,vote,fromuserid,touserid,date ' +
-              'FROM votes WHERE fromuserid = ? AND contenttypeid = ?',
-              [ row.fromuserid, POST ],
-              function (err, rows) {
-
-            if (err) {
-              next(err);
+          async.eachLimit(userids, 50, function (row, next) {
+            if (!users[row.fromuserid]) {
+              // ignore votes casted by deleted users
+              next();
               return;
             }
 
-            var bulk = N.models.users.Vote.collection.initializeUnorderedBulkOp();
-            var count = 0;
+            conn.query('SELECT targetid,vote,fromuserid,touserid,date ' +
+                'FROM votes WHERE fromuserid = ? AND contenttypeid = ?',
+                [ row.fromuserid, POST ],
+                function (err, rows) {
 
-            async.eachSeries(rows, function (row, next) {
               if (err) {
                 next(err);
                 return;
               }
 
-              if (!users[row.touserid]) {
-                // ignore votes casted for deleted users
-                next();
-                return;
-              }
+              var bulk = N.models.users.Vote.collection.initializeUnorderedBulkOp();
+              var count = 0;
 
-              N.models.vbconvert.PostMapping.findOne({ mysql_id: row.targetid })
-                  .lean(true)
-                  .exec(function (err, post_mapping) {
+              async.eachSeries(rows, function (row, callback) {
+                function next() {
+                  bar.tick();
+                  callback.apply(null, arguments);
+                }
 
                 if (err) {
                   next(err);
                   return;
                 }
 
-                count++;
-                bulk.find({
-                  from:  users[row.fromuserid]._id,
-                  to:    users[row.touserid]._id,
-                  'for': post_mapping.post_id,
-                  type:  N.models.users.Vote.types.FORUM_POST
-                }).upsert().update({
-                  $setOnInsert: {
-                    _id:   new mongoose.Types.ObjectId(row.date),
+                if (!users[row.touserid]) {
+                  // ignore votes casted for deleted users
+                  next();
+                  return;
+                }
+
+                N.models.vbconvert.PostMapping.findOne({ mysql_id: row.targetid })
+                    .lean(true)
+                    .exec(function (err, post_mapping) {
+
+                  if (err) {
+                    next(err);
+                    return;
+                  }
+
+                  count++;
+                  bulk.find({
                     from:  users[row.fromuserid]._id,
                     to:    users[row.touserid]._id,
                     'for': post_mapping.post_id,
-                    type:  N.models.users.Vote.types.FORUM_POST,
-                    hb:    users[row.fromuserid].hb,
-                    value: Number(row.vote)
-                  }
+                    type:  N.models.users.Vote.types.FORUM_POST
+                  }).upsert().update({
+                    $setOnInsert: {
+                      _id:   new mongoose.Types.ObjectId(row.date),
+                      from:  users[row.fromuserid]._id,
+                      to:    users[row.touserid]._id,
+                      'for': post_mapping.post_id,
+                      type:  N.models.users.Vote.types.FORUM_POST,
+                      hb:    users[row.fromuserid].hb,
+                      value: Number(row.vote)
+                    }
+                  });
+
+                  next();
                 });
+              }, function (err) {
+                if (err) {
+                  next(err);
+                  return;
+                }
 
-                next();
+                if (!count) {
+                  next();
+                  return;
+                }
+
+                bulk.execute(next);
               });
-            }, function (err) {
-              if (err) {
-                next(err);
-                return;
-              }
-
-              if (!count) {
-                next();
-                return;
-              }
-
-              bulk.execute(next);
             });
+          }, function (err) {
+            if (err) {
+              callback(err);
+              return;
+            }
+
+            bar.terminate();
+
+            conn.release();
+            N.logger.info('Vote import finished');
+            callback();
           });
-        }, function (err) {
-          if (err) {
-            callback(err);
-            return;
-          }
-
-          bar.terminate();
-
-          conn.release();
-          N.logger.info('Vote import finished');
-          callback();
         });
       });
     });

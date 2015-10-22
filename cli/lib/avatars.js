@@ -48,10 +48,13 @@ module.exports = function (N, callback) {
       var bar = progress(' avatars :current/:total [:bar] :percent', rows.length);
       var counter = 0;
 
-      async.eachLimit(rows, 50, function (row, next) {
-        var tmpfile = '/tmp/vbconvert-' + (++counter) + '.jpg';
+      async.eachLimit(rows, 50, function (row, callback) {
+        function next() {
+          bar.tick();
+          callback.apply(null, arguments);
+        }
 
-        bar.tick();
+        var tmpfile = '/tmp/vbconvert-' + (++counter) + '.jpg';
 
         N.models.users.User.findOne({ hid: row.userid })
             .lean(true)
