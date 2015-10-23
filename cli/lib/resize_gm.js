@@ -11,65 +11,77 @@ var mimoza   = require('mimoza');
 var Mongoose = require('mongoose');
 var probe    = require('probe-image-size');
 var Stream   = require('stream');
-var util     = require('util');
 
 var File;
 
 
-function ReadStream(chunks) {
-  Stream.Readable.call(this);
-  this.chunks = chunks.slice(0);
-}
+// Read the stream and return { buffer, width, height, length }
+// of the image inside.
+//
+function readImage(stream, callback) {
+  callback = _.once(callback);
 
-util.inherits(ReadStream, Stream.Readable);
+  var chunks = [];
+  var length = 0;
 
-ReadStream.prototype._read = function () {
-  this.push(this.chunks.shift() || null);
-};
+  stream.on('error', function (err) {
+    callback(err);
+  });
 
+  stream.on('data', function (chunk) {
+    chunks.push(chunk);
+    length += chunk.length;
+  });
 
-function WriteStream() {
-  Stream.Transform.call(this);
-  this.image = [];
-  this.image.size = 0;
-  this.image.width = NaN;
-  this.image.height = NaN;
+  stream.on('end', function () {
+    var readStream = new Stream.Readable();
+    var buffer = Buffer.concat(chunks, length);
 
-  var self = this;
+    readStream._read = function () {
+      this.push(buffer);
+      this.push(null);
+    };
 
-  probe(self, function (err, imgSz) {
-    if (err) {
-      self.emit('error', err);
-      return;
-    }
+    probe(readStream, function (err, imgSz) {
+      if (err) {
+        callback(err);
+        return;
+      }
 
-    self.image.width  = imgSz.width;
-    self.image.height = imgSz.height;
+      callback(null, {
+        buffer: buffer,
+        length: length,
+        width:  imgSz.width,
+        height: imgSz.height
+      });
+    });
   });
 }
-
-util.inherits(WriteStream, Stream.Transform);
-
-WriteStream.prototype._transform = function (chunk, encoding, callback) {
-  if (chunk) {
-    this.image.push(chunk);
-    this.image.size += chunk.length;
-  }
-
-  callback(null, chunk);
-};
 
 
 // Create preview for image
 //
 function createPreview(image, resizeConfig, imageType, callback) {
+  // Is image size smaller than 'skip_size' - skip resizing
+  if (resizeConfig.skip_size && image.length < resizeConfig.skip_size) {
+    callback(null, { image: image, type: imageType });
+    return;
+  }
+
   var outType = resizeConfig.type || imageType;
   var path = 'file.' + imageType;
 
   // If animation not allowed - take first frame of gif image
   path = (imageType === 'gif' && resizeConfig.gif_animation === false) ? path + '[0]' : path;
 
-  var gmInstance = gm(new ReadStream(image), path);
+  var readStream = new Stream.Readable();
+
+  readStream._read = function () {
+    this.push(image.buffer);
+    this.push(null);
+  };
+
+  var gmInstance = gm(readStream, path);
 
   // Limit amount of threads used
   gmInstance.limit('threads', 1);
@@ -81,12 +93,6 @@ function createPreview(image, resizeConfig, imageType, callback) {
 
   if (resizeConfig.unsharp) {
     gmInstance.unsharp('0');
-  }
-
-  // Is image size smaller than 'skip_size' - skip resizing
-  if (resizeConfig.skip_size && image.size < resizeConfig.skip_size) {
-    callback(null, { image: image, type: imageType });
-    return;
   }
 
   gmInstance.gravity('Center');
@@ -132,19 +138,21 @@ function createPreview(image, resizeConfig, imageType, callback) {
       return;
     }
 
-    var stream = new WriteStream();
+    readImage(stdout, function (err, image) {
+      if (err) {
+        callback(err);
+        return;
+      }
 
-    stdout.pipe(stream);
-    stdout.on('end', function () {
-      callback(null, { image: stream.image, type: outType });
+      callback(null, { image: image, type: outType });
     });
   });
 }
 
 
-// Save files to database
+// Save buffered images to database
 //
-function saveFiles(previews, date, callback) {
+function saveImages(previews, date, callback) {
   // Create new ObjectId for orig file.
   // You can get file_id from put function, but all previews save async.
   var origId = new Mongoose.Types.ObjectId(date);
@@ -162,7 +170,9 @@ function saveFiles(previews, date, callback) {
         params.filename = origId + '_' + key;
       }
 
-      File.put(new ReadStream(data.image), params, function (err) {
+      var image = data.image;
+
+      File.put(image.buffer, params, function (err) {
         next(err);
       });
     },
@@ -182,12 +192,12 @@ module.exports = function (src, options, callback) {
   File = options.store;
 
   var previews = {};
-  var origStream = new WriteStream();
 
-  fs.createReadStream(src).pipe(origStream);
-
-  origStream.on('end', function () {
-    var origImage = origStream.image;
+  readImage(fs.createReadStream(src), function (err, origImage) {
+    if (err) {
+      callback(err);
+      return;
+    }
 
     async.eachSeries(Object.keys(options.resize), function (resizeConfigKey, next) {
       // Create preview for each size
@@ -199,13 +209,13 @@ module.exports = function (src, options, callback) {
       var from = (previews[resizeConfig.from || ''] || previews.orig || {});
       var image = from.image || origImage;
 
-      createPreview(image, resizeConfig, from.type || options.ext, function (err, data) {
+      createPreview(image, resizeConfig, from.type || options.ext, function (err, newImage) {
         if (err) {
           next(err);
           return;
         }
 
-        previews[resizeConfigKey] = data;
+        previews[resizeConfigKey] = newImage;
         next();
       });
     }, function (err) {
@@ -215,25 +225,20 @@ module.exports = function (src, options, callback) {
       }
 
       // Save all previews
-      saveFiles(previews, options.date, function (err, origId) {
+      saveImages(previews, options.date, function (err, origId) {
         if (err) {
           callback(err);
           return;
         }
 
-        var images = {};
-        _.forEach(previews, function (val, key) {
-          images[key] = val.size;
-        });
-
         callback(null, {
           id: origId,
-          size: previews.orig.image.size,
+          size: previews.orig.image.length,
           images: _.map(previews, function (preview) {
             return {
               width:  preview.image.width,
               height: preview.image.height,
-              length: preview.image.size
+              length: preview.image.length
             };
           })
         });
