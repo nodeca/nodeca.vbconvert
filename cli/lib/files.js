@@ -3,53 +3,26 @@
 
 'use strict';
 
+var _           = require('lodash');
 var async       = require('async');
 var fs          = require('fs');
 var mimoza      = require('mimoza');
 var mongoose    = require('mongoose');
 var path        = require('path');
-var probe       = require('probe-image-size');
 var progress    = require('./progressbar');
+var resizeParse = require('nodeca.users/server/_lib/resize_parse');
 var ALBUM       = 8; // content type for albums
 
+// resize_sharp is a drop-in replacement for resize in nodeca.users,
+// so you can comment out one or the other to switch between
+// gm and sharp libraries
+//
+var resize = require('./resize_gm');
+// var resize = require('./resize_sharp');
+
+
 module.exports = function (N, callback) {
-  // Returns file size and image dimensions
-  //
-  function getFileParams(file, ext, callback) {
-    fs.stat(file, function (err, stats) {
-      if (err) {
-        callback(err);
-        return;
-      }
-
-      var supportedImageFormats = [ 'bmp', 'gif', 'jpg', 'jpeg', 'png' ];
-      var result = {};
-
-      result.size = stats.size;
-
-      if (supportedImageFormats.indexOf(ext) === -1) {
-        result.type = N.models.users.MediaInfo.types.BINARY;
-        callback(null, result);
-        return;
-      }
-
-      var stream = fs.createReadStream(file);
-
-      probe(stream, function (err, imgSz) {
-        stream.destroy();
-
-        if (err) {
-          callback(err);
-          return;
-        }
-
-        result.width  = imgSz.width;
-        result.height = imgSz.height;
-        result.type   = N.models.users.MediaInfo.types.IMAGE;
-        callback(null, result);
-      });
-    });
-  }
+  var mediaConfig = resizeParse(N.config.users.uploads);
 
   // Chopped-down version of N.models.users.MediaInfo.createFile
   //
@@ -66,35 +39,70 @@ module.exports = function (N, callback) {
     media.file_name   = filedata.filename;
     media.description = filedata.caption;
 
-    getFileParams(filepath, filedata.extension, function (err, data) {
-      if (err) {
-        callback(err);
-        return;
-      }
+    var supportedImageFormats = [ 'bmp', 'gif', 'jpg', 'jpeg', 'png' ];
 
-      var storeOptions = {
-        _id: new mongoose.Types.ObjectId(filedata.dateline),
-        contentType: mimoza.getMimeType(filedata.extension),
-        metadata: {
-          origName:    filedata.filename
-        }
-      };
-
-      N.models.core.File.put(filepath, storeOptions, function (err, info) {
+    // Just save if file is not an image
+    if (supportedImageFormats.indexOf(filedata.extension) === -1) {
+      fs.stat(filepath, function (err, stats) {
         if (err) {
           callback(err);
           return;
         }
 
-        media.type      = data.type;
-        media.media_id  = info.id;
-        media.file_size = data.size;
+        var storeOptions = {
+          _id: new mongoose.Types.ObjectId(filedata.dateline),
+          contentType: mimoza.getMimeType(filedata.extension),
+          metadata: {
+            origName: filedata.filename
+          }
+        };
 
-        if (data.width || data.height) {
-          media.image_sizes = {
-            orig: { width: data.width, height: data.height }
-          };
+        N.models.core.File.put(filepath, storeOptions, function (err, info) {
+          if (err) {
+            callback(err);
+            return;
+          }
+
+          media.type      = N.models.users.MediaInfo.types.BINARY;
+          media.media_id  = info.id;
+          media.file_size = stats.size;
+
+          media.save(function (err) {
+            if (err) {
+              callback(err);
+              return;
+            }
+
+            callback(null, media);
+          });
+        });
+      });
+
+      return;
+    }
+
+    var resizeConfig = _.cloneDeep(mediaConfig.types[filedata.extension].resize);
+
+    resizeConfig.orig.skip_size = Infinity;
+
+    resize(
+      filepath,
+      {
+        store:   N.models.core.File,
+        ext:     filedata.extension,
+        date:    filedata.dateline,
+        resize:  resizeConfig
+      },
+      function (err, data) {
+        if (err) {
+          callback(err);
+          return;
         }
+
+        media.type        = N.models.users.MediaInfo.types.IMAGE;
+        media.image_sizes = data.images;
+        media.media_id    = data.id;
+        media.file_size   = data.size;
 
         media.save(function (err) {
           if (err) {
@@ -104,8 +112,8 @@ module.exports = function (N, callback) {
 
           callback(null, media);
         });
-      });
-    });
+      }
+    );
   }
 
 
@@ -132,10 +140,8 @@ module.exports = function (N, callback) {
           return;
         }
 
-        async.eachLimit(userids, 50, function (row, next) {
+        async.eachLimit(userids, 100, function (row, next) {
           var userid = row.userid;
-
-          bar.tick();
 
           N.models.users.User.findOne({ hid: userid })
               .lean(true)

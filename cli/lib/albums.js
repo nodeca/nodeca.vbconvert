@@ -33,7 +33,7 @@ module.exports = function (N, callback) {
           return;
         }
 
-        async.eachLimit(userids, 50, function (row, next) {
+        async.eachLimit(userids, 100, function (row, next) {
           var userid = row.userid;
 
           N.models.users.User.findOne({ hid: userid })

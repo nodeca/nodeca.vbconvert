@@ -64,7 +64,7 @@ module.exports = function (N, callback) {
             return;
           }
 
-          async.eachLimit(userids, 50, function (row, next) {
+          async.eachLimit(userids, 100, function (row, next) {
             if (!users[row.fromuserid]) {
               // ignore votes casted by deleted users
               next();

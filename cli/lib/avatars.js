@@ -15,7 +15,7 @@ var resizeParse = require('nodeca.users/server/_lib/resize_parse');
 // so you can comment out one or the other to switch between
 // gm and sharp libraries
 //
-var resize = require('nodeca.users/models/users/_lib/resize');
+var resize = require('./resize_gm');
 // var resize = require('./resize_sharp');
 
 
@@ -48,7 +48,7 @@ module.exports = function (N, callback) {
       var bar = progress(' avatars :current/:total [:bar] :percent', rows.length);
       var counter = 0;
 
-      async.eachLimit(rows, 50, function (row, callback) {
+      async.eachLimit(rows, 100, function (row, callback) {
         function next() {
           bar.tick();
           callback.apply(null, arguments);

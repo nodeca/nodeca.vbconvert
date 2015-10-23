@@ -371,7 +371,7 @@ module.exports = function (N, callback) {
 
       var bar = progress(' topics :current/:total [:bar] :percent', rows.length);
 
-      async.eachLimit(rows, 50, function (row, callback) {
+      async.eachLimit(rows, 100, function (row, callback) {
         import_topic(row.threadid, function () {
           bar.tick();
           callback.apply(null, arguments);
@@ -408,7 +408,7 @@ module.exports = function (N, callback) {
         return;
       }
 
-      async.eachLimit(rows, 50, function (row, callback) {
+      async.eachLimit(rows, 100, function (row, callback) {
         N.models.vbconvert.PostMapping.findOne({ mysql_id: row.postid })
             .lean(true)
             .exec(function (err, post_mapping) {

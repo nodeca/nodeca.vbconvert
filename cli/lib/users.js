@@ -55,7 +55,7 @@ module.exports = function (N, callback) {
             return;
           }
 
-          async.eachLimit(rows, 50, function (row, callback) {
+          async.eachLimit(rows, 100, function (row, callback) {
             function next() {
               bar.tick();
               callback.apply(null, arguments);
