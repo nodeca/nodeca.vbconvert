@@ -1,7 +1,10 @@
+applications:
+  - nodeca.vbconvert
+
 vbconvert:
 
   # Connection details for mysql
-  #database: 'mysql://username@password:host/database'
+  database: 'mysql://root@localhost/vbforum'
 
   # Usergroup mapping
   usergroups:
