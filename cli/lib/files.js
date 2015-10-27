@@ -17,8 +17,8 @@ var ALBUM       = 8; // content type for albums
 // so you can comment out one or the other to switch between
 // gm and sharp libraries
 //
-var resize = require('./resize_gm');
-// var resize = require('./resize_sharp');
+// var resize = require('./resize_gm');
+var resize = require('./resize_sharp');
 
 
 module.exports = function (N, callback) {
@@ -26,11 +26,8 @@ module.exports = function (N, callback) {
 
   // Chopped-down version of N.models.users.MediaInfo.createFile
   //
-  function createFile(filedata, user, album_id, callback) {
-    var media    = new N.models.users.MediaInfo();
-    var filepath = path.join(N.config.vbconvert.files,
-                             String(filedata.filedataowner).split('').join('/'),
-                             filedata.filedataid + '.attach');
+  function createFile(filedata, filepath, user, album_id, callback) {
+    var media = new N.models.users.MediaInfo();
 
     media._id         = new mongoose.Types.ObjectId(filedata.dateline);
     media.user_id     = user._id;
@@ -244,11 +241,14 @@ module.exports = function (N, callback) {
                         }
 
                         var albumid = album_ids[row.contenttypeid === ALBUM ? row.contentid : 0].id;
+                        var filepath = path.join(N.config.vbconvert.files,
+                              String(row.filedataowner).split('').join('/'),
+                              row.filedataid + '.attach');
 
-                        createFile(row, user, albumid, function (err, media) {
+                        createFile(row, filepath, user, albumid, function (err, media) {
                           if (err) {
                             // some files are considered corrupted by gm, we should log those
-                            N.logger.warn('File import: ' + err.message);
+                            N.logger.warn('File import: ' + err.message + ' (processing ' + filepath + ')');
                             next();
                             return;
                           }

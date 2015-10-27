@@ -15,8 +15,8 @@ var resizeParse = require('nodeca.users/server/_lib/resize_parse');
 // so you can comment out one or the other to switch between
 // gm and sharp libraries
 //
-var resize = require('./resize_gm');
-// var resize = require('./resize_sharp');
+// var resize = require('./resize_gm');
+var resize = require('./resize_sharp');
 
 
 module.exports = function (N, callback) {

@@ -6,11 +6,11 @@
 var _        = require('lodash');
 var async    = require('async');
 var fs       = require('fs');
-var gm       = require('gm');
 var mimoza   = require('mimoza');
 var Mongoose = require('mongoose');
 var probe    = require('probe-image-size');
 var Stream   = require('stream');
+var gm       = require('gm');
 
 var File;
 
@@ -127,6 +127,12 @@ function createPreview(image, resizeConfig, imageType, callback) {
   // Don't resize (only crop) image if height smaller than scaledHeight
   if (image.height > scaledHeight) {
     gmInstance.resize(null, scaledHeight);
+  }
+
+  if (image.height === scaledHeight && image.width === scaledWidth) {
+    // already scaled, skip it
+    callback(null, { image: image, type: imageType });
+    return;
   }
 
   gmInstance.crop(scaledWidth, scaledHeight);

@@ -6,5 +6,6 @@
   "license"         : "MIT",
   "repository"      : "nodeca/nodeca.vbconvert",
   "dependencies"    : { "mysql"    : "^2.9",
-                        "progress" : "tj/node-progress" }
+                        "progress" : "tj/node-progress",
+                        "sharp"    : "~0.11.3" }
 }
