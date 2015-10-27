@@ -1,6 +1,7 @@
 language: node_js
 node_js:
  - "0.12"
+before_install: curl https://raw.githubusercontent.com/lovell/sharp/master/preinstall.sh | sudo sh
 script: make test-ci
 services:
   - redis
@@ -9,4 +10,3 @@ addons:
   apt_packages:
     - graphicsmagick
     - net-tools
-sudo: false
