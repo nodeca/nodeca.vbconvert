@@ -33,7 +33,7 @@ sudo apt-get update
 sudo apt-get install percona-server-server-5.6
 ```
 
-4\. Prepare source images & database:
+4\. Prepare source images & database, reset mysql password:
 
 ```sh
 mkdir /tmp/extract
@@ -42,16 +42,7 @@ rm -rf /var/lib/mysql
 cp -a /tmp/extract/var/lib/mysql /var/lib/mysql
 chown mysql:mysql -Rv /var/lib/mysql
 ln -s /tmp/extract/var/www/forum.rcdesign.ru/www /tmp/www
-```
-
-5\. Reset mysql password:
-
-```sh
-# mysqld_safe --skip-grant-tables &
-# mysql
-mysql> FLUSH PRIVILEGES;
-mysql> SET PASSWORD FOR 'root'@'localhost' = '';
-mysql> GRANT ALL PRIVILEGES ON *.* TO 'debian-sys-maint'@'localhost' IDENTIFIED BY 'xxx';
+echo "FLUSH PRIVILEGES; SET PASSWORD FOR 'root'@'localhost' = '';" | mysql
 ```
 
 Launch
