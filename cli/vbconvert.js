@@ -22,16 +22,16 @@ module.exports.commandLineArguments = [
 
 module.exports.run = function (N, args, callback) {
   var modules = [
-    require('./lib/usergroups'),
-    require('./lib/users'),
-    require('./lib/sections'),
-    require('./lib/section_perms'),
-    require('./lib/topics'),
-    require('./lib/section_cache'),
-    require('./lib/votes'),
-    require('./lib/albums'),
-    require('./lib/files'),
-    require('./lib/avatars')
+    require('./_lib/usergroups'),
+    require('./_lib/users'),
+    require('./_lib/sections'),
+    require('./_lib/section_perms'),
+    require('./_lib/topics'),
+    require('./_lib/section_cache'),
+    require('./_lib/votes'),
+    require('./_lib/albums'),
+    require('./_lib/files'),
+    require('./_lib/avatars')
   ];
 
   N.wire.emit([ 'init:models' ], N, function (err) {

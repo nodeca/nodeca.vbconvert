@@ -5,4 +5,8 @@
     != self.partial('@admin.core.blocks.breadcrumbs')
 
     h1
-      p: a.btn.btn-primary(href=self.link_to('admin.vbconvert.rebuild')) #{self.t('rebuild_posts')}
+      p
+        if self.progress
+          a.btn.btn-primary(href='#', data-on-click='admin.vbconvert.stop') #{self.t('stop')}
+        else
+          a.btn.btn-primary(href='#', data-on-click='admin.vbconvert.start') #{self.t('start')}

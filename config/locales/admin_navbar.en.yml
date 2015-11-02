@@ -3,4 +3,4 @@ i18n:
     admin:
       menus:
         navbar:
-          vbconvert: Conversion
+          vbconvert: VB Convert
