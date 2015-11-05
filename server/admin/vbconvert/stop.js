@@ -6,6 +6,6 @@ module.exports = function (N, apiPath) {
   });
 
   N.wire.on(apiPath, function vbconvert_stop(env, callback) {
-    callback();
+    N.queue.cancel('queue:vbconvert_rebuild:vbconvert_rebuild', callback);
   });
 };

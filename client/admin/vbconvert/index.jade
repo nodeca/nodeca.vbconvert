@@ -4,9 +4,24 @@
   .main
     != self.partial('@admin.core.blocks.breadcrumbs')
 
-    h1
-      p
-        if self.progress
+    .vbconvert-task-line
+      if self.task_info
+        if self.task_info.chunks
+          - var chunks = self.task_info.chunks;
+          - var total = chunks.pending + chunks.active + chunks.errored + chunks.done;
+        .vbconvert-task-line__caption
+          = self.t('currently_converting')
+          if self.task_info.chunks
+            = ' '
+            b= (((chunks.done + chunks.errored) / total * 100) || 0).toFixed(2) + '%'
+        if self.task_info.chunks
+          .vbconvert-task-line__progress.progress
+            .progress-bar.progress-bar-danger(title=self.t('errored_chunks'), style='width: ' + (chunks.errored/total * 100).toFixed(4) + '%')
+            .progress-bar.progress-bar-success(title=self.t('successful_chunks'), style='width: ' + (chunks.done/total * 100).toFixed(4) + '%')
+            .progress-bar.progress-bar-warning(title=self.t('active_chunks'), style='width: ' + (chunks.active/total * 100).toFixed(4) + '%')
+        .vbconvert-task-line__btn
           a.btn.btn-primary(href='#', data-on-click='admin.vbconvert.stop') #{self.t('stop')}
-        else
+      else
+        .vbconvert-task-line__caption= self.t('start_converting')
+        .vbconvert-task-line__btn
           a.btn.btn-primary(href='#', data-on-click='admin.vbconvert.start') #{self.t('start')}

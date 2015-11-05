@@ -1,3 +1,10 @@
 en-US:
   index:
-    rebuild_posts: Rebuild posts
+    title: VB Convert
+    start: start
+    stop: stop
+    currently_converting: 'Currently converting BBCode to Markdown:'
+    start_converting: 'Convert BBCode to Markdown in forum posts:'
+    errored_chunks: errored chunks
+    successful_chunks: successful chunks
+    active_chunks: active chunks
