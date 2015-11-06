@@ -3,6 +3,9 @@ applications:
 
 vbconvert:
 
+  # Base url of the new forum
+  destination: 'https://dev.rcopen.com/'
+
   # Connection details for mysql
   database: 'mysql://root@localhost/vbforum'
 
