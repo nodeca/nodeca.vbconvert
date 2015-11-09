@@ -248,7 +248,8 @@ module.exports = function (N, callback) {
           ts:     ts,
           html:   post.pagetext,
           ip:     post.ipaddress,
-          user:   user._id
+          user:   user._id,
+          attach: []
         };
 
         new_post.votes = 0;

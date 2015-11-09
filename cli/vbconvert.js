@@ -30,8 +30,8 @@ module.exports.run = function (N, args, callback) {
     require('./_lib/section_cache'),
     require('./_lib/votes'),
     require('./_lib/albums'),
-    require('./_lib/files'),
-    require('./_lib/avatars')
+    require('./_lib/avatars'),
+    require('./_lib/files')
   ];
 
   N.wire.emit([ 'init:models' ], N, function (err) {

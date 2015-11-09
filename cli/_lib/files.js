@@ -12,6 +12,7 @@ var path        = require('path');
 var progress    = require('./progressbar');
 var resizeParse = require('nodeca.users/server/_lib/resize_parse');
 var ALBUM       = 8; // content type for albums
+var POST        = 1; // content type for posts
 
 // resize_sharp is a drop-in replacement for resize in nodeca.users,
 // so you can comment out one or the other to switch between
@@ -26,7 +27,7 @@ module.exports = function (N, callback) {
 
   // Chopped-down version of N.models.users.MediaInfo.createFile
   //
-  function createFile(filedata, filepath, user, album_id, callback) {
+  function create_file(filedata, filepath, user, album_id, callback) {
     var media = new N.models.users.MediaInfo();
 
     media._id         = new mongoose.Types.ObjectId(filedata.dateline);
@@ -61,7 +62,7 @@ module.exports = function (N, callback) {
           }
 
           media.type      = N.models.users.MediaInfo.types.BINARY;
-          media.media_id  = info.id;
+          media.media_id  = info._id;
           media.file_size = stats.size;
 
           media.save(function (err) {
@@ -111,6 +112,87 @@ module.exports = function (N, callback) {
         });
       }
     );
+  }
+
+
+  // Create file, add it to album and add it to post if necessary
+  //
+  function add_file(row, user, album_ids, callback) {
+    var albumid = album_ids[row.contenttypeid === ALBUM ? row.contentid : 0].id;
+    var filepath = path.join(N.config.vbconvert.files,
+          String(row.filedataowner).split('').join('/'),
+          row.filedataid + '.attach');
+
+    create_file(row, filepath, user, albumid, function (err, media) {
+      if (err) {
+        // some files are considered corrupted by gm, we should log those
+        N.logger.warn('File import: ' + err.message + ' (processing ' + filepath + ')');
+        callback();
+        return;
+      }
+
+      N.models.users.UserExtra.update(
+          { user_id: media.user_id },
+          { $inc: { media_size: media.file_size } },
+          function (err) {
+
+        if (err) {
+          callback(err);
+          return;
+        }
+
+        var album = album_ids[row.contenttypeid === ALBUM ? row.contentid : 0];
+
+        var updateData = { $inc: { count: 1 } };
+
+        // only set cover if:
+        //  1. cover info doesn't exist in mysql (last image will be the cover)
+        //  2. cover exist and is equal to current row
+        if (!album.cover || album.cover === row.attachmentid) {
+          updateData.$set = { cover_id: media.media_id };
+        }
+
+        N.models.users.Album.update({ _id: album.id }, updateData, function (err) {
+          if (err) {
+            callback(err);
+            return;
+          }
+
+          if (row.contenttypeid !== POST) {
+            callback(null, media);
+            return;
+          }
+
+          N.models.vbconvert.PostMapping.findOne({ mysql_id: row.contentid })
+              .lean(true)
+              .exec(function (err, postmapping) {
+
+            if (err) {
+              callback(err);
+              return;
+            }
+
+            if (!postmapping) {
+              callback(null, media);
+              return;
+            }
+
+            N.models.forum.Post.update(
+              { _id: postmapping.post_id },
+              { $push: { attach: media.media_id } },
+              function (err) {
+                if (err) {
+                  callback(err);
+                  return;
+                }
+
+                callback(null, media);
+              }
+            );
+          });
+        });
+      });
+    });
   }
 
 
@@ -240,52 +322,16 @@ module.exports = function (N, callback) {
                           return;
                         }
 
-                        var albumid = album_ids[row.contenttypeid === ALBUM ? row.contentid : 0].id;
-                        var filepath = path.join(N.config.vbconvert.files,
-                              String(row.filedataowner).split('').join('/'),
-                              row.filedataid + '.attach');
-
-                        createFile(row, filepath, user, albumid, function (err, media) {
+                        add_file(row, user, album_ids, function (err, media) {
                           if (err) {
-                            // some files are considered corrupted by gm, we should log those
-                            N.logger.warn('File import: ' + err.message + ' (processing ' + filepath + ')');
-                            next();
+                            next(err);
                             return;
                           }
 
-                          N.models.users.UserExtra.update(
-                              { user_id: media.user_id },
-                              { $inc: { media_size: media.file_size } },
-                              function (err) {
-
-                            if (err) {
-                              next(err);
-                              return;
-                            }
-
-                            var album = album_ids[row.contenttypeid === ALBUM ? row.contentid : 0];
-
-                            var updateData = { $inc: { count: 1 } };
-
-                            // only set cover if:
-                            //  1. cover info doesn't exist in mysql (last image will be the cover)
-                            //  2. cover exist and is equal to current row
-                            if (!album.cover || album.cover === row.attachmentid) {
-                              updateData.$set = { cover_id: media.media_id };
-                            }
-
-                            N.models.users.Album.update({ _id: album.id }, updateData, function (err) {
-                              if (err) {
-                                next(err);
-                                return;
-                              }
-
-                              new N.models.vbconvert.FileMapping({
-                                mysql: row.attachmentid,
-                                mongo: media._id
-                              }).save(next);
-                            });
-                          });
+                          new N.models.vbconvert.FileMapping({
+                            mysql: row.attachmentid,
+                            mongo: media._id
+                          }).save(next);
                         });
                       });
                     }, next);
