@@ -10,6 +10,22 @@ var mongoose = require('mongoose');
 var progress = require('./progressbar');
 var POST     = 1; // content type for posts
 
+var html_entities = {
+  '&amp;':  '&',
+  '&quot;': '"',
+  '&gt;':   '>',
+  '&lt;':   '<'
+};
+
+
+// Replace html entities like "&quot;" with the corresponding characters
+//
+function html_unescape(text) {
+  return text.replace(/&(?:quot|amp|lt|gt|#(\d{1,6}));/g, function (entity, code) {
+    return html_entities[entity] || String.fromCharCode(+code);
+  });
+}
+
 
 module.exports = function (N, callback) {
   /* eslint-disable max-nested-callbacks */
@@ -121,7 +137,7 @@ module.exports = function (N, callback) {
         _id:         new mongoose.Types.ObjectId(thread.dateline),
         hid:         thread.threadid,
         section:     sections[thread.forumid]._id,
-        title:       thread.title,
+        title:       html_unescape(thread.title),
         views_count: thread.views
       };
 
@@ -286,9 +302,13 @@ module.exports = function (N, callback) {
 
         // process replies if they are in the same topic
         if (post.parentid && posts_by_id[post.parentid]) {
-          new_post.to      = posts_by_id[post.parentid]._id;
-          new_post.to_user = posts_by_id[post.parentid].user;
-          new_post.to_phid = posts_by_id[post.parentid].hid;
+          // ignore replies to the first post because most of them are
+          // (that's the default for "reply in thread" button)
+          if (posts_by_id[post.parentid].hid !== 1) {
+            new_post.to      = posts_by_id[post.parentid]._id;
+            new_post.to_user = posts_by_id[post.parentid].user;
+            new_post.to_phid = posts_by_id[post.parentid].hid;
+          }
         }
 
         posts_by_id[post.postid] = new_post;
