@@ -328,6 +328,11 @@ module.exports = function (N, callback) {
                             return;
                           }
 
+                          if (!media) {
+                            next();
+                            return;
+                          }
+
                           new N.models.vbconvert.FileMapping({
                             mysql: row.attachmentid,
                             mongo: media._id

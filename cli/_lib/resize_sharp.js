@@ -116,8 +116,9 @@ function createPreview(image, resizeConfig, imageType, callback) {
   }
 
   // Don't resize (only crop) image if height smaller than scaledHeight
-  if (image.height > scaledHeight) {
-    gmInstance.resize(null, scaledHeight);
+  if (image.height <= scaledHeight) {
+    scaledWidth = image.width;
+    scaledHeight = image.height;
   }
 
   if (image.height === scaledHeight && image.width === scaledWidth) {
