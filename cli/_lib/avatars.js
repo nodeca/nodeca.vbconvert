@@ -35,7 +35,8 @@ module.exports = function (N, callback) {
       return;
     }
 
-    conn.query('SELECT userid,width,height,sel_top,sel_left,sel_width,sel_height,bigpicrevision ' +
+    conn.query('SELECT userid,width,height,bigpicrevision,dateline,' +
+        'sel_top,sel_left,sel_width,sel_height ' +
         'FROM custombigpic JOIN user USING(userid) ' +
         'WHERE bigpicsaved = 1 ORDER BY userid ASC',
         function (err, rows) {
@@ -89,7 +90,11 @@ module.exports = function (N, callback) {
               resize(tmpfile, {
                 store:   N.models.core.File,
                 ext:     'jpeg',
-                maxSize: Infinity,
+
+                // old files don't have timestamp,
+                // so use 01 Jan 2011 for those
+                date:    Math.max(row.dateline, 1293840000),
+
                 resize:  config.types.jpg.resize
               }, function (err, data) {
                 if (err) {
