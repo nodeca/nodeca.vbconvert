@@ -344,7 +344,9 @@ module.exports = function (N, callback) {
     // Update created topic
     //
     function update_topic(callback) {
-      topic.last_post_hid = posts.length - 1;
+      // each fetched post is assigned a consecutive hid starting with 1,
+      // so the last hid will be equal to the number of posts
+      topic.last_post_hid = posts.length;
 
       topic.st = thread.open ?
                  N.models.forum.Topic.statuses.OPEN :
