@@ -138,7 +138,8 @@ module.exports = function (N, callback) {
         hid:         thread.threadid,
         section:     sections[thread.forumid]._id,
         title:       html_unescape(thread.title),
-        views_count: thread.views
+        views_count: thread.views,
+        version:     0
       };
 
       N.models.forum.Topic.findOneAndUpdate(
