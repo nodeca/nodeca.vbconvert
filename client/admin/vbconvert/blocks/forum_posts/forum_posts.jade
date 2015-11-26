@@ -13,13 +13,13 @@
   div
     a.btn.btn-default(
       href='#'
-      data-on-click='admin.vbconvert.blocks.forum_post.start'
+      data-on-click='admin.vbconvert.blocks.forum_posts.start'
       data-bind='visible: !started()'
     )= self.t('start')
 
     a.btn.btn-default(
       href='#'
-      data-on-click='admin.vbconvert.blocks.forum_post.stop'
+      data-on-click='admin.vbconvert.blocks.forum_posts.stop'
       data-bind='visible: started'
       style='display: none'
     )= self.t('stop')
