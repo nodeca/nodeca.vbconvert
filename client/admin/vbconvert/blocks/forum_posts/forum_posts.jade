@@ -3,7 +3,7 @@
 .vbconvert-widget#vbconvert-task-forum-posts
   div
     = self.t('caption')
-    div(data-bind='visible: started')
+    span(data-bind='visible: started')
       = ' '
       b(data-bind='text: (current() / total() * 100).toFixed(2) + "%"')
 
