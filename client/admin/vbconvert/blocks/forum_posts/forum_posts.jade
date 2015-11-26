@@ -1,0 +1,25 @@
+- self.add_raw_data('forum_posts_task', self.task_info);
+
+.vbconvert-widget#vbconvert-task-forum-posts
+  div
+    = self.t('caption')
+    div(data-bind='visible: started')
+      = ' '
+      b(data-bind='text: (current() / total() * 100).toFixed(2) + "%"')
+
+  .progress
+    .progress-bar.progress-bar-success.progress-bar-striped.active(data-bind='style: { width: (current() / total() * 100).toFixed(4) + "%" }, visible: started')
+
+  div
+    a.btn.btn-default(
+      href='#'
+      data-on-click='admin.vbconvert.blocks.forum_post.start'
+      data-bind='visible: !started()'
+    )= self.t('start')
+
+    a.btn.btn-default(
+      href='#'
+      data-on-click='admin.vbconvert.blocks.forum_post.stop'
+      data-bind='visible: started'
+      style='display: none'
+    )= self.t('stop')
