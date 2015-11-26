@@ -50,13 +50,9 @@ N.wire.once('navigate.done', function vbconvert_forum_post_task_widget_setup_han
   //
   N.wire.on(module.apiPath + '.start', function vbconvert_start() {
     N.io.rpc(module.apiPath + '.start')
-      .done(function (task_info) {
-        view.started(task_info.started);
-        view.current(task_info.current);
-        view.total(task_info.total);
-      })
-      .fail(function (err) {
-        N.wire.emit('notify', { type: 'error', message: err.message });
+      .done(function () {
+        // TODO
+        N.wire.emit('navigate.reload');
       });
   });
 
@@ -65,13 +61,9 @@ N.wire.once('navigate.done', function vbconvert_forum_post_task_widget_setup_han
   //
   N.wire.on(module.apiPath + '.stop', function vbconvert_stop() {
     N.io.rpc(module.apiPath + '.stop')
-      .done(function (task_info) {
-        view.started(task_info.started);
-        view.current(task_info.current);
-        view.total(task_info.total);
-      })
-      .fail(function (err) {
-        N.wire.emit('notify', { type: 'error', message: err.message });
+      .done(function () {
+        // TODO
+        N.wire.emit('navigate.reload');
       });
   });
 });
