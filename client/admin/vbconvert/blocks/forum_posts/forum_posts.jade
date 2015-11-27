@@ -11,14 +11,12 @@
     .progress-bar.progress-bar-success.progress-bar-striped.active(data-bind='style: { width: (current() / total() * 100).toFixed(4) + "%" }, visible: started')
 
   div
-    a.btn.btn-default(
-      href='#'
+    button.btn.btn-default(
       data-on-click='admin.vbconvert.blocks.forum_posts.start'
       data-bind='visible: !started()'
     )= self.t('start')
 
-    a.btn.btn-default(
-      href='#'
+    button.btn.btn-default(
       data-on-click='admin.vbconvert.blocks.forum_posts.stop'
       data-bind='visible: started'
       style='display: none'
