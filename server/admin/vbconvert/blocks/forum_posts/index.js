@@ -20,8 +20,6 @@ module.exports = function (N) {
                             data.chunks.active.length + data.chunks.pending.length;
       }
 
-      task_info.started = !!data;
-
       env.res.blocks.push({
         name:      'forum_posts',
         task_info: task_info

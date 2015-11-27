@@ -21,19 +21,18 @@ function update_task_status(task_info) {
     return;
   }
 
-  // if task is running, but we're at 100%, set "started: false" because
-  // we'll receive no more notifications
-  if (task_info.started && (task_info.current < task_info.total && task_info.current && task_info.total)) {
-    view.started(true);
-  } else {
-    view.started(false);
-  }
-
   view.current(task_info.current);
   view.total(task_info.total);
 
-  if (task_info.current === task_info.total) {
+  // if task is running, but we're at 100%, set "started: false" because
+  // we'll receive no more notifications
+  if (task_info.current === task_info.total &&
+      task_info.current > 0 &&
+      task_info.total > 0) {
+    view.started(false);
     ignore_runid = Math.max(ignore_runid, task_info.runid);
+  } else {
+    view.started(true);
   }
 
   last_runid = Math.max(task_info.runid, last_runid);
@@ -43,10 +42,13 @@ function update_task_status(task_info) {
 N.wire.on('navigate.done:admin.vbconvert.index', function vbconvert_forum_post_task_widget_setup() {
   if (!$(SELECTOR).length) { return; }
 
+  var current = N.runtime.page_data.forum_posts_task.current || 0;
+  var total   = N.runtime.page_data.forum_posts_task.total || 1;
+
   view = {
-    started:  ko.observable(N.runtime.page_data.forum_posts_task.started),
-    current:  ko.observable(N.runtime.page_data.forum_posts_task.current || 0),
-    total:    ko.observable(N.runtime.page_data.forum_posts_task.total || 1)
+    started:  ko.observable(current > 0 && current < total),
+    current:  ko.observable(current),
+    total:    ko.observable(total)
   };
 
   ko.applyBindings(view, $(SELECTOR)[0]);
