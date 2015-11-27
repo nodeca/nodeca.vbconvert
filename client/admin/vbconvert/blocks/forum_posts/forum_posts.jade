@@ -5,15 +5,15 @@
     = self.t('caption')
     span.small(data-bind='visible: started')
       = ' '
-      b(data-bind='text: (current() / total() * 100).toFixed(2) + "%"')
+      b(data-bind='text: (current() / total() * 100 || 0).toFixed(2) + "%"')
 
   .progress
     .progress-bar.progress-bar-success(
-      data-bind='style: { width: (current() / total() * 100).toFixed(4) + "%" }, visible: started'
+      data-bind='style: { width: (current() / total() * 100).toFixed(4) + "%" }, visible: current() && total() && current() !== total()'
       style='display: none'
     )
     .progress-bar.progress-bar-success(
-      data-bind='visible: finished'
+      data-bind='visible: current() && total() && current() === total()'
       style='display: none; width: 100%'
     )= self.t('complete')
 

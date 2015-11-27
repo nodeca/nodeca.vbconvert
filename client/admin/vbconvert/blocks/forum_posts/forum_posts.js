@@ -9,24 +9,34 @@ var ko = require('knockout');
 // Knockout bindings root object.
 var view = null;
 var SELECTOR = '#vbconvert-task-forum-posts';
-var finished_tasks = {};
+var ignore_runid = 0;
+var last_runid = 0;
 
 
 function update_task_status(task_info) {
   if (!view) { return; }
 
-  if (finished_tasks[task_info.taskid]) {
+  if (ignore_runid >= task_info.runid || last_runid > task_info.runid) {
     // task is finished, but we're still receiving debounced messages
     return;
   }
 
-  view.started(!!task_info.started);
+  // if task is running, but we're at 100%, set "started: false" because
+  // we'll receive no more notifications
+  if (task_info.started && (task_info.current < task_info.total && task_info.current && task_info.total)) {
+    view.started(true);
+  } else {
+    view.started(false);
+  }
+
   view.current(task_info.current);
   view.total(task_info.total);
 
-  if (task_info.finished) {
-    finished_tasks[task_info.taskid] = true;
+  if (task_info.current === task_info.total) {
+    ignore_runid = Math.max(ignore_runid, task_info.runid);
   }
+
+  last_runid = Math.max(task_info.runid, last_runid);
 }
 
 
@@ -35,14 +45,8 @@ N.wire.on('navigate.done:admin.vbconvert.index', function vbconvert_forum_post_t
 
   view = {
     started:  ko.observable(N.runtime.page_data.forum_posts_task.started),
-    current:  ko.observable(N.runtime.page_data.forum_posts_task.current),
-    total:    ko.observable(N.runtime.page_data.forum_posts_task.total),
-    finished: ko.computed(function () {
-      return false;
-
-      // TODO
-      //return !this.started() && Object.keys(finished_tasks).length > 0;
-    }, view)
+    current:  ko.observable(N.runtime.page_data.forum_posts_task.current || 0),
+    total:    ko.observable(N.runtime.page_data.forum_posts_task.total || 1)
   };
 
   ko.applyBindings(view, $(SELECTOR)[0]);
@@ -66,8 +70,15 @@ N.wire.once('navigate.done:admin.vbconvert.index', function vbconvert_forum_post
   // Click on "start" button
   //
   N.wire.on(module.apiPath + '.start', function vbconvert_start() {
+    var prev_runid = last_runid;
+
     N.io.rpc(module.apiPath + '.start')
       .done(function () {
+        // reset progress bar to zero,
+        // and ignore all updates on the last task
+        ignore_runid = Math.max(prev_runid, ignore_runid);
+        view.current(0);
+        view.total(1);
         view.started(true);
       });
   });
@@ -76,8 +87,15 @@ N.wire.once('navigate.done:admin.vbconvert.index', function vbconvert_forum_post
   // Click on "stop" button
   //
   N.wire.on(module.apiPath + '.stop', function vbconvert_stop() {
+    var prev_runid = last_runid;
+
     N.io.rpc(module.apiPath + '.stop')
       .done(function () {
+        // reset progress bar to zero,
+        // and ignore all updates on the last task
+        ignore_runid = Math.max(prev_runid, ignore_runid);
+        view.current(0);
+        view.total(1);
         view.started(false);
       });
   });
