@@ -2,5 +2,7 @@
   .main
     != self.partial('@admin.core.blocks.breadcrumbs')
 
+    h1 #{self.head.title}
+
     each block in self.blocks
       != self.partial('@admin.vbconvert.blocks.' + block.name, block)
