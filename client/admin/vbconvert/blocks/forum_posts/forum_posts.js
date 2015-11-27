@@ -9,14 +9,24 @@ var ko = require('knockout');
 // Knockout bindings root object.
 var view = null;
 var SELECTOR = '#vbconvert-task-forum-posts';
+var finished_tasks = {};
 
 
 function update_task_status(task_info) {
   if (!view) { return; }
 
-  // view.started(task_info.started);
-  view.current(task_info.chunks.done + task_info.chunks.errored);
-  view.total(task_info.chunks.pending);
+  if (finished_tasks[task_info.taskid]) {
+    // task is finished, but we're still receiving debounced messages
+    return;
+  }
+
+  view.started(!!task_info.started);
+  view.current(task_info.current);
+  view.total(task_info.total);
+
+  if (task_info.finished) {
+    finished_tasks[task_info.taskid] = true;
+  }
 }
 
 
@@ -24,9 +34,15 @@ N.wire.on('navigate.done:admin.vbconvert.index', function vbconvert_forum_post_t
   if (!$(SELECTOR).length) { return; }
 
   view = {
-    started: ko.observable(N.runtime.page_data.forum_posts_task.started),
-    current: ko.observable(N.runtime.page_data.forum_posts_task.current),
-    total:   ko.observable(N.runtime.page_data.forum_posts_task.total)
+    started:  ko.observable(N.runtime.page_data.forum_posts_task.started),
+    current:  ko.observable(N.runtime.page_data.forum_posts_task.current),
+    total:    ko.observable(N.runtime.page_data.forum_posts_task.total),
+    finished: ko.computed(function () {
+      return false;
+
+      // TODO
+      //return !this.started() && Object.keys(finished_tasks).length > 0;
+    }, view)
   };
 
   ko.applyBindings(view, $(SELECTOR)[0]);
@@ -52,8 +68,6 @@ N.wire.once('navigate.done:admin.vbconvert.index', function vbconvert_forum_post
   N.wire.on(module.apiPath + '.start', function vbconvert_start() {
     N.io.rpc(module.apiPath + '.start')
       .done(function () {
-        // TODO
-        // N.wire.emit('navigate.reload');
         view.started(true);
       });
   });
@@ -64,8 +78,6 @@ N.wire.once('navigate.done:admin.vbconvert.index', function vbconvert_forum_post
   N.wire.on(module.apiPath + '.stop', function vbconvert_stop() {
     N.io.rpc(module.apiPath + '.stop')
       .done(function () {
-        // TODO
-        // N.wire.emit('navigate.reload');
         view.started(false);
       });
   });

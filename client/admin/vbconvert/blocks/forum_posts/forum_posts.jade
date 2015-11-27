@@ -1,14 +1,21 @@
 - self.add_raw_data('forum_posts_task', self.task_info);
 
 .vbconvert-widget#vbconvert-task-forum-posts
-  div
+  h4
     = self.t('caption')
-    span(data-bind='visible: started')
+    span.small(data-bind='visible: started')
       = ' '
       b(data-bind='text: (current() / total() * 100).toFixed(2) + "%"')
 
   .progress
-    .progress-bar.progress-bar-success.progress-bar-striped.active(data-bind='style: { width: (current() / total() * 100).toFixed(4) + "%" }, visible: started')
+    .progress-bar.progress-bar-success(
+      data-bind='style: { width: (current() / total() * 100).toFixed(4) + "%" }, visible: started'
+      style='display: none'
+    )
+    .progress-bar.progress-bar-success(
+      data-bind='visible: finished'
+      style='display: none; width: 100%'
+    )= self.t('complete')
 
   div
     button.btn.btn-default(
@@ -16,7 +23,7 @@
       data-bind='visible: !started()'
     )= self.t('start')
 
-    button.btn.btn-default(
+    button.btn.btn-danger(
       data-on-click='admin.vbconvert.blocks.forum_posts.stop'
       data-bind='visible: started'
       style='display: none'

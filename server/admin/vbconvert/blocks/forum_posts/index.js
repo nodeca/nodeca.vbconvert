@@ -18,13 +18,13 @@ module.exports = function (N) {
         task_info.current = data.chunks.done.length + data.chunks.errored.length;
         task_info.total   = data.chunks.done.length + data.chunks.errored.length +
                             data.chunks.active.length + data.chunks.pending.length;
-      } else if (data && data.state === 'mapping') {
-        // show 0%
-        task_info.current = 0;
-        task_info.total   = 1;
       } else if (data && data.state === 'reducing') {
         // show 100%
         task_info.current = 1;
+        task_info.total   = 1;
+      } else {
+        // show 0%
+        task_info.current = 0;
         task_info.total   = 1;
       }
 
