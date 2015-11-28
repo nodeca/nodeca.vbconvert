@@ -2,4 +2,4 @@ menus:
   admin:
     navbar:
       vbconvert:
-        to: admin.vbconvert.index
+        to: admin.vbconvert

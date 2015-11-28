@@ -5,7 +5,7 @@
 
 
 module.exports = function (N) {
-  N.wire.after('server:admin.vbconvert.index', function forum_posts_task_widget(env, callback) {
+  N.wire.after('server:admin.vbconvert', function forum_posts_task_widget(env, callback) {
     N.queue.status('queue:forum_posts_import:forum_posts_import', function (err, data) {
       if (err) {
         callback(err);

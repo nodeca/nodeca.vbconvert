@@ -1,4 +1,4 @@
 router:
   http.get:
-    admin.vbconvert.index:
+    admin.vbconvert:
       "/vbconvert": ~
