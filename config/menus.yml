@@ -3,3 +3,6 @@ menus:
     navbar:
       vbconvert:
         to: admin.vbconvert
+        submenu:
+          import_bbcode:
+            to: admin.vbconvert

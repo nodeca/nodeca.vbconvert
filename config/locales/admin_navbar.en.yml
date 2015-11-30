@@ -4,3 +4,4 @@ i18n:
       menus:
         navbar:
           vbconvert: VB Convert
+          vbconvert.import_bbcode: Import BBcode
