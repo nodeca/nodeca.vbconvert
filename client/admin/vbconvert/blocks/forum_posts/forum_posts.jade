@@ -3,9 +3,9 @@
 #vbconvert-task-forum-posts.vbconvert-widget
   h4
     = self.t('caption')
-    span.small(data-bind='visible: started')
-      = ' '
-      b(data-bind='text: (current() / total() * 100 || 0).toFixed(2) + "%"')
+    = ' '
+    small(data-bind='visible: started, text: (current() / total() * 100 || 0).toFixed(2) + "%"'
+    )
 
   .progress
     .progress-bar(
