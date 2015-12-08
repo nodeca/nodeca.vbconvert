@@ -1,12 +1,16 @@
-// Add a widget displaying post import progress
+// Add a widget displaying image fetch progress
 //
 
 'use strict';
 
 
 module.exports = function (N) {
-  N.wire.after('server:admin.vbconvert', { priority: 20 }, function forum_posts_task_widget(env, callback) {
-    N.queue.status('forum_posts_import', N.queue.worker('forum_posts_import').taskID(), function (err, data) {
+  N.wire.after('server:admin.vbconvert', { priority: 30 }, function forum_images_task_widget(env, callback) {
+    N.queue.status(
+        'vbconvert_forum_images_fetch',
+        N.queue.worker('vbconvert_forum_images_fetch').taskID(),
+        function (err, data) {
+
       if (err) {
         callback(err);
         return;
@@ -21,7 +25,7 @@ module.exports = function (N) {
       }
 
       env.res.blocks.push({
-        name:      'forum_posts',
+        name:      'forum_images',
         task_info: task_info
       });
 
