@@ -17,7 +17,6 @@ sudo apt-get install build-essential software-properties-common
 2\. Install `nodeca.vbconvert` module:
 
 ```sh
-curl https://raw.githubusercontent.com/lovell/sharp/master/preinstall.sh | sudo sh
 cd nodeca
 npm i git+https://github.com/nodeca/nodeca.vbconvert.git
 cp node_modules/nodeca.vbconvert/config/vbconvert.yml.example config/vbconvert.yml
