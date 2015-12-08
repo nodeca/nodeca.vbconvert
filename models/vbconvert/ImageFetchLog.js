@@ -15,6 +15,7 @@ module.exports = function (N, collectionName) {
 
   var ImageFetchLog = new Schema({
     url:     String,
+    post_id: Schema.Types.ObjectId,
 
     // status (see above)
     status:  Number,
@@ -28,6 +29,8 @@ module.exports = function (N, collectionName) {
 
   // Indexes
   //////////////////////////////////////////////////////////////////////////////
+
+  ImageFetchLog.index({ post_id: 1 });
 
 
   // Export statuses
