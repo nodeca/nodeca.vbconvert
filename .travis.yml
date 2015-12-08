@@ -10,7 +10,10 @@ addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
+      - mongodb-3.0-precise
     packages:
+      - redis
+      - mongodb-org
       - graphicsmagick
       - g++-4.8
 env:
