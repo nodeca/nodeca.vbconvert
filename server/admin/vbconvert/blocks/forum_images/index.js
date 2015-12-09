@@ -6,11 +6,7 @@
 
 module.exports = function (N) {
   N.wire.after('server:admin.vbconvert', { priority: 30 }, function forum_images_task_widget(env, callback) {
-    N.queue.status(
-        'vbconvert_forum_images_fetch',
-        N.queue.worker('vbconvert_forum_images_fetch').taskID(),
-        function (err, data) {
-
+    N.queue.worker('vbconvert_forum_images_fetch').status(function (err, data) {
       if (err) {
         callback(err);
         return;
