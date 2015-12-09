@@ -246,22 +246,18 @@ module.exports = function (N, callback) {
           cache.first_user = user._id;
         }
 
-        if (post.visible === 1) {
+        if (post.visible === 1 || hid === 1) {
           cache_hb.post_count++;
-        }
+          cache_hb.last_post = id;
+          cache_hb.last_ts   = ts;
+          cache_hb.last_user = user._id;
 
-        cache_hb.last_post = id;
-        cache_hb.last_ts   = ts;
-        cache_hb.last_user = user._id;
-
-        if (!user.hb || hid === 1) {
-          if (post.visible === 1) {
+          if (!user.hb || hid === 1) {
             cache.post_count++;
+            cache.last_post = id;
+            cache.last_ts   = ts;
+            cache.last_user = user._id;
           }
-
-          cache.last_post = id;
-          cache.last_ts   = ts;
-          cache.last_user = user._id;
         }
 
         var new_post = {
