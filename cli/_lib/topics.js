@@ -269,6 +269,7 @@ module.exports = function (N, callback) {
           topic:  topic._id,
           hid:    hid,
           ts:     ts,
+          md:     post.pagetext,
           html:   post.pagetext,
           ip:     post.ipaddress,
           user:   user._id,
