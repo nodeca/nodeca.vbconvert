@@ -14,14 +14,17 @@ module.exports = function (N, collectionName) {
   };
 
   var ImageFetchLog = new Schema({
-    url:     String,
-    post_id: Schema.Types.ObjectId,
+    url:        String,
+    post_id:    Schema.Types.ObjectId,
 
     // status (see above)
-    status:  Number,
+    status:     Number,
 
     // text of the error message (if any)
-    error:   String
+    error:      String,
+
+    // http status (e.g. 403) or system code (e.g. 'ETIMEDOUT')
+    error_code: Schema.Types.Mixed
   }, {
     versionKey: false
   });
