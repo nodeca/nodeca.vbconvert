@@ -10,16 +10,10 @@ var mimoza      = require('mimoza');
 var mongoose    = require('mongoose');
 var path        = require('path');
 var progress    = require('./progressbar');
+var resize      = require('./resize');
 var resizeParse = require('nodeca.users/server/_lib/resize_parse');
 var ALBUM       = 8; // content type for albums
 var POST        = 1; // content type for posts
-
-// resize_sharp is a drop-in replacement for resize in nodeca.users,
-// so you can comment out one or the other to switch between
-// gm and sharp libraries
-//
-// var resize = require('./resize_gm');
-var resize = require('./resize_sharp');
 
 
 module.exports = function (N, callback) {
