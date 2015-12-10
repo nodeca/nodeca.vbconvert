@@ -1,7 +1,6 @@
 language: node_js
 node_js:
  - "4"
-before_install: curl https://raw.githubusercontent.com/lovell/sharp/master/preinstall.sh | sudo sh
 script: make test-ci
 services:
   - redis
@@ -9,8 +8,8 @@ services:
 addons:
   apt:
     sources:
-      - ubuntu-toolchain-r-test
       - mongodb-3.0-precise
+      - ubuntu-toolchain-r-test
     packages:
       - redis
       - mongodb-org
@@ -18,3 +17,4 @@ addons:
       - g++-4.8
 env:
   - CXX=g++-4.8
+sudo: false
