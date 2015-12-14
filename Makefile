@@ -36,7 +36,8 @@ test-ci:
 	cd ${TMP_PATH} && $(MAKE) deps-ci
 	cd ${TMP_PATH} && npm install
 	cd ${TMP_PATH} && NODECA_APP_PATH=./node_modules/${NPM_PACKAGE} $(MAKE) lint
-	#cd ${TMP_PATH} && NODECA_APP=${NPM_PACKAGE} $(MAKE) test
+	cp config/vbconvert.yml.example ${TMP_PATH}/config/vbconvert.yml
+	cd ${TMP_PATH} && NODECA_APP=${NPM_PACKAGE} $(MAKE) test
 	rm -rf ${TMP_PATH}
 
 
