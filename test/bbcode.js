@@ -49,7 +49,9 @@ describe('BBcode', function () {
   });
 
   it('parse smilies', function () {
-    assert(to_html(tokenize('foo :P bar')).match(/tongue/));
+    assert.equal(to_md(tokenize('foo :wub: bar'), {
+      smileys: TEST.N.config.vbconvert.smiley_map
+    }), 'foo :heart_eyes: bar');
   });
 
   it('parse empty quote #1', function () {

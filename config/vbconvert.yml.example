@@ -26,3 +26,43 @@ vbconvert:
 
   # Path to the folder with avatar original pictures ("big" ones)
   avatars: '/tmp/www/custombigprofilepics'
+
+  # Original smilies -> markdown-it smilies
+  smiley_map:
+    ':mellow:':        ':)' # ?
+    ':o':              ':o'
+    ';)':              ';)'
+    ':P':              ':P'
+    ':D':              ':grin:'
+    ':lol:':           ':laughing:'
+    'B)':              'B-)'
+    ':rolleyes:':      ':unamused:'
+    '-_-':             ':relieved:'
+    ':)':              ':)'
+    ':wub:':           ':heart_eyes:'
+    ':(':              ':('
+    ':unsure:':        ':)' # ?
+    ':wacko:':         ':dizzy_face:'
+    ':blink:':         ':)' # ?
+    ':excl:':          ':exclamation:'
+    ':devil:':         ':smiling_imp:'
+    ':innocent:':      ':innocent:'
+    ':bash:':          ':)' # ?
+    ':angry:':         ':angry:'
+    ':ninja:':         ':)' # ?
+    ':blush:':         ':blush:'
+    ':bleh:':          ':stuck_out_tongue_closed_eyes:'
+    ':coffee:':        ':coffee:'
+    ':megalol:':       ':joy:'
+    ':haha:':          ':sweat_smile:'
+    ':clap:':          ':)' # ?
+    ':harhar:':        ':stuck_out_tongue_winking_eye:'
+    ':licklips:':      ':yum:'
+    ':gun_rifle:':     ':)' # ?
+    ':drinks_cheers:': ':)' # ?
+    ':cry:':           ':cry:'
+    ':beer:':          ':)' # ?
+    ':thumbsup:':      ':)' # ?
+    ':wow:':           ':astonished:'
+    ':confused:':      ':-/'
+    ':?:':             ':question:'
