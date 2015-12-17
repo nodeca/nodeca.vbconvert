@@ -29,13 +29,48 @@ function html_unescape(text) {
 
 module.exports = function (N, callback) {
   /* eslint-disable max-nested-callbacks */
-  var users, sections, conn;
+  var users, sections, conn, default_usergroup;
+
+  // Get usergroup for deleted users
+  //
+  function get_default_usergroup(callback) {
+    N.models.users.UserGroup.findOne({ short_name: 'members' }).exec(function (err, group) {
+      if (err) {
+        callback(err);
+        return;
+      }
+
+      default_usergroup = group;
+      callback();
+    });
+  }
+
+  // Get parser options reference for a post
+  //
+  function get_parser_param_id(post, callback) {
+    N.settings.getByCategory(
+        'forum_markup',
+        { usergroup_ids: users[post.userid] ? users[post.userid].usergroups : [ default_usergroup ] },
+        { alias: true },
+        function (err, params) {
+
+      if (err) {
+        callback(err);
+        return;
+      }
+
+      if (post.allowsmilie) {
+        params.emoji = false;
+      }
+
+      N.models.core.MessageParams.setParams(params, callback);
+    });
+  }
 
   // Get a { hid: { _id, hb } } mapping for all registered users
   //
   function get_users(callback) {
     N.models.users.User.find()
-        .select('hid _id hb')
         .lean(true)
         .exec(function (err, userlist) {
 
@@ -190,7 +225,7 @@ module.exports = function (N, callback) {
     // Fetch posts from this thread from SQL
     //
     function fetch_posts(callback) {
-      conn.query('SELECT threadid,postid,parentid,pagetext,dateline,ipaddress,userid,visible,' +
+      conn.query('SELECT threadid,postid,parentid,pagetext,dateline,ipaddress,userid,visible,allowsmilie,' +
           'GROUP_CONCAT(vote) AS votes,GROUP_CONCAT(fromuserid) AS casters ' +
           'FROM post LEFT JOIN votes ON post.postid = votes.targetid AND votes.contenttypeid = ? ' +
           'WHERE threadid = ? GROUP BY postid ORDER BY postid ASC',
@@ -229,111 +264,128 @@ module.exports = function (N, callback) {
       var cache_hb = topic.cache_hb = {
         post_count: 0
       };
+      var hid = 0;
 
-      posts.forEach(function (post, i) {
+      async.each(posts, function (post, callback) {
         var id   = new mongoose.Types.ObjectId(post.dateline);
         var ts   = new Date(post.dateline * 1000);
         var user = users[post.userid] || {};
-        var hid  = i + 1;
 
-        if (hid === 1) {
-          cache_hb.first_post = id;
-          cache_hb.first_ts   = ts;
-          cache_hb.first_user = user._id;
+        hid++;
 
-          cache.first_post = id;
-          cache.first_ts   = ts;
-          cache.first_user = user._id;
-        }
-
-        if (post.visible === 1 || hid === 1) {
-          cache_hb.post_count++;
-          cache_hb.last_post = id;
-          cache_hb.last_ts   = ts;
-          cache_hb.last_user = user._id;
-
-          if (!user.hb || hid === 1) {
-            cache.post_count++;
-            cache.last_post = id;
-            cache.last_ts   = ts;
-            cache.last_user = user._id;
+        get_parser_param_id(post, function (err, params_id) {
+          if (err) {
+            callback(err);
+            return;
           }
-        }
 
-        var new_post = {
-          _id:    id,
-          topic:  topic._id,
-          hid:    hid,
-          ts:     ts,
-          md:     post.pagetext,
-          html:   post.pagetext,
-          ip:     post.ipaddress,
-          user:   user._id,
-          attach: []
-        };
+          if (hid === 1) {
+            cache_hb.first_post = id;
+            cache_hb.first_ts   = ts;
+            cache_hb.first_user = user._id;
 
-        new_post.votes = 0;
-        new_post.votes_hb = 0;
+            cache.first_post = id;
+            cache.first_ts   = ts;
+            cache.first_user = user._id;
+          }
 
-        _.zip((post.casters || '').split(','), (post.votes || '').split(',')).forEach(function (arr) {
-          if (arr[0] && arr[1]) {
-            if (users[arr[0]]) {
-              new_post.votes_hb += Number(arr[1]);
+          if (post.visible === 1 || hid === 1) {
+            cache_hb.post_count++;
+            cache_hb.last_post = id;
+            cache_hb.last_ts   = ts;
+            cache_hb.last_user = user._id;
 
-              if (!users[arr[0]].hb) {
-                new_post.votes += Number(arr[1]);
-              }
+            if (!user.hb || hid === 1) {
+              cache.post_count++;
+              cache.last_post = id;
+              cache.last_ts   = ts;
+              cache.last_user = user._id;
             }
           }
-        });
 
-        if (user.hb) {
-          new_post.st  = N.models.forum.Post.statuses.HB;
-          new_post.ste = N.models.forum.Post.statuses.VISIBLE;
-        } else {
-          new_post.st = N.models.forum.Post.statuses.VISIBLE;
-        }
+          var new_post = {
+            _id:        id,
+            topic:      topic._id,
+            hid:        hid,
+            ts:         ts,
+            md:         post.pagetext,
+            html:       post.pagetext,
+            ip:         post.ipaddress,
+            user:       user._id,
+            params_ref: params_id,
+            attach:     []
+          };
 
-        if (post.visible !== 1) {
-          new_post.prev_st = _.omit({
-            st:  new_post.st,
-            ste: new_post.ste
-          }, _.isUndefined);
+          new_post.votes = 0;
+          new_post.votes_hb = 0;
 
-          new_post.st = N.models.forum.Post.statuses.DELETED;
-          delete new_post.ste;
-        }
+          _.zip((post.casters || '').split(','), (post.votes || '').split(',')).forEach(function (arr) {
+            if (arr[0] && arr[1]) {
+              if (users[arr[0]]) {
+                new_post.votes_hb += Number(arr[1]);
 
-        // process replies if they are in the same topic
-        if (post.parentid && posts_by_id[post.parentid]) {
-          // ignore replies to the first post because most of them are
-          // (that's the default for "reply in thread" button)
-          if (posts_by_id[post.parentid].hid !== 1) {
-            new_post.to      = posts_by_id[post.parentid]._id;
-            new_post.to_user = posts_by_id[post.parentid].user;
-            new_post.to_phid = posts_by_id[post.parentid].hid;
+                if (!users[arr[0]].hb) {
+                  new_post.votes += Number(arr[1]);
+                }
+              }
+            }
+          });
+
+          if (user.hb) {
+            new_post.st  = N.models.forum.Post.statuses.HB;
+            new_post.ste = N.models.forum.Post.statuses.VISIBLE;
+          } else {
+            new_post.st = N.models.forum.Post.statuses.VISIBLE;
           }
-        }
 
-        posts_by_id[post.postid] = new_post;
+          if (post.visible !== 1) {
+            new_post.prev_st = _.omit({
+              st:  new_post.st,
+              ste: new_post.ste
+            }, _.isUndefined);
 
-        post_bulk.insert(new_post);
-        map_bulk.insert({
-          mysql_id: post.postid,
-          topic_id: topic._id,
-          post_id:  new_post._id,
-          post_hid: hid,
-          text:     post.pagetext
+            new_post.st = N.models.forum.Post.statuses.DELETED;
+            delete new_post.ste;
+          }
+
+          // process replies if they are in the same topic
+          if (post.parentid && posts_by_id[post.parentid]) {
+            // ignore replies to the first post because most of them are
+            // (that's the default for "reply in thread" button)
+            if (posts_by_id[post.parentid].hid !== 1) {
+              new_post.to      = posts_by_id[post.parentid]._id;
+              new_post.to_user = posts_by_id[post.parentid].user;
+              new_post.to_phid = posts_by_id[post.parentid].hid;
+            }
+          }
+
+          posts_by_id[post.postid] = new_post;
+
+          post_bulk.insert(new_post);
+          map_bulk.insert({
+            mysql_id: post.postid,
+            topic_id: topic._id,
+            post_id:  new_post._id,
+            post_hid: hid,
+            text:     post.pagetext
+          });
+
+          callback();
         });
-      });
-
-      post_bulk.execute(function (err) {
+      }, function (err) {
         if (err) {
           callback(err);
           return;
         }
 
-        map_bulk.execute(callback);
+        post_bulk.execute(function (err) {
+          if (err) {
+            callback(err);
+            return;
+          }
+
+          map_bulk.execute(callback);
+        });
       });
     }
 
@@ -504,6 +556,7 @@ module.exports = function (N, callback) {
 
 
   async.series([
+    get_default_usergroup,
     get_users,
     get_sections,
     get_connection,
