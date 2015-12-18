@@ -190,6 +190,18 @@ describe('BBcode', function () {
     assert.equal(to_md(tokenize('[url=http://test/ ()?1]foobar[/url]')), '[foobar](http://test/%20%28%29?1)');
   });
 
+  it('render protocol-less urls #1', function () {
+    assert.equal(to_md(tokenize('[url]www.foo.bar[/url]')), '<http://www.foo.bar>');
+  });
+
+  it('render protocol-less urls #2', function () {
+    assert.equal(to_md(tokenize('[url=www.foo.bar]www.foo.bar[/url]')), '<http://www.foo.bar>');
+  });
+
+  it("don't render banned links", function () {
+    assert.equal(to_md(tokenize('[url]www.*****.bar[/url]')), 'www.\\*\\*\\*\\*\\*.bar');
+  });
+
   it('render param-less urls', function () {
     assert.equal(to_md(tokenize('[url]http://blah[/url]')), '<http://blah>');
   });
