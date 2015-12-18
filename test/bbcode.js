@@ -126,18 +126,23 @@ describe('BBcode', function () {
 
   it('render old converted quotes', function () {
     assert.equal(to_md(tokenize('[quote][b]test (12-12-2000 12:34):[/b]\ntest[/quote]')),
-                 '```quote test (12-12-2000 12:34)\ntest\n```\n');
+                 '```quote test (12-12-2000 12:34)\ntest\n```');
   });
 
   it('render post references inside quote tag', function () {
     assert.deepEqual(to_md(tokenize('[quote= user name; 1234 ]bzzz[/quote]'), {
       posts: { 1234: 'http://example.org/' }
-    }), 'http://example.org/\n> bzzz\n');
+    }), 'http://example.org/\n> bzzz');
   });
 
   it('skip bbcode inside code blocks', function () {
     assert.deepEqual(to_md(tokenize('[code] test [b]foo[/b] [code]bar[/code] quux [/code]')),
-                     '```\n test foo bar quux \n```\n');
+                     '```\n test foo bar quux \n```');
+  });
+
+  it('leave newlines as is inside code blocks', function () {
+    assert.deepEqual(to_md(tokenize('before\n\n\n[code]foo\n   bar\n\n   baz\n\n\nquux[/code]\n\n\n\nafter\n\n\n\n')),
+                     'before\n\n```\nfoo\n   bar\n\n   baz\n\n\nquux\n```\n\nafter');
   });
 
   it("don't render smilies inside code blocks", function () {
@@ -148,7 +153,7 @@ describe('BBcode', function () {
 
   it('render spoilers', function () {
     assert.deepEqual(to_md(tokenize('[spoiler=test]bzzz[/spoiler]')),
-                     '```spoiler test\nbzzz\n```\n');
+                     '```spoiler test\nbzzz\n```');
   });
 
   it('escape text', function () {
@@ -232,16 +237,16 @@ describe('BBcode', function () {
   });
 
   it('parse lists', function () {
-    assert.equal(to_md(tokenize('[list]\nfoo\n[*] \n[*] bar\nbaz\n[/list]')), '- foo\n\n- bar  \n  baz\n');
+    assert.equal(to_md(tokenize('[list]\nfoo\n[*] \n[*] bar\nbaz\n[/list]')), '- foo\n- bar  \n  baz');
   });
 
   it('parse numeric lists', function () {
-    assert.equal(to_md(tokenize('[list=1]\nfoo\n[*] \n[*] bar\nbaz\n[/list]')), '1. foo\n\n2. bar  \n   baz\n');
+    assert.equal(to_md(tokenize('[list=1]\nfoo\n[*] \n[*] bar\nbaz\n[/list]')), '1. foo\n2. bar  \n   baz');
   });
 
   it('parse nested lists', function () {
     assert.equal(to_md(tokenize('[list=1]\nfoo\n[*]\n[list=1]\nbar\n[*]\nbaz\n[/list]\nquux\n[/list]')),
-                 '1. foo\n2. 1. bar\n   2. baz\n   \n   quux\n');
+                 '1. foo\n2. 1. bar\n   2. baz\n   \n   quux');
   });
 
   it("don't parse list item in text", function () {
