@@ -6,6 +6,7 @@
 
 var _        = require('lodash');
 var async    = require('async');
+var memoizee = require('memoizee');
 var mongoose = require('mongoose');
 var progress = require('./progressbar');
 var POST     = 1; // content type for posts
@@ -29,28 +30,18 @@ function html_unescape(text) {
 
 module.exports = function (N, callback) {
   /* eslint-disable max-nested-callbacks */
-  var users, sections, conn, default_usergroup;
+  var users, sections, conn;
 
-  // Get usergroup for deleted users
-  //
-  function get_default_usergroup(callback) {
-    N.models.users.UserGroup.findOne({ short_name: 'members' }).exec(function (err, group) {
-      if (err) {
-        callback(err);
-        return;
-      }
 
-      default_usergroup = group;
-      callback();
-    });
-  }
+  var get_default_usergroup = memoizee(function (callback) {
+    N.models.users.UserGroup.findOne({ short_name: 'members' }).exec(callback);
+  }, { async: true });
 
-  // Get parser options reference for a post
-  //
-  function get_parser_param_id(post, callback) {
+
+  var get_parser_param_id = memoizee(function (usergroup_ids, allowsmilie, callback) {
     N.settings.getByCategory(
         'forum_markup',
-        { usergroup_ids: users[post.userid] ? users[post.userid].usergroups : [ default_usergroup ] },
+        { usergroup_ids: usergroup_ids },
         { alias: true },
         function (err, params) {
 
@@ -59,13 +50,32 @@ module.exports = function (N, callback) {
         return;
       }
 
-      if (post.allowsmilie) {
+      if (allowsmilie) {
         params.emoji = false;
       }
 
       N.models.core.MessageParams.setParams(params, callback);
     });
+  }, { async: true, primitive: true });
+
+
+  // Get parser options reference for a post
+  //
+  function get_post_parser_param_id(post, callback) {
+    get_default_usergroup(function (err, default_usergroup) {
+      if (err) {
+        callback(err);
+        return;
+      }
+
+      get_parser_param_id(
+        users[post.userid] ? users[post.userid].usergroups : [ default_usergroup._id ],
+        post.allowsmilie,
+        callback
+      );
+    });
   }
+
 
   // Get a { hid: { _id, hb } } mapping for all registered users
   //
@@ -273,7 +283,7 @@ module.exports = function (N, callback) {
 
         hid++;
 
-        get_parser_param_id(post, function (err, params_id) {
+        get_post_parser_param_id(post, function (err, params_id) {
           if (err) {
             callback(err);
             return;
@@ -556,7 +566,6 @@ module.exports = function (N, callback) {
 
 
   async.series([
-    get_default_usergroup,
     get_users,
     get_sections,
     get_connection,
