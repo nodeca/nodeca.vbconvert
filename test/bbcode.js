@@ -14,8 +14,8 @@ describe('BBcode', function () {
   });
 
   it('fix overlapping tags', function () {
-    assert.equal(to_html(tokenize('[i]foo [b]bar[/i] baz[/b]')),
-                 '<i>foo <b>bar</b></i><b> baz</b>');
+    assert.equal(to_html(tokenize('[i]foo[b]bar[/i]baz[/b]')),
+                 '<i>foo<b>bar</b></i><b>baz</b>');
   });
 
   it('remove unpaired opening tags', function () {
@@ -46,6 +46,16 @@ describe('BBcode', function () {
   it('convert emphases inside strings', function () {
     assert.equal(to_md(tokenize('xx[i]foo[b]bar[/b]baz[/i]xx')),
                  'xx\u200A_foo\u200A**bar**\u200Abaz_\u200Axx');
+  });
+
+  it('convert emphases - newlines', function () {
+    assert.equal(to_md(tokenize('\n[b]\nfoo\n[/b]\n')),
+                 '**\u200B  \nfoo  \n\u200B**');
+  });
+
+  it('convert emphases inside strings #2', function () {
+    assert.equal(to_md(tokenize('xx[b][b]foo[/b][/b]xx')),
+                 'xx\u200A****foo****\u200Axx');
   });
 
   it('parse smilies', function () {
@@ -108,6 +118,30 @@ describe('BBcode', function () {
 
   it('remove empty overlapping tags #2', function () {
     assert.equal(to_html(tokenize('foo [i][b][/i]bar[/b] baz')), 'foo <b>bar</b> baz');
+  });
+
+  it('shift spaces in emphasis', function () {
+    assert.equal(to_md(tokenize('[i] foo [/i] [b] bar [/b]')), '_foo_ **bar**');
+  });
+
+  it('bubble up block tags', function () {
+    assert.equal(to_md(tokenize('[b]foo[quote]bar[/quote]baz[/b]')),
+                 '**foo**\n\n> **bar**\n\n**baz**');
+  });
+
+  it('bubble up list elements', function () {
+    assert.equal(to_md(tokenize('[list][b]foo[*]bar[/b][*]baz[/list]')),
+                 '- **foo**\n- **bar**\n- baz');
+  });
+
+  it('bubble up list elements #2', function () {
+    assert.equal(to_md(tokenize('[b]foo[*]bar[*]baz[/b]')),
+                 '**foo\\[\\*\\]bar\\[\\*\\]baz**');
+  });
+
+  it('bubble up paragraphs', function () {
+    assert.equal(to_md(tokenize('[b]foo\n\nbar[/b]')),
+                 '**foo**\n\n**bar**');
   });
 
   it("don't blow up on empty input", function () {
