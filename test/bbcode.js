@@ -159,7 +159,7 @@ describe('BBcode', function () {
   });
 
   it('shift spaces in emphasis', function () {
-    assert.equal(to_md(tokenize('[i] foo [/i] [b] bar [/b]')), '_foo_ **bar**');
+    assert.equal(to_md(tokenize('[i] foo [/i] [b] bar [/b]')), '_foo_   **bar**');
   });
 
   it('bubble up block tags', function () {
@@ -174,7 +174,7 @@ describe('BBcode', function () {
 
   it('bubble up list elements #2', function () {
     assert.equal(to_md(tokenize('[b]foo[*]bar[*]baz[/b]')),
-                 '**foo\\[\\*\\]bar\\[\\*\\]baz**');
+                 '**foo[\\*]bar[\\*]baz**');
   });
 
   it('bubble up paragraphs', function () {
@@ -229,22 +229,43 @@ describe('BBcode', function () {
   });
 
   it('escape text', function () {
-    assert.equal(to_md(tokenize('[foo](bar)')), '\\[foo\\](bar)');
+    assert.equal(to_md(tokenize('[foo](bar)')), '\\[foo](bar)');
   });
 
   it('escape block tags', function () {
     assert.equal(to_md(tokenize('foo\n-------')),
-                 'foo  \n\\-\\-\\-\\-\\-\\-\\-');
+                 'foo  \n\\-------');
   });
 
-  it('avoid unintended lists', function () {
-    assert.equal(to_md(tokenize('1. foo\n2. bar')),
-                 '1\\. foo  \n2\\. bar');
+  it('escape quotes', function () {
+    assert.equal(to_md(tokenize('> test')), '\\> test');
+  });
+
+  it('escape quotes #2', function () {
+    assert.equal(to_md(tokenize('[quote]> test[/quote]')), '> \\> test');
+  });
+
+  it('escape quotes #3', function () {
+    assert.equal(to_md(tokenize('> > test')), '\\> > test');
+  });
+
+  it('escape autolinks', function () {
+    assert.equal(to_md(tokenize('<http://google.com>')), '\\<http://google.com>');
+  });
+
+  it('escape block tags - no escape necessary', function () {
+    assert.equal(to_md(tokenize('foo\n-+-+-')),
+                 'foo  \n-+-+-');
   });
 
   it('avoid unintended code blocks', function () {
     assert.equal(to_md(tokenize('    foo\n')),
                  'foo');
+  });
+
+  it("don't escape inside code blocks", function () {
+    assert.equal(to_md(tokenize('[code]foo\\[bar]()\n-----\n[/code]')),
+                 '```\nfoo\\[bar]()\n-----\n```');
   });
 
   it('ignore block tags inside inlines', function () {
@@ -297,7 +318,7 @@ describe('BBcode', function () {
   });
 
   it("don't render weird protocols", function () {
-    assert.equal(to_md(tokenize('[img]ftp://blah[/img]')), '\\[img\\]ftp://blah\\[/img\\]');
+    assert.equal(to_md(tokenize('[img]ftp://blah[/img]')), '[img]ftp://blah[/img]');
   });
 
   it('weird case, see post 1492423', function () {
@@ -326,7 +347,7 @@ describe('BBcode', function () {
   });
 
   it("don't parse list item in text", function () {
-    assert.equal(to_md(tokenize('foo[*]bar')), 'foo\\[\\*\\]bar');
+    assert.equal(to_md(tokenize('foo[*]bar')), 'foo[\\*]bar');
   });
 
   it('accept font with params', function () {
@@ -334,7 +355,7 @@ describe('BBcode', function () {
   });
 
   it('reject font without params', function () {
-    assert.equal(to_md(tokenize('[font]test[/font]')), '\\[font\\]test\\[/font\\]');
+    assert.equal(to_md(tokenize('[font]test[/font]')), '[font]test[/font]');
   });
 
   it('parse thread tag without params', function () {
@@ -352,7 +373,7 @@ describe('BBcode', function () {
   it("don't parse invalid thread tag", function () {
     assert.equal(to_md(tokenize('[thread]whatever[/thread]'), {
       topics: { 123: 'http://example.org/123' }
-    }), '\\[thread\\]whatever\\[/thread\\]');
+    }), '[thread]whatever[/thread]');
   });
 
   it("render it as text if thread doesn't exist", function () {
