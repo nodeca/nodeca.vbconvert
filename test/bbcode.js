@@ -3,11 +3,44 @@
 
 var assert   = require('assert');
 var tokenize = require('../lib/bbcode/tokenize');
-var to_html  = require('../lib/bbcode/format_html');
 var to_md    = require('../lib/bbcode/format_md');
 
 
+// tokens to html converter, used for testing purposes only
+function to_html(tokens) {
+  var result = '';
+
+  for (var i = 0; i < tokens.length; i++) {
+    var token = tokens[i];
+
+    switch (token.type) {
+      case 'text':
+        result += token.text.replace(/"/g, '&quot;');
+        break;
+      case 'i':
+        result += token.nesting === 1 ? '<i>' : '</i>';
+        break;
+      case 'b':
+        result += token.nesting === 1 ? '<b>' : '</b>';
+        break;
+      default:
+        throw new Error('Unable to format token type: ' + token.type);
+    }
+  }
+
+  return result;
+}
+
+
 describe('BBcode', function () {
+  // we can use TEST.N.config.vbconvert.smiley_map here,
+  // but it's better to hardcode some mappings (allows to run
+  // tests with "mocha", doesn't depend on config change)
+  var smileys = {
+    ':wub:': ':heart_eyes:',
+    ':)':    ':lol:'
+  };
+
   it('do basic conversion', function () {
     assert.equal(to_html(tokenize('[i]italic[/i] [B]bold[/B]')),
                  '<i>italic</i> <b>bold</b>');
@@ -59,9 +92,13 @@ describe('BBcode', function () {
   });
 
   it('parse smilies', function () {
-    assert.equal(to_md(tokenize('foo :wub: bar'), {
-      smileys: TEST.N.config.vbconvert.smiley_map
-    }), 'foo :heart_eyes: bar');
+    assert.equal(to_md(tokenize('foo :wub: bar', smileys)),
+                 'foo :heart_eyes: bar');
+  });
+
+  it('smilies are case-sensitive', function () {
+    assert.equal(to_md(tokenize('foo :WuB: bar', smileys)),
+                 'foo :WuB: bar');
   });
 
   it('parse empty quote #1', function () {
@@ -101,7 +138,8 @@ describe('BBcode', function () {
   });
 
   it("don't parse smilies inside quotes", function () {
-    assert.equal(tokenize('[quote="foo :) bar"]bzzz[/quote]')[0].param, 'foo :) bar');
+    assert.equal(tokenize('[quote="foo :) bar"]bzzz[/quote]', smileys)[0].param,
+                 'foo :) bar');
   });
 
   it('attach pairs properly', function () {
@@ -180,7 +218,7 @@ describe('BBcode', function () {
   });
 
   it("don't render smilies inside code blocks", function () {
-    assert.deepEqual(tokenize('[code]:)[code]:)[/code]:)[/code]').filter(function (token) {
+    assert.deepEqual(tokenize('[code]:)[code]:)[/code]:)[/code]', smileys).filter(function (token) {
       return token.type === 'smiley';
     }), []);
   });
@@ -252,6 +290,10 @@ describe('BBcode', function () {
 
   it('render images', function () {
     assert.equal(to_md(tokenize('[img]http://blah[/img]')), '![](http://blah)');
+  });
+
+  it('render images - tags are case-insensitive', function () {
+    assert.equal(to_md(tokenize('[ImG]http://blah[/iMg]')), '![](http://blah)');
   });
 
   it("don't render weird protocols", function () {
