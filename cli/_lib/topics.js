@@ -235,7 +235,7 @@ module.exports = function (N, callback) {
     // Fetch posts from this thread from SQL
     //
     function fetch_posts(callback) {
-      conn.query('SELECT threadid,postid,parentid,pagetext,dateline,ipaddress,userid,visible,allowsmilie,' +
+      conn.query('SELECT threadid,postid,parentid,pagetext,dateline,ipaddress,userid,username,visible,allowsmilie,' +
           'GROUP_CONCAT(vote) AS votes,GROUP_CONCAT(fromuserid) AS casters ' +
           'FROM post LEFT JOIN votes ON post.postid = votes.targetid AND votes.contenttypeid = ? ' +
           'WHERE threadid = ? GROUP BY postid ORDER BY postid ASC',
@@ -276,7 +276,7 @@ module.exports = function (N, callback) {
       };
       var hid = 0;
 
-      async.each(posts, function (post, callback) {
+      async.eachSeries(posts, function (post, callback) {
         var id   = new mongoose.Types.ObjectId(post.dateline);
         var ts   = new Date(post.dateline * 1000);
         var user = users[post.userid] || {};
@@ -321,10 +321,15 @@ module.exports = function (N, callback) {
             md:         post.pagetext,
             html:       post.pagetext,
             ip:         post.ipaddress,
-            user:       user._id,
             params_ref: params_id,
             attach:     []
           };
+
+          if (user._id) {
+            new_post.user = user._id;
+          } else {
+            new_post.legacy_nick = post.username;
+          }
 
           new_post.votes = 0;
           new_post.votes_hb = 0;
