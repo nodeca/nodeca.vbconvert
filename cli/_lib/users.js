@@ -43,8 +43,8 @@ module.exports = function (N, callback) {
         }
 
         conn.query('SELECT userid,usergroupid,membergroupids,username,email,' +
-            'ipaddress,joindate,lastactivity,posts,field5 as firstname,' +
-            'field6 as lastname ' +
+            'password,salt,passworddate,ipaddress,joindate,lastactivity,posts,' +
+            'field5 as firstname,field6 as lastname ' +
             'FROM user JOIN userfield USING(`userid`) ' +
             'ORDER BY userid ASC', function (err, rows) {
 
@@ -97,7 +97,29 @@ module.exports = function (N, callback) {
                 user.hb = true;
               }
 
-              user.save(next);
+              user.save(function (err) {
+                if (err) {
+                  callback(err);
+                  return;
+                }
+
+                var authLink = new N.models.users.AuthLink();
+
+                authLink.user_id = user._id;
+                authLink.type    = 'vb';
+                authLink.email   = row.email;
+                authLink.ts      = new Date(row.passworddate);
+                authLink.last_ts = new Date(row.passworddate);
+                authLink.ip      = row.ipaddress;
+                authLink.last_ip = row.ipaddress;
+                authLink._id     = new mongoose.Types.ObjectId(authLink.ts / 1000);
+                authLink.meta    = {
+                  password: row.password,
+                  salt:     row.salt
+                }
+
+                authLink.save(next);
+              });
             });
           }, function (err) {
             bar.terminate();
