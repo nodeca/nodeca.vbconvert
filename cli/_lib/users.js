@@ -114,9 +114,9 @@ module.exports = function (N, callback) {
                 authLink.last_ip = row.ipaddress;
                 authLink._id     = new mongoose.Types.ObjectId(authLink.ts / 1000);
                 authLink.meta    = {
-                  password: row.password,
-                  salt:     row.salt
-                }
+                  pass: row.password,
+                  salt: row.salt
+                };
 
                 authLink.save(next);
               });
