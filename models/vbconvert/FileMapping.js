@@ -8,8 +8,16 @@ var Schema   = Mongoose.Schema;
 module.exports = function (N, collectionName) {
 
   var FileMapping = new Schema({
-    mysql: Number,
-    mongo: Schema.Types.ObjectId
+    attachmentid:      Number,
+    filedataid:        Number,
+
+    // old attachment id from picturelegacy (optional)
+    pictureaid_legacy: Number,
+
+    // old attachment id from blog_attachmentlegacy (optional)
+    blogaid_legacy:    Number,
+
+    media_id:          Schema.Types.ObjectId
   }, {
     versionKey: false
   });
@@ -18,7 +26,10 @@ module.exports = function (N, collectionName) {
   // Indexes
   //////////////////////////////////////////////////////////////////////////////
 
-  FileMapping.index({ mysql: 1 }, { unique: true });
+  FileMapping.index({ attachmentid: 1 }, { unique: true });
+  FileMapping.index({ filedataid: 1 });
+  FileMapping.index({ pictureaid_legacy: 1 });
+  FileMapping.index({ blogaid_legacy: 1 });
 
 
   N.wire.on('init:models', function emit_init_FileMapping(__, callback) {

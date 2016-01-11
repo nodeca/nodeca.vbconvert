@@ -278,9 +278,15 @@ module.exports = function (N, callback) {
                   album_ids[0] = { id: def_album._id };
 
                   conn.query('SELECT filedata.userid AS filedataowner,' +
-                      'filedataid,attachmentid,extension,filename,caption,' +
-                      'contentid,contenttypeid,attachment.dateline ' +
+                      'filedataid,attachment.attachmentid,extension,filename,' +
+                      'caption,contentid,contenttypeid,attachment.dateline,' +
+                      'blog_attachmentlegacy.oldattachmentid AS blogaid_legacy,' +
+                      'picturelegacy.pictureid AS pictureaid_legacy ' +
                       'FROM filedata JOIN attachment USING(filedataid) ' +
+                      'LEFT JOIN blog_attachmentlegacy ON ' +
+                      'blog_attachmentlegacy.newattachmentid = attachment.attachmentid ' +
+                      'LEFT JOIN picturelegacy ON ' +
+                      'picturelegacy.attachmentid = attachment.attachmentid ' +
                       'WHERE attachment.userid = ? ORDER BY attachmentid ASC',
                       [ userid ],
                       function (err, rows) {
@@ -302,7 +308,7 @@ module.exports = function (N, callback) {
                       }
 
                       N.models.vbconvert.FileMapping.findOne(
-                          { mysql: row.attachmentid },
+                          { attachmentid: row.attachmentid },
                           function (err, file_mapping) {
 
                         if (err) {
@@ -327,10 +333,21 @@ module.exports = function (N, callback) {
                             return;
                           }
 
-                          new N.models.vbconvert.FileMapping({
-                            mysql: row.attachmentid,
-                            mongo: media._id
-                          }).save(next);
+                          var file_mapping = new N.models.vbconvert.FileMapping({
+                            attachmentid:      row.attachmentid,
+                            filedataid:        row.filedataid,
+                            media_id:          media._id
+                          });
+
+                          if (row.blogaid_legacy) {
+                            file_mapping.blogaid_legacy = row.blogaid_legacy;
+                          }
+
+                          if (row.pictureaid_legacy) {
+                            file_mapping.pictureaid_legacy = row.pictureaid_legacy;
+                          }
+
+                          file_mapping.save(next);
                         });
                       });
                     }, next);
