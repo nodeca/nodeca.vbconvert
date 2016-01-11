@@ -5,23 +5,8 @@ bundles:
 
 packages:
   admin:
-    client:
-      include: client/admin/**.js
-      exclude: /(^|\/|\\)_.*/
+    entries:
+      - client/admin
+      - server/admin
 
-    views:
-      include: client/admin/**.jade
-      exclude: /(^|\/|\\)_.*/
-
-    i18n_client:
-      include: client/admin/**i18n/*.yml
-
-    styles:
-      include: client/admin/**.styl
-
-    server:
-      include: server/admin/**.js
-      exclude: /(^|\/|\\)_.*/
-
-    i18n_server:
-      include: server/admin/**i18n/*.yml
+  convert: {}
