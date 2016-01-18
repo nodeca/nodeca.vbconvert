@@ -354,7 +354,7 @@ module.exports = function (N, callback) {
           }
 
           if (post.visible !== 1) {
-            new_post.prev_st = _.omit({
+            new_post.prev_st = _.omitBy({
               st:  new_post.st,
               ste: new_post.ste
             }, _.isUndefined);
@@ -425,7 +425,7 @@ module.exports = function (N, callback) {
       }
 
       if (thread.visible !== 1) {
-        topic.prev_st = _.omit({
+        topic.prev_st = _.omitBy({
           st:  topic.st,
           ste: topic.ste
         }, _.isUndefined);
