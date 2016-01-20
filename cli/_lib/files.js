@@ -10,7 +10,7 @@ var mimoza      = require('mimoza');
 var mongoose    = require('mongoose');
 var path        = require('path');
 var progress    = require('./progressbar');
-var resize      = require('./resize');
+var resize      = require('nodeca.users/models/users/_lib/resize');
 var resizeParse = require('nodeca.users/server/_lib/resize_parse');
 var ALBUM       = 8; // content type for albums
 var POST        = 1; // content type for posts
@@ -84,28 +84,24 @@ module.exports = function (N, callback) {
         ext:     filedata.extension,
         date:    filedata.dateline,
         resize:  resizeConfig
-      },
-      function (err, data) {
+      }
+    ).then(data => {
+      media.type        = N.models.users.MediaInfo.types.IMAGE;
+      media.image_sizes = data.images;
+      media.media_id    = data.id;
+      media.file_size   = data.size;
+
+      media.save(function (err) {
         if (err) {
           callback(err);
           return;
         }
 
-        media.type        = N.models.users.MediaInfo.types.IMAGE;
-        media.image_sizes = data.images;
-        media.media_id    = data.id;
-        media.file_size   = data.size;
-
-        media.save(function (err) {
-          if (err) {
-            callback(err);
-            return;
-          }
-
-          callback(null, media);
-        });
-      }
-    );
+        callback(null, media);
+      });
+    }).catch(err => {
+      callback(err);
+    });
   }
 
 
