@@ -3,108 +3,71 @@
 
 'use strict';
 
-var async = require('async');
-var thenify = require('thenify');
+const co = require('co');
 
 
-module.exports = thenify(function (N, callback) {
-  N.vbconvert.getConnection(function (err, conn) {
-    if (err) {
-      callback(err);
+module.exports = co.wrap(function* (N) {
+  let conn = yield N.vbconvert.getConnection();
+
+  let rows = yield conn.query(`
+    SELECT forumid,title,description,parentid,displayorder
+    FROM forum
+    ORDER BY forumid ASC
+  `);
+
+  //
+  // Create sections
+  //
+  yield rows.map(co.wrap(function* (row) {
+    if (N.config.vbconvert.sections &&
+        N.config.vbconvert.sections.ignore &&
+        N.config.vbconvert.sections.ignore.indexOf(row.forumid) !== -1) {
+
       return;
     }
 
-    conn.query('SELECT forumid,title,description,parentid,displayorder FROM forum ORDER BY forumid ASC',
-        function (err, rows) {
+    let existing_section = yield N.models.forum.Section.findOne({ hid: row.forumid });
 
-      if (err) {
-        callback(err);
-        return;
-      }
+    if (existing_section) {
+      // section with this id is already imported
+      return;
+    }
 
-      // Create sections
-      //
-      async.each(rows, function (row, next) {
-        if (N.config.vbconvert.sections &&
-            N.config.vbconvert.sections.ignore &&
-            N.config.vbconvert.sections.ignore.indexOf(row.forumid) !== -1) {
+    let section = new N.models.forum.Section();
 
-          next();
-          return;
-        }
+    section.hid           = row.forumid;
+    section.title         = row.title;
+    section.description   = row.description;
+    section.display_order = row.displayorder;
+    section.is_category   = false;
 
-        N.models.forum.Section.findOne({ hid: row.forumid }, function (err, existing_section) {
-          if (err) {
-            next(err);
-            return;
-          }
+    yield section.save();
+  }));
 
-          if (existing_section) {
-            // section with this id is already imported
-            next();
-            return;
-          }
 
-          var section = new N.models.forum.Section();
+  //
+  // Link each section with its parent
+  //
+  yield rows.map(co.wrap(function* (row) {
+    if (row.parentid < 0) {
+      // top-level forum
+      return;
+    }
 
-          section.hid           = row.forumid;
-          section.title         = row.title;
-          section.description   = row.description;
-          section.display_order = row.displayorder;
-          section.is_category   = false;
+    let parent = yield N.models.forum.Section.findOne({ hid: row.parentid });
 
-          section.save(next);
-        });
-      }, function (err) {
-        if (err) {
-          callback(err);
-          return;
-        }
+    yield N.models.forum.Section.update(
+      { hid: row.forumid },
+      { $set: { parent: parent._id } }
+    );
 
-        // Link each section with its parent
-        //
-        async.each(rows, function (row, next) {
-          if (row.parentid < 0) {
-            // top-level forum
-            next();
-            return;
-          }
+    yield N.models.core.Increment.update(
+      { key: 'section' },
+      { $set: { value: rows[rows.length - 1].forumid } },
+      { upsert: true }
+    );
+  }));
 
-          N.models.forum.Section.findOne({ hid: row.parentid }, function (err, parent) {
-            if (err) {
-              next(err);
-              return;
-            }
-
-            N.models.forum.Section.update(
-              { hid: row.forumid },
-              { $set: { parent: parent._id } },
-              next
-            );
-          });
-        }, function (err) {
-          if (err) {
-            callback(err);
-            return;
-          }
-
-          N.models.core.Increment.update(
-            { key: 'section' },
-            { $set: { value: rows[rows.length - 1].forumid } },
-            { upsert: true },
-            function (err) {
-              if (err) {
-                callback(err);
-                return;
-              }
-
-              conn.release();
-              N.logger.info('Section import finished');
-              callback();
-            }
-          );
-        });
-      });
-    });
-  });
+  conn.release();
+  N.logger.info('Section import finished');
 });

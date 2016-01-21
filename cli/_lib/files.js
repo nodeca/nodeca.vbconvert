@@ -4,39 +4,17 @@
 'use strict';
 
 const _           = require('lodash');
-const async       = require('async');
+const Promise     = require('bluebird');
 const co          = require('co');
 const fs          = require('mz/fs');
 const mime        = require('mime-types').lookup;
 const mongoose    = require('mongoose');
 const path        = require('path');
-const progress    = require('./progressbar');
+const progress    = require('./utils').progress;
 const resize      = require('nodeca.users/models/users/_lib/resize');
 const resizeParse = require('nodeca.users/server/_lib/resize_parse');
 const ALBUM       = 8; // content type for albums
 const POST        = 1; // content type for posts
-
-
-// Helper to run promises in parallel
-//
-function eachLimit(array, limit, fn) {
-  return new Promise(function (resolve, reject) {
-    async.eachLimit(array, limit, function (item, next) {
-      fn(item)
-        .then(
-          ()    => process.nextTick(() => next()),
-          (err) => process.nextTick(() => next(err))
-        );
-    }, function (err) {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      resolve();
-    });
-  });
-}
 
 
 module.exports = co.wrap(function* (N) {
@@ -136,7 +114,7 @@ module.exports = co.wrap(function* (N) {
     yield N.models.users.Album.update({ _id: album.id }, updateData);
 
     if (row.contenttypeid === POST) {
-      let postmapping = N.models.vbconvert.PostMapping.findOne({ mysql_id: row.contentid }).lean(true);
+      let postmapping = yield N.models.vbconvert.PostMapping.findOne({ mysql_id: row.contentid }).lean(true);
 
       if (postmapping) {
         yield N.models.forum.Post.update(
@@ -158,7 +136,7 @@ module.exports = co.wrap(function* (N) {
 
   let userids = yield conn.query('SELECT userid FROM attachment GROUP BY userid ORDER BY userid ASC');
 
-  yield eachLimit(userids, 100, co.wrap(function* (row) {
+  yield Promise.map(userids, co.wrap(function* (row) {
     let rows;
     let userid = row.userid;
 
@@ -167,10 +145,10 @@ module.exports = co.wrap(function* (N) {
     // ignore content owned by deleted users
     if (!user) { return; }
 
-    rows = yield conn.query('SELECT albumid,coverattachmentid ' +
-                   'FROM album WHERE userid = ? ORDER BY albumid ASC',
-                   [ userid ]
-                 );
+    rows = yield conn.query(`
+      SELECT albumid,coverattachmentid
+      FROM album WHERE userid = ? ORDER BY albumid ASC
+    `, [ userid ]);
 
     let album_ids = {};
 
@@ -193,19 +171,20 @@ module.exports = co.wrap(function* (N) {
 
     album_ids[0] = { id: def_album._id };
 
-    rows = yield conn.query('SELECT filedata.userid AS filedataowner,' +
-                   'filedataid,attachment.attachmentid,extension,filename,' +
-                   'caption,contentid,contenttypeid,attachment.dateline,' +
-                   'blog_attachmentlegacy.oldattachmentid AS blogaid_legacy,' +
-                   'picturelegacy.pictureid AS pictureaid_legacy ' +
-                   'FROM filedata JOIN attachment USING(filedataid) ' +
-                   'LEFT JOIN blog_attachmentlegacy ON ' +
-                   'blog_attachmentlegacy.newattachmentid = attachment.attachmentid ' +
-                   'LEFT JOIN picturelegacy ON ' +
-                   'picturelegacy.attachmentid = attachment.attachmentid ' +
-                   'WHERE attachment.userid = ? ORDER BY attachmentid ASC',
-                   [ userid ]
-                 );
+    rows = yield conn.query(`
+      SELECT filedata.userid AS filedataowner,
+             filedataid,attachment.attachmentid,extension,filename,
+             caption,contentid,contenttypeid,attachment.dateline,
+             blog_attachmentlegacy.oldattachmentid AS blogaid_legacy,
+             picturelegacy.pictureid AS pictureaid_legacy
+      FROM filedata
+      JOIN attachment USING(filedataid)
+      LEFT JOIN blog_attachmentlegacy
+             ON blog_attachmentlegacy.newattachmentid = attachment.attachmentid
+      LEFT JOIN picturelegacy
+             ON picturelegacy.attachmentid = attachment.attachmentid
+      WHERE attachment.userid = ? ORDER BY attachmentid ASC
+   `, [ userid ]);
 
     for (let i = 0; i < rows.length; i++) {
       if (i) { bar.tick(); }
@@ -241,7 +220,7 @@ module.exports = co.wrap(function* (N) {
     }
 
     bar.tick();
-  }));
+  }), { concurrency: 100 });
 
   bar.terminate();
   conn.release();

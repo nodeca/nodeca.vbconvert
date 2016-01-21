@@ -4,36 +4,14 @@
 'use strict';
 
 const _           = require('lodash');
-const async       = require('async');
+const Promise     = require('bluebird');
 const co          = require('co');
 const fs          = require('mz/fs');
 const sharp       = require('sharp');
 const path        = require('path');
-const progress    = require('./progressbar');
+const progress    = require('./utils').progress;
 const resizeParse = require('nodeca.users/server/_lib/resize_parse');
 const resize      = require('nodeca.users/models/users/_lib/resize');
-
-
-// Helper to run promises in parallel
-//
-function eachLimit(array, limit, fn) {
-  return new Promise(function (resolve, reject) {
-    async.eachLimit(array, limit, function (item, next) {
-      fn(item)
-        .then(
-          ()    => process.nextTick(() => next()),
-          (err) => process.nextTick(() => next(err))
-        );
-    }, function (err) {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      resolve();
-    });
-  });
-}
 
 
 module.exports = co.wrap(function* (N) {
@@ -47,16 +25,18 @@ module.exports = co.wrap(function* (N) {
 
   let conn = yield N.vbconvert.getConnection();
 
-  let rows = yield conn.query('SELECT userid,width,height,bigpicrevision,dateline,' +
-               'sel_top,sel_left,sel_width,sel_height ' +
-               'FROM custombigpic JOIN user USING(userid) ' +
-               'WHERE bigpicsaved = 1 ORDER BY userid ASC'
-             );
+  let rows = yield conn.query(`
+    SELECT userid,width,height,bigpicrevision,dateline,
+           sel_top,sel_left,sel_width,sel_height
+    FROM custombigpic JOIN user USING(userid)
+    WHERE bigpicsaved = 1
+    ORDER BY userid ASC
+  `);
 
   let bar = progress(' avatars :current/:total [:bar] :percent', rows.length);
   let counter = 0;
 
-  yield eachLimit(rows, 100, co.wrap(function* (row) {
+  yield Promise.map(rows, co.wrap(function* (row) {
     bar.tick();
 
     let tmpfile = '/tmp/vbconvert-' + (++counter) + '.jpg';
@@ -107,7 +87,7 @@ module.exports = co.wrap(function* (N) {
     } finally {
       yield fs.unlink(tmpfile);
     }
-  }));
+  }), { concurrency: 100 });
 
   bar.terminate();
   conn.release();

@@ -3,146 +3,84 @@
 
 'use strict';
 
-var async    = require('async');
-var mongoose = require('mongoose');
-var progress = require('./progressbar');
-var thenify  = require('thenify');
-var ALBUM    = 8; // content type for albums
+const Promise   = require('bluebird');
+const co        = require('co');
+const mongoose  = require('mongoose');
+const progress  = require('./utils').progress;
+const ALBUM     = 8; // content type for albums
 
 
-module.exports = thenify(function (N, callback) {
-  /* eslint-disable max-nested-callbacks */
-  N.vbconvert.getConnection(function (err, conn) {
-    if (err) {
-      callback(err);
-      return;
-    }
+module.exports = co.wrap(function* (N) {
+  let conn = yield N.vbconvert.getConnection();
 
-    conn.query('SELECT count(*) AS count FROM album', function (err, rows) {
-      if (err) {
-        callback(err);
-        return;
+  let rows = yield conn.query('SELECT count(*) AS count FROM album');
+
+  let bar = progress(' albums :current/:total [:bar] :percent', rows[0].count);
+
+  let userids = yield conn.query('SELECT userid FROM album GROUP BY userid ORDER BY userid ASC');
+
+  yield Promise.map(userids, co.wrap(function* (row) {
+    let userid = row.userid;
+    let user = yield N.models.users.User.findOne({ hid: userid }).lean(true);
+
+    // ignore albums belonging to deleted users
+    if (!user) { return; }
+
+    let rows = yield conn.query(`
+      SELECT albumid,title,description,createdate,lastpicturedate
+      FROM album
+      WHERE userid = ?
+      ORDER BY albumid ASC
+    `, [ userid ]);
+
+    for (let i = 0; i < rows.length; i++) {
+      bar.tick();
+
+      let row = rows[i];
+      let album_mapping = yield N.models.vbconvert.AlbumMapping.findOne(
+                            { mysql: row.albumid }
+                          );
+
+      // already imported
+      if (album_mapping) { continue; }
+
+      let datelines = yield conn.query(`
+        SELECT dateline
+        FROM attachment
+        WHERE contenttypeid = ? AND contentid = ?
+        ORDER BY dateline ASC
+      `, [ ALBUM, row.albumid ]);
+
+      datelines = datelines || [];
+
+      let album = new N.models.users.Album();
+
+      album.title       = row.title;
+      album.description = row.description;
+      album.user_id     = user._id;
+
+      if (row.createdate) {
+        album._id = new mongoose.Types.ObjectId(row.createdate);
+      } else if (datelines.length) {
+        album._id = new mongoose.Types.ObjectId(datelines[0].dateline);
       }
 
-      var bar = progress(' albums :current/:total [:bar] :percent', rows[0].count);
+      if (datelines.length) {
+        album.last_ts = new Date(datelines[datelines.length - 1].dateline * 1000);
+      } else if (row.lastpicturedate) {
+        album.last_ts = new Date(row.lastpicturedate * 1000);
+      }
 
-      conn.query('SELECT userid FROM album GROUP BY userid ORDER BY userid ASC',
-          function (err, userids) {
+      yield new N.models.vbconvert.AlbumMapping({
+        mysql: row.albumid,
+        mongo: album._id
+      }).save();
 
-        if (err) {
-          callback(err);
-          return;
-        }
+      yield album.save();
+    }
+  }), { concurrency: 100 });
 
-        async.eachLimit(userids, 100, function (row, next) {
-          var userid = row.userid;
-
-          N.models.users.User.findOne({ hid: userid })
-              .lean(true)
-              .exec(function (err, user) {
-
-            if (err) {
-              next(err);
-              return;
-            }
-
-            if (!user) {
-              // ignore albums belonging to deleted users
-              next();
-              return;
-            }
-
-            conn.query('SELECT albumid,title,description,createdate,lastpicturedate ' +
-                'FROM album WHERE userid = ? ORDER BY albumid ASC',
-                [ userid ],
-                function (err, rows) {
-
-              if (err) {
-                next(err);
-                return;
-              }
-
-              async.eachSeries(rows, function (row, callback) {
-                function next() {
-                  bar.tick();
-                  callback.apply(null, arguments);
-                }
-
-                N.models.vbconvert.AlbumMapping.findOne(
-                    { mysql: row.albumid },
-                    function (err, album_mapping) {
-
-                  if (err) {
-                    next(err);
-                    return;
-                  }
-
-                  if (album_mapping) {
-                    // already imported
-                    next();
-                    return;
-                  }
-
-                  conn.query('SELECT dateline ' +
-                      'FROM attachment WHERE contenttypeid = ? AND contentid = ? ' +
-                      'ORDER BY dateline ASC',
-                      [ ALBUM, row.albumid ],
-                      function (err, datelines) {
-
-                    if (err) {
-                      next(err);
-                      return;
-                    }
-
-                    datelines = datelines || [];
-
-                    var album = new N.models.users.Album();
-
-                    album.title       = row.title;
-                    album.description = row.description;
-                    album.user_id     = user._id;
-
-                    if (row.createdate) {
-                      album._id = new mongoose.Types.ObjectId(row.createdate);
-                    } else if (datelines.length) {
-                      album._id = new mongoose.Types.ObjectId(datelines[0].dateline);
-                    }
-
-                    if (datelines.length) {
-                      album.last_ts = new Date(datelines[datelines.length - 1].dateline * 1000);
-                    } else if (row.lastpicturedate) {
-                      album.last_ts = new Date(row.lastpicturedate * 1000);
-                    }
-
-                    new N.models.vbconvert.AlbumMapping({
-                      mysql: row.albumid,
-                      mongo: album._id
-                    }).save(function (err) {
-                      if (err) {
-                        next(err);
-                        return;
-                      }
-
-                      album.save(next);
-                    });
-                  });
-                });
-              }, next);
-            });
-          });
-        }, function (err) {
-          if (err) {
-            callback(err);
-            return;
-          }
-
-          bar.terminate();
-
-          conn.release();
-          N.logger.info('Album import finished');
-          callback();
-        });
-      });
-    });
-  });
+  bar.terminate();
+  conn.release();
+  N.logger.info('Album import finished');
 });

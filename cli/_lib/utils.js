@@ -1,12 +1,12 @@
-// Wrapper for 'progress'
-//
 
 'use strict';
 
-var ProgressBar = require('progress');
+const ProgressBar = require('progress');
 
 
-module.exports = function (text, total) {
+// Wrapper for 'progress'
+//
+module.exports.progress = function (text, total) {
   if (!process.stderr.isTTY) {
     return {
       tick: function () {},
