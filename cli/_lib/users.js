@@ -6,9 +6,10 @@
 var async    = require('async');
 var mongoose = require('mongoose');
 var progress = require('./progressbar');
+var thenify  = require('thenify');
 
 
-module.exports = function (N, callback) {
+module.exports = thenify(function (N, callback) {
   /* eslint-disable max-nested-callbacks */
   N.models.vbconvert.UserGroupMapping.find().lean(true).exec(function (err, usergroups) {
     if (err) {
@@ -149,4 +150,4 @@ module.exports = function (N, callback) {
       });
     });
   });
-};
+});

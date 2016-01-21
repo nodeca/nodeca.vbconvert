@@ -3,87 +3,52 @@
 
 'use strict';
 
-var async = require('async');
+const co = require('co');
 
 
-module.exports = function (N, callback) {
-  var SectionUsergroupStore = N.settings.getStore('section_usergroup');
+module.exports = co.wrap(function* (N) {
+  let SectionUsergroupStore = N.settings.getStore('section_usergroup');
 
   /* eslint-disable max-nested-callbacks */
-  N.models.users.UserGroup.find().lean(true).exec(function (err, usergroups) {
-    if (err) {
-      callback(err);
-      return;
+  let usergroups = yield N.models.users.UserGroup.find().lean(true);
+
+  let conn = yield N.vbconvert.getConnection();
+
+  let forums = yield conn.query('SELECT forumid FROM forum ORDER BY forumid ASC');
+
+  for (let i = 0; i < forums.length; i++) {
+    let forum = forums[i];
+
+    if (N.config.vbconvert.sections &&
+        N.config.vbconvert.sections.hide &&
+        N.config.vbconvert.sections.hide.indexOf(forum.forumid) === -1) {
+
+      continue;
     }
 
-    N.vbconvert.getConnection(function (err, conn) {
-      if (err) {
-        callback(err);
-        return;
-      }
+    let section = yield N.models.forum.Section.findOne({ hid: forum.forumid }).lean(true);
 
-      conn.query('SELECT forumid FROM forum ORDER BY forumid ASC', function (err, forums) {
-        if (err) {
-          callback(err);
-          return;
-        }
+    if (!section) {
+      continue;
+    }
 
-        async.eachSeries(forums, function (forum, next) {
-          if (N.config.vbconvert.sections &&
-              N.config.vbconvert.sections.hide &&
-              N.config.vbconvert.sections.hide.indexOf(forum.forumid) === -1) {
+    let set = {};
 
-            next();
-            return;
-          }
-
-          N.models.forum.Section.findOne({ hid: forum.forumid })
-              .lean(true)
-              .exec(function (err, section) {
-
-            if (err) {
-              next(err);
-              return;
-            }
-
-            if (!section) {
-              next();
-              return;
-            }
-
-            var set = {};
-
-            usergroups.forEach(function (usergroup) {
-              set['data.' + usergroup._id + '.forum_can_view'] = {
-                value: false,
-                own: true
-              };
-            });
-
-            N.models.forum.SectionUsergroupStore.update(
-              { section_id: section._id },
-              { $set: set },
-              next
-            );
-          });
-        }, function (err) {
-          if (err) {
-            callback(err);
-            return;
-          }
-
-          SectionUsergroupStore.updateInherited(function (err) {
-            if (err) {
-              callback(err);
-              return;
-            }
-
-            conn.release();
-            N.logger.info('Section permissions created');
-            callback();
-          });
-        });
-      });
+    /* eslint-disable no-loop-func */
+    usergroups.forEach(function (usergroup) {
+      set['data.' + usergroup._id + '.forum_can_view'] = {
+        value: false,
+        own: true
+      };
     });
-  });
-};
+
+    yield N.models.forum.SectionUsergroupStore.update(
+      { section_id: section._id },
+      { $set: set }
+    );
+  }
+
+  yield SectionUsergroupStore.updateInherited();
+  conn.release();
+  N.logger.info('Section permissions created');
+});

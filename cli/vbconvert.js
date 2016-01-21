@@ -3,7 +3,7 @@
 
 'use strict';
 
-var async    = require('async');
+const co = require('co');
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -20,35 +20,19 @@ module.exports.commandLineArguments = [
 ];
 
 
-module.exports.run = function (N, args, callback) {
-  var modules = [
-    require('./_lib/usergroups'),
-    require('./_lib/users'),
-    require('./_lib/sections'),
-    require('./_lib/section_perms'),
-    require('./_lib/topics'),
-    require('./_lib/section_cache'),
-    require('./_lib/votes'),
-    require('./_lib/albums'),
-    require('./_lib/avatars'),
-    require('./_lib/files')
-  ];
+module.exports.run = co.wrap(function* (N/*, args*/) {
+  yield N.wire.emit([ 'init:models' ], N);
 
-  N.wire.emit([ 'init:models' ], N, function (err) {
-    if (err) {
-      callback(err);
-      return;
-    }
+  yield require('./_lib/usergroups')(N);
+  yield require('./_lib/users')(N);
+  yield require('./_lib/sections')(N);
+  yield require('./_lib/section_perms')(N);
+  yield require('./_lib/topics')(N);
+  yield require('./_lib/section_cache')(N);
+  yield require('./_lib/votes')(N);
+  yield require('./_lib/albums')(N);
+  yield require('./_lib/avatars')(N);
+  yield require('./_lib/files')(N);
 
-    async.mapSeries(modules, function (fn, next) {
-      fn(N, next);
-    }, function (err) {
-      if (err) {
-        callback(err);
-        return;
-      }
-
-      process.exit(0);
-    });
-  });
-};
+  process.exit(0);
+});

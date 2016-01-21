@@ -6,10 +6,11 @@
 var async    = require('async');
 var mongoose = require('mongoose');
 var progress = require('./progressbar');
+var thenify  = require('thenify');
 var ALBUM    = 8; // content type for albums
 
 
-module.exports = function (N, callback) {
+module.exports = thenify(function (N, callback) {
   /* eslint-disable max-nested-callbacks */
   N.vbconvert.getConnection(function (err, conn) {
     if (err) {
@@ -144,4 +145,4 @@ module.exports = function (N, callback) {
       });
     });
   });
-};
+});

@@ -9,6 +9,7 @@ var async    = require('async');
 var memoizee = require('memoizee');
 var mongoose = require('mongoose');
 var progress = require('./progressbar');
+var thenify  = require('thenify');
 var POST     = 1; // content type for posts
 
 var html_entities = {
@@ -28,7 +29,7 @@ function html_unescape(text) {
 }
 
 
-module.exports = function (N, callback) {
+module.exports = thenify(function (N, callback) {
   /* eslint-disable max-nested-callbacks */
   var users, sections, conn;
 
@@ -589,4 +590,4 @@ module.exports = function (N, callback) {
     N.logger.info('Topic import finished');
     callback();
   });
-};
+});

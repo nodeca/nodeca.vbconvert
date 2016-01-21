@@ -6,10 +6,11 @@
 var async    = require('async');
 var mongoose = require('mongoose');
 var progress = require('./progressbar');
+var thenify  = require('thenify');
 var POST     = 1; // content type for posts
 
 
-module.exports = function (N, callback) {
+module.exports = thenify(function (N, callback) {
   var users;
 
   // Get a { hid: { _id, hb } } mapping for all registered users
@@ -160,4 +161,4 @@ module.exports = function (N, callback) {
       });
     });
   });
-};
+});

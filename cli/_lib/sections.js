@@ -4,9 +4,10 @@
 'use strict';
 
 var async = require('async');
+var thenify = require('thenify');
 
 
-module.exports = function (N, callback) {
+module.exports = thenify(function (N, callback) {
   N.vbconvert.getConnection(function (err, conn) {
     if (err) {
       callback(err);
@@ -106,4 +107,4 @@ module.exports = function (N, callback) {
       });
     });
   });
-};
+});
