@@ -21,7 +21,7 @@ module.exports.commandLineArguments = [
 
 
 module.exports.run = co.wrap(function* (N/*, args*/) {
-  yield N.wire.emit([ 'init:models' ], N);
+  yield N.wire.emit('init:models', N);
 
   yield require('./_lib/usergroups')(N);
   yield require('./_lib/users')(N);
