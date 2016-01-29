@@ -75,7 +75,7 @@ N.wire.once('navigate.done:admin.vbconvert', function vbconvert_forum_images_tas
     var prev_runid = last_runid;
 
     N.io.rpc(module.apiPath + '.start')
-      .done(function () {
+      .then(function () {
         // reset progress bar to zero,
         // and ignore all updates on the last task
         ignore_runid = Math.max(prev_runid, ignore_runid);
@@ -92,7 +92,7 @@ N.wire.once('navigate.done:admin.vbconvert', function vbconvert_forum_images_tas
     var prev_runid = last_runid;
 
     N.io.rpc(module.apiPath + '.stop')
-      .done(function () {
+      .then(function () {
         // reset progress bar to zero,
         // and ignore all updates on the last task
         ignore_runid = Math.max(prev_runid, ignore_runid);
