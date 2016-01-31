@@ -44,15 +44,11 @@ module.exports = co.wrap(function* (N) {
     let user = yield N.models.users.User.findOne({ hid: row.userid }).lean(true);
 
     // already imported
-    if (user.avatar_id) {
-      return;
-    }
+    if (user.avatar_id) return;
 
-    if (row.sel_width < min_width || row.sel_height < min_height) {
-      // 1. avatar removed (both sel_width and sel_height are zero)
-      // 2. avatar is too small and we can't scale it up while preserving aspect ratio
-      return;
-    }
+    // 1. avatar removed (both sel_width and sel_height are zero)
+    // 2. avatar is too small and we can't scale it up while preserving aspect ratio
+    if (row.sel_width < min_width || row.sel_height < min_height) return;
 
     let sharpInstance = sharp(path.join(
       N.config.vbconvert.avatars,

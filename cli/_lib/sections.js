@@ -28,10 +28,8 @@ module.exports = co.wrap(function* (N) {
 
     let existing_section = yield N.models.forum.Section.findOne({ hid: row.forumid });
 
-    if (existing_section) {
-      // section with this id is already imported
-      return;
-    }
+    // section with this id is already imported
+    if (existing_section) return;
 
     let section = new N.models.forum.Section();
 
@@ -49,10 +47,8 @@ module.exports = co.wrap(function* (N) {
   // Link each section with its parent
   //
   yield rows.map(co.wrap(function* (row) {
-    if (row.parentid < 0) {
-      // top-level forum
-      return;
-    }
+    // top-level forum
+    if (row.parentid < 0) return;
 
     let parent = yield N.models.forum.Section.findOne({ hid: row.parentid });
 

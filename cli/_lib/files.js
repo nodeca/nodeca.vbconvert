@@ -143,7 +143,7 @@ module.exports = co.wrap(function* (N) {
     let user = yield N.models.users.User.findOne({ hid: userid }).lean(true);
 
     // ignore content owned by deleted users
-    if (!user) { return; }
+    if (!user) return;
 
     rows = yield conn.query(`
       SELECT albumid,coverattachmentid
@@ -187,7 +187,7 @@ module.exports = co.wrap(function* (N) {
    `, [ userid ]);
 
     for (let i = 0; i < rows.length; i++) {
-      if (i) { bar.tick(); }
+      if (i) bar.tick();
 
       let row = rows[i];
 
@@ -196,11 +196,11 @@ module.exports = co.wrap(function* (N) {
                                );
 
       // already imported
-      if (file_mapping) { continue; }
+      if (file_mapping) continue;
 
       let media = yield add_file(row, user, album_ids);
 
-      if (!media) { continue; }
+      if (!media) continue;
 
       file_mapping = new N.models.vbconvert.FileMapping({
         attachmentid:      row.attachmentid,

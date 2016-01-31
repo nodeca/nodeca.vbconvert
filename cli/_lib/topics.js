@@ -79,9 +79,7 @@ module.exports = co.wrap(function* (N) {
     // Create a dummy { _id, hid } object in the mongodb, check if topic
     // can be imported.
     //
-    if (!sections[thread.forumid]) {
-      return;
-    }
+    if (!sections[thread.forumid]) return;
 
     topic = {
       _id:         new mongoose.Types.ObjectId(thread.dateline),
@@ -99,10 +97,8 @@ module.exports = co.wrap(function* (N) {
                     ).lean(true);
 
     if (old_topic) {
-      if (old_topic.cache) {
-        // topic had been imported fully last time
-        return;
-      }
+      // topic had been imported fully last time
+      if (old_topic.cache) return;
 
       // reuse old topic if it exists, but haven't been fully imported
       topic._id = old_topic._id;
@@ -126,10 +122,8 @@ module.exports = co.wrap(function* (N) {
       ORDER BY postid ASC
     `, [ POST, thread.threadid ]);
 
-    if (posts.length === 0) {
-      // empty topic, e.g. http://forum.rcdesign.ru/f90/thread121809.html
-      return;
-    }
+    // empty topic, e.g. http://forum.rcdesign.ru/f90/thread121809.html
+    if (posts.length === 0) return;
 
 
     //

@@ -38,7 +38,7 @@ module.exports = co.wrap(function* (N) {
 
   yield Promise.map(userids, co.wrap(function* (row) {
     // ignore votes casted by deleted users
-    if (!users[row.fromuserid]) { return; }
+    if (!users[row.fromuserid]) return;
 
     let rows = yield conn.query(`
       SELECT targetid,vote,fromuserid,touserid,date
@@ -53,7 +53,7 @@ module.exports = co.wrap(function* (N) {
       bar.tick();
 
       // ignore votes casted for deleted users
-      if (!users[row.touserid]) { continue; }
+      if (!users[row.touserid]) continue;
 
       let post_mapping = yield N.models.vbconvert.PostMapping.findOne({
         mysql_id: row.targetid
@@ -78,7 +78,7 @@ module.exports = co.wrap(function* (N) {
       });
     }
 
-    if (!count) { return; }
+    if (!count) return;
 
     yield new Promise((resolve, reject) => {
       bulk.execute(err => err ? reject(err) : resolve());

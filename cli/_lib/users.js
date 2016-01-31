@@ -44,7 +44,7 @@ module.exports = co.wrap(function* (N) {
     let existing_user = yield N.models.users.User.findOne({ hid: row.userid });
 
     // user with this id is already imported
-    if (existing_user) { return; }
+    if (existing_user) return;
 
     let user = new N.models.users.User();
 

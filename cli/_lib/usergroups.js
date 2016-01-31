@@ -34,9 +34,7 @@ module.exports = co.wrap(function* (N) {
       }).save();
     } catch (err) {
       // ignore duplicate key errors
-      if (err.code !== 11000) {
-        throw err;
-      }
+      if (err.code !== 11000) throw err;
 
       return;
     }

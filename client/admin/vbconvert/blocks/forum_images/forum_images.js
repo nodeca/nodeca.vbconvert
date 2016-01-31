@@ -14,7 +14,7 @@ var last_runid = 0;
 
 
 function update_task_status(task_info) {
-  if (!view) { return; }
+  if (!view) return;
 
   if (ignore_runid >= task_info.runid || last_runid > task_info.runid) {
     // task is finished, but we're still receiving debounced messages
@@ -40,7 +40,7 @@ function update_task_status(task_info) {
 
 
 N.wire.on('navigate.done:admin.vbconvert', function vbconvert_forum_images_task_widget_setup() {
-  if (!$(SELECTOR).length) { return; }
+  if (!$(SELECTOR).length) return;
 
   var current = N.runtime.page_data.forum_images_task.current || 0;
   var total   = N.runtime.page_data.forum_images_task.total || 1;
@@ -58,7 +58,7 @@ N.wire.on('navigate.done:admin.vbconvert', function vbconvert_forum_images_task_
 
 
 N.wire.on('navigate.exit:admin.vbconvert', function vbconvert_forum_images_task_widget_teardown() {
-  if (!$(SELECTOR).length) { return; }
+  if (!$(SELECTOR).length) return;
 
   view = null;
   ko.cleanNode($(SELECTOR)[0]);

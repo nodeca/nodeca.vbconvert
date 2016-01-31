@@ -28,9 +28,7 @@ module.exports = co.wrap(function* (N) {
 
     let section = yield N.models.forum.Section.findOne({ hid: forum.forumid }).lean(true);
 
-    if (!section) {
-      continue;
-    }
+    if (!section) continue;
 
     let set = {};
 

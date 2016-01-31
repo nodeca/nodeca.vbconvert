@@ -24,7 +24,7 @@ module.exports = co.wrap(function* (N) {
     let user = yield N.models.users.User.findOne({ hid: userid }).lean(true);
 
     // ignore albums belonging to deleted users
-    if (!user) { return; }
+    if (!user) return;
 
     let rows = yield conn.query(`
       SELECT albumid,title,description,createdate,lastpicturedate
@@ -42,7 +42,7 @@ module.exports = co.wrap(function* (N) {
                           );
 
       // already imported
-      if (album_mapping) { continue; }
+      if (album_mapping) continue;
 
       let datelines = yield conn.query(`
         SELECT dateline
