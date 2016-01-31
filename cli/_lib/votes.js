@@ -81,7 +81,7 @@ module.exports = co.wrap(function* (N) {
     if (!count) { return; }
 
     yield new Promise((resolve, reject) => {
-      bulk.execute((err) => err ? reject(err) : resolve());
+      bulk.execute(err => err ? reject(err) : resolve());
     });
   }), { concurrency: 100 });
 

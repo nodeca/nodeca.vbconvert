@@ -42,7 +42,7 @@ module.exports = co.wrap(function* (N) {
   const get_parser_param_id = thenify(memoizee(function (usergroup_ids, allowsmilie, callback) {
     N.settings.getByCategory(
         'forum_markup',
-        { usergroup_ids: usergroup_ids },
+        { usergroup_ids },
         { alias: true },
         function (err, params) {
 
@@ -187,8 +187,8 @@ module.exports = co.wrap(function* (N) {
         let new_post = {
           _id:        id,
           topic:      topic._id,
-          hid:        hid,
-          ts:         ts,
+          hid,
+          ts,
           md:         post.pagetext,
           html:       post.pagetext,
           ip:         post.ipaddress,
@@ -259,11 +259,11 @@ module.exports = co.wrap(function* (N) {
       }
 
       yield new Promise((resolve, reject) => {
-        post_bulk.execute((err) => err ? reject(err) : resolve());
+        post_bulk.execute(err => err ? reject(err) : resolve());
       });
 
       yield new Promise((resolve, reject) => {
-        map_bulk.execute((err) => err ? reject(err) : resolve());
+        map_bulk.execute(err => err ? reject(err) : resolve());
       });
     }
 

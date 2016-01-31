@@ -9,8 +9,8 @@ const ProgressBar = require('progress');
 module.exports.progress = function (text, total) {
   if (!process.stderr.isTTY) {
     return {
-      tick: function () {},
-      terminate: function () {}
+      tick() {},
+      terminate() {}
     };
   }
 
@@ -20,7 +20,7 @@ module.exports.progress = function (text, total) {
     incomplete: ' ',
     width: 40,
     clear: true,
-    total: total,
+    total,
     renderThrottle: 300
   });
 };
