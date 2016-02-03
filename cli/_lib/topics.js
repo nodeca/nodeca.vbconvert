@@ -41,21 +41,19 @@ module.exports = co.wrap(function* (N) {
 
   const get_parser_param_id = thenify(memoizee(function (usergroup_ids, allowsmilie, callback) {
     N.settings.getByCategory(
-        'forum_markup',
-        { usergroup_ids },
-        { alias: true },
-        function (err, params) {
+      'forum_markup',
+      { usergroup_ids },
+      { alias: true }
+    ).then(params => {
+      process.nextTick(() => {
+        if (allowsmilie) {
+          params.emoji = false;
+        }
 
-      if (err) {
-        callback(err);
-        return;
-      }
-
-      if (allowsmilie) {
-        params.emoji = false;
-      }
-
-      N.models.core.MessageParams.setParams(params, callback);
+        N.models.core.MessageParams.setParams(params, callback);
+      });
+    }, err => {
+      process.nextTick(() => callback(err));
     });
   }, { async: true, primitive: true }));
 
