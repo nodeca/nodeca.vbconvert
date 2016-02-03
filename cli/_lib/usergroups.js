@@ -18,7 +18,7 @@ module.exports = co.wrap(function* (N) {
     let usergroup, usergroup_id;
 
     if (typeof mapping[row.usergroupid] !== 'undefined') {
-      usergroup_id = (yield N.models.users.UserGroup.findIdByName(mapping[row.usergroupid]))._id;
+      usergroup_id = yield N.models.users.UserGroup.findIdByName(mapping[row.usergroupid]);
     } else {
       usergroup = new N.models.users.UserGroup({
         short_name: row.title
