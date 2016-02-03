@@ -41,7 +41,7 @@ rm -rf /var/lib/mysql
 cp -a /tmp/extract/var/lib/mysql /var/lib/mysql
 chown mysql:mysql -Rv /var/lib/mysql
 ln -s /tmp/extract/var/www/forum.rcdesign.ru/www /tmp/www
-dpkg-reconfigure percona-server-server-5.6
+#dpkg-reconfigure percona-server-server-5.6
 ```
 
 5\. Set mysql password to the empty one:
@@ -49,6 +49,7 @@ dpkg-reconfigure percona-server-server-5.6
 ```sh
 service mysql stop
 mysqld_safe --skip-grant-tables &
+echo "UPDATE mysql.user SET plugin = '' WHERE plugin = 'mysql_old_password'; FLUSH PRIVILEGES;" | mysql
 echo "FLUSH PRIVILEGES; SET PASSWORD FOR 'root'@'localhost' = '';" | mysql
 kill `cat /var/run/mysqld/mysqld.pid`
 service mysql start
