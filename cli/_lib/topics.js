@@ -4,30 +4,15 @@
 'use strict';
 
 
-const _         = require('lodash');
-const Promise   = require('bluebird');
-const co        = require('co');
-const memoizee  = require('memoizee');
-const mongoose  = require('mongoose');
-const progress  = require('./utils').progress;
-const thenify   = require('thenify');
-const POST      = 1; // content type for posts
-
-const html_entities = {
-  '&amp;':  '&',
-  '&quot;': '"',
-  '&gt;':   '>',
-  '&lt;':   '<'
-};
-
-
-// Replace html entities like "&quot;" with the corresponding characters
-//
-function html_unescape(text) {
-  return text.replace(/&(?:quot|amp|lt|gt|#(\d{1,6}));/g, (entity, code) =>
-    (html_entities[entity] || String.fromCharCode(+code))
-  );
-}
+const _             = require('lodash');
+const Promise       = require('bluebird');
+const co            = require('co');
+const memoizee      = require('memoizee');
+const mongoose      = require('mongoose');
+const progress      = require('./utils').progress;
+const thenify       = require('thenify');
+const html_unescape = require('./utils').html_unescape;
+const POST          = 1; // content type for posts
 
 
 module.exports = co.wrap(function* (N) {
@@ -121,7 +106,10 @@ module.exports = co.wrap(function* (N) {
     `, [ POST, thread.threadid ]);
 
     // empty topic, e.g. http://forum.rcdesign.ru/f90/thread121809.html
-    if (posts.length === 0) return;
+    if (posts.length === 0) {
+      yield N.models.forum.Topic.find({ _id: topic._id }).remove();
+      return;
+    }
 
 
     //
@@ -164,15 +152,17 @@ module.exports = co.wrap(function* (N) {
 
         if (post.visible === 1 || hid === 1) {
           cache_hb.post_count++;
-          cache_hb.last_post = id;
-          cache_hb.last_ts   = ts;
-          cache_hb.last_user = user._id;
+          cache_hb.last_post     = id;
+          cache_hb.last_post_hid = hid;
+          cache_hb.last_ts       = ts;
+          cache_hb.last_user     = user._id;
 
           if (!user.hb || hid === 1) {
             cache.post_count++;
-            cache.last_post = id;
-            cache.last_ts   = ts;
-            cache.last_user = user._id;
+            cache.last_post     = id;
+            cache.last_post_hid = hid;
+            cache.last_ts       = ts;
+            cache.last_user     = user._id;
           }
         }
 

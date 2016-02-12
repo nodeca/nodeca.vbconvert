@@ -3,10 +3,11 @@
 
 'use strict';
 
-const Promise   = require('bluebird');
-const co        = require('co');
-const mongoose  = require('mongoose');
-const progress  = require('./utils').progress;
+const Promise       = require('bluebird');
+const co            = require('co');
+const mongoose      = require('mongoose');
+const progress      = require('./utils').progress;
+const html_unescape = require('./utils').html_unescape;
 
 
 module.exports = co.wrap(function* (N) {
@@ -48,17 +49,17 @@ module.exports = co.wrap(function* (N) {
 
     let user = new N.models.users.User();
 
-    user._id = new mongoose.Types.ObjectId(row.joindate);
-    user.hid = row.userid;
-    user.nick = row.username;
-    user.email = row.email;
-    user.joined_ts = new Date(row.joindate * 1000);
-    user.joined_ip = row.ipaddress;
+    user._id            = new mongoose.Types.ObjectId(row.joindate);
+    user.hid            = row.userid;
+    user.nick           = html_unescape(row.username);
+    user.email          = row.email;
+    user.joined_ts      = new Date(row.joindate * 1000);
+    user.joined_ip      = row.ipaddress;
     user.last_active_ts = new Date(row.lastactivity * 1000);
-    user.post_count = row.posts;
-    user.first_name = row.firstname;
-    user.last_name = row.lastname;
-    user.usergroups = [ mongoid[row.usergroupid] ];
+    user.post_count     = row.posts;
+    user.first_name     = html_unescape(row.firstname);
+    user.last_name      = html_unescape(row.lastname);
+    user.usergroups     = [ mongoid[row.usergroupid] ];
 
     if (row.membergroupids) {
       user.usergroups = user.usergroups.concat(row.membergroupids.split(',').map(function (id) {
