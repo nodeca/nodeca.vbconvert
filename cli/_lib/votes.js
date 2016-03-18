@@ -36,20 +36,24 @@ module.exports = co.wrap(function* (N) {
     ORDER BY fromuserid ASC
   `);
 
-  yield Promise.map(userids, co.wrap(function* (row) {
+  yield Promise.map(userids, co.wrap(function* (userid_row) {
+    let fromuserid = userid_row.fromuserid;
+
     // ignore votes casted by deleted users
-    if (!users[row.fromuserid]) return;
+    if (!users[fromuserid]) return;
 
     let rows = yield conn.query(`
       SELECT targetid,vote,fromuserid,touserid,date
       FROM votes
       WHERE fromuserid = ? AND contenttypeid = ?
-    `, [ row.fromuserid, POST ]);
+    `, [ fromuserid, POST ]);
 
     let bulk = N.models.users.Vote.collection.initializeUnorderedBulkOp();
     let count = 0;
 
-    for (var i = 0; i < rows; i++) {
+    for (let i = 0; i < rows.length; i++) {
+      let row = rows[i];
+
       bar.tick();
 
       // ignore votes casted for deleted users
@@ -58,6 +62,9 @@ module.exports = co.wrap(function* (N) {
       let post_mapping = yield N.models.vbconvert.PostMapping.findOne({
         mysql_id: row.targetid
       }).lean(true);
+
+      // voted for non-existent or not imported post
+      if (!post_mapping) continue;
 
       count++;
       bulk.find({
