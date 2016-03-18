@@ -9,9 +9,11 @@ const co = require('co');
 module.exports = co.wrap(function* (N) {
   let conn = yield N.vbconvert.getConnection();
 
+  // select all sections except link-only
   let rows = yield conn.query(`
     SELECT forumid,title,description,parentid,displayorder
     FROM forum
+    WHERE link = ''
     ORDER BY forumid ASC
   `);
 
