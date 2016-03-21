@@ -16,11 +16,6 @@ vbconvert:
     members: 2
     administrators: 6
 
-  # IDs of sections that needs to be hidden or ignored respectively
-  sections:
-    hide: [ 42, 102, 114 ]
-    ignore: [ 117 ]
-
   # Path to the folder where attachments are stored in
   files: '/tmp/www/uploads/posts'
 
