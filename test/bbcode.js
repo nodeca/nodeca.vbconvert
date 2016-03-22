@@ -391,4 +391,9 @@ describe('BBcode', function () {
     assert.equal(to_md(tokenize('foo[video]http://example.com[/video]bar')),
                 'foo\n\nhttp://example.com\n\nbar');
   });
+
+  it('video vs em regression', function () {
+    assert.equal(to_md(tokenize('[u][video]http://example.com[/video][/u]')),
+                'http://example.com');
+  });
 });
