@@ -12,7 +12,12 @@ const can_post_threads           = 16;
 const can_open_close_own_threads = 1024;
 
 // forum options
-const forum_active = 1;
+const forum_active              = 1;
+const forum_allow_posting       = 2;
+const forum_can_contain_threads = 4;
+const forum_count_posts         = 4096;
+const forum_index_posts         = 16384;
+const forum_prefix_required     = 131072;
 
 
 /* eslint-disable no-bitwise */
@@ -21,7 +26,7 @@ module.exports = co.wrap(function* (N) {
 
   // select all sections except link-only
   let rows = yield conn.query(`
-    SELECT forumid,title,description,options,parentid,displayorder
+    SELECT forumid,title,description,options,excludable,parentid,displayorder
     FROM forum
     WHERE link = ''
     ORDER BY forumid ASC
@@ -41,11 +46,18 @@ module.exports = co.wrap(function* (N) {
 
     let section = new N.models.forum.Section();
 
-    section.hid           = row.forumid;
-    section.title         = row.title;
-    section.description   = row.description;
-    section.display_order = row.displayorder;
-    section.is_category   = false;
+    section.hid                = row.forumid;
+    section.title              = row.title;
+    section.description        = row.description;
+    section.display_order      = row.displayorder;
+    section.is_category        = !(row.options & forum_can_contain_threads);
+    section.is_enabled         = true;
+    section.is_writable        = !!(row.options & forum_allow_posting);
+    section.is_searchable      = !!(row.options & forum_index_posts);
+    section.is_votable         = true;
+    section.is_counted         = !!(row.options & forum_count_posts);
+    section.is_excludable      = !!row.excludable;
+    section.is_prefix_required = !!(row.options & forum_prefix_required);
 
     yield section.save();
   }));
