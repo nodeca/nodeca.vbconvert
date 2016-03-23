@@ -15,6 +15,8 @@ vbconvert:
     guests: 1
     members: 2
     administrators: 6
+    violators: 12
+    banned: 8
 
   # Path to the folder where attachments are stored in
   files: '/tmp/www/uploads/posts'
