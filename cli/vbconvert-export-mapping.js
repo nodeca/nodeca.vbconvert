@@ -182,36 +182,32 @@ module.exports.run = co.wrap(function* (N, args) {
 
   yield new Promise((resolve, reject) => {
     pump(
-      N.models.vbconvert.FileMapping.collection.find({}).stream(),
+      N.models.vbconvert.FileMapping.collection.aggregate([ {
+        $lookup: {
+          from: 'users.mediainfos',
+          localField: 'media_id',
+          foreignField: '_id',
+          as: 'media'
+        }
+      } ]).stream(),
 
       through2.obj((file, enc, callback) => {
-        N.models.users.MediaInfo.findById(file.media_id)
-            .select('user_id media_id')
-            .lean(true)
-            .exec(function (err, media) {
+        bar.tick();
 
-          if (err) {
-            callback(err);
-            return;
-          }
+        ldb.filedataids.put(file.filedataid, { attachment: file.attachmentid });
 
-          bar.tick();
+        if (file.pictureaid_legacy) {
+          ldb.pictureaids.put(file.pictureaid_legacy, { attachment: file.attachmentid });
+        }
 
-          ldb.filedataids.put(file.filedataid, { attachment: file.attachmentid });
+        if (file.blogaid_legacy) {
+          ldb.blogaids.put(file.blogaid_legacy, { attachment: file.attachmentid });
+        }
 
-          if (file.pictureaid_legacy) {
-            ldb.pictureaids.put(file.pictureaid_legacy, { attachment: file.attachmentid });
-          }
+        let user_hid = users_by_id[file.media[0].user_id].hid;
 
-          if (file.blogaid_legacy) {
-            ldb.blogaids.put(file.blogaid_legacy, { attachment: file.attachmentid });
-          }
-
-          let user_hid = users_by_id[media.user_id].hid;
-
-          ldb.attachments.put(file.attachmentid, { user: user_hid, media: file.media_id });
-          callback();
-        });
+        ldb.attachments.put(file.attachmentid, { user: user_hid, media: file.media_id });
+        callback();
       }),
 
       err => {
