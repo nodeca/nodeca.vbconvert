@@ -63,3 +63,35 @@ vbconvert:
     ':wow:':           ':astonished:'
     ':confused:':      ':-/'
     ':?:':             ':question:'
+
+  # list of domains to force https on (subdomains included)
+  force_https:
+   - yandex.ru
+   - googleusercontent.com
+   - mail.ru
+   - pp.vk.me
+   - hobbyking.com
+   - ggpht.com
+   - staticflickr.com
+   - imgur.com
+   - dropbox.com
+   - dropboxusercontent.com
+   - fbcdn.net
+   - akamaihd.net
+   - wikimedia.org
+   - livefilestore.com
+   - yandex.net
+   - habrastorage.org
+   - google.com
+   - avito.st
+   - gstatic.com
+   - cloudfront.net
+   - gyazo.com
+   - d-cd.net
+   - yadi.sk
+   - amazonaws.com
+   - wordpress.com
+   - twimg.com
+   - ytimg.com
+   - fotocdn.net
+   - tumblr.com
