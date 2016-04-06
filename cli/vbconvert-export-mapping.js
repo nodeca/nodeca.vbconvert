@@ -49,7 +49,6 @@ module.exports.run = co.wrap(function* (N, args) {
 
   [ 'topics', 'posts', 'avatars', 'albums', 'attachments', 'filedataids', 'pictureaids', 'blogaids' ].forEach(name => {
     ldb[name] = level(path.join(args.dest, name), {
-      keyEncoding:   'json',
       valueEncoding: 'json'
     });
   });
