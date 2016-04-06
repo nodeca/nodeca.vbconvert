@@ -1,0 +1,64 @@
+#
+# Forum posts
+#
+ - - http://forum.rcdesign.ru/f91/thread331689-post5237667.html
+   - https://dev.rcopen.com/forum/f91/topic331689/416
+
+ - - http://forum.rcdesign.ru/showthread.php?p=5282211
+   - https://dev.rcopen.com/forum/f91/topic61971/16
+
+ - - http://forum.rcdesign.ru/showpost.php?p=5282211
+   - https://dev.rcopen.com/forum/f91/topic61971/16
+
+#
+# Forum topics
+#
+ - - http://forum.rcdesign.ru/f91/thread331689-34.html
+   - https://dev.rcopen.com/forum/f91/topic331689/1321
+
+ - - http://forum.rcdesign.ru/f91/thread61971.html
+   - https://dev.rcopen.com/forum/f91/topic61971
+
+ - - http://forum.rcdesign.ru/thread331689-34.html
+   - https://dev.rcopen.com/forum/f91/topic331689/1321
+
+ - - http://forum.rcdesign.ru/thread61971.html
+   - https://dev.rcopen.com/forum/f91/topic61971
+
+ - - http://forum.rcdesign.ru/showthread.php?t=331689&page=34
+   - https://dev.rcopen.com/forum/f91/topic331689/1321
+
+ - - http://forum.rcdesign.ru/showthread.php?t=61971
+   - https://dev.rcopen.com/forum/f91/topic61971
+
+#
+# Forum sections
+#
+ - - http://forum.rcdesign.ru/f90/
+   - https://dev.rcopen.com/forum/f90
+
+#
+# Users
+#
+ - - http://forum.rcdesign.ru/member.php?u=31337
+   - https://dev.rcopen.com/member31337
+
+#
+# Extra tests
+#
+
+# it should substitute section id for the real one
+ - - http://forum.rcdesign.ru/f99999/thread331689.html
+   - https://dev.rcopen.com/forum/f91/topic331689
+
+# it should substitute topic id for the real one
+ - - http://forum.rcdesign.ru/f99999/thread999999999-post5237667.html
+   - https://dev.rcopen.com/forum/f91/topic331689/416
+
+# if section is unknown and topic is not found, link to any valid section
+ - - http://forum.rcdesign.ru/thread999999999.html
+   - https://dev.rcopen.com/forum/f1/topic999999999
+
+# if post is not found, link to a topic instead
+ - - http://forum.rcdesign.ru/f91/thread331689-post999999999.html
+   - https://dev.rcopen.com/forum/f91/topic331689

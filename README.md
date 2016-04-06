@@ -58,6 +58,17 @@ service mysql start
 Launch
 ------
 
-```
+```sh
 ./nodeca.js vbconvert
 ```
+
+Run tests for link mapping
+--------------------------
+
+To test link mapping, run:
+
+```sh
+NODECA_ENV=development ./nodeca.js test nodeca.vbconvert
+```
+
+Link mapping tests are only run if you have a database with a real data. Otherwise (e.g. on travis) they are skipped entirely.
