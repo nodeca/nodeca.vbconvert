@@ -30,3 +30,21 @@
 
  - - http://forum.rcdesign.ru/#unknown-slug
    - https://dev.rcopen.com/#unknown-slug
+
+#
+# New links with old style anchors (posts only)
+#
+ - - http://forum.rcdesign.ru/f91/thread61971.html#entry5282211
+   - https://dev.rcopen.com/forum/f91/topic61971/16
+
+ - - http://forum.rcdesign.ru/f91/thread331689-11.html#entry5237667
+   - https://dev.rcopen.com/forum/f91/topic331689/416
+
+ - - http://forum.rcdesign.ru/showthread.php?t=61971#entry5282211
+   - https://dev.rcopen.com/forum/f91/topic61971/16
+
+#
+# Rules from previous versions (ipb_rewrite.php)
+#
+ - - http://forum.rcdesign.ru/index.php?act=ST&f=91&t=331689#entry5237667
+   - https://dev.rcopen.com/forum/f91/topic331689/416

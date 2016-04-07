@@ -2,6 +2,7 @@
 'use strict';
 
 
+const _        = require('lodash');
 const assert   = require('assert');
 const fs       = require('fs');
 const glob     = require('glob').sync;
@@ -55,6 +56,16 @@ describe('link_rewrite', function () {
                 u.protocol = 'https:';
                 u.host = 'dev.rcopen.com';
                 u.hash = link.hash;
+
+                // replace X with hex characters, needed for objectids
+                if (entry[1].indexOf('X') !== -1) {
+                  let reg = new RegExp(_.escapeRegExp(entry[1]).replace(/X/g, '[a-fA-F0-9]'));
+
+                  if (url.format(u).match(reg)) {
+                    done();
+                    return;
+                  }
+                }
 
                 assert.equal(url.format(u), entry[1]);
 

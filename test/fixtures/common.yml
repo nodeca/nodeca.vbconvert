@@ -44,6 +44,166 @@
    - https://dev.rcopen.com/member31337
 
 #
+# Albums and attachments
+#
+# "X" means any hex character, it's important 'cause objectids may change
+#
+ - - http://forum.rcdesign.ru/attachment.php?attachmentid=854249&d=1381981225&thumb=1
+   - https://dev.rcopen.com/files/525f5c29XXXXXXXXXXXXXXXX_sm
+
+ - - http://forum.rcdesign.ru/attachment.php?attachmentid=854249&d=1381981225
+   - https://dev.rcopen.com/files/525f5c29XXXXXXXXXXXXXXXX
+
+ - - http://forum.rcdesign.ru/album.php?albumid=4175&attachmentid=752780
+   - https://dev.rcopen.com/member72132/media/511b9accXXXXXXXXXXXXXXXX
+
+ - - http://forum.rcdesign.ru/album.php?albumid=4175&page=10
+   - https://dev.rcopen.com/member72132/album/4e0492b2XXXXXXXXXXXXXXXX
+
+ - - http://forum.rcdesign.ru/album.php?albumid=4175
+   - https://dev.rcopen.com/member72132/album/4e0492b2XXXXXXXXXXXXXXXX
+
+ - - http://forum.rcdesign.ru/uploads/posts/8/5/8/3/8/773588.thumb?d=1325419032
+   - https://dev.rcopen.com/files/525f5c29XXXXXXXXXXXXXXXX
+
+ - - http://forum.rcdesign.ru/blog_attachment.php?attachmentid=87055&d=1254317733
+   - https://dev.rcopen.com/files/423044dcXXXXXXXXXXXXXXXX
+
+ - - http://forum.rcdesign.ru/picture.php?albumid=999999999&pictureid=512
+   - https://dev.rcopen.com/files/46f2167fXXXXXXXXXXXXXXXX
+
+#
+# Avatars
+#
+ - - http://forum.rcdesign.ru/customavatars/avatar4752_8.gif
+   - https://dev.rcopen.com/files/4f53ca3cXXXXXXXXXXXXXXXX_md
+
+ - - http://forum.rcdesign.ru/customavatars/thumbs/avatar4752_8.gif
+   - https://dev.rcopen.com/files/4f53ca3cXXXXXXXXXXXXXXXX_md
+
+ - - http://forum.rcdesign.ru/customprofilepics/profilepic4752_8.gif
+   - https://dev.rcopen.com/files/4f53ca3cXXXXXXXXXXXXXXXX
+
+#
+# Rules from previous versions (ipb_rewrite.php)
+#
+
+#
+# Forum posts
+#
+ - - http://forum.rcdesign.ru/?act=findpost&pid=5237667
+   - https://dev.rcopen.com/forum/f91/topic331689/416
+
+ - - http://forum.rcdesign.ru/index.php?act=findpost&p=5237667
+   - https://dev.rcopen.com/forum/f91/topic331689/416
+
+ - - http://forum.rcdesign.ru/index.php?act=findpost&pid=5237667
+   - https://dev.rcopen.com/forum/f91/topic331689/416
+
+ - - http://forum.rcdesign.ru/index.php?showtopic=331689&p=5237667
+   - https://dev.rcopen.com/forum/f91/topic331689/416
+
+ - - http://forum.rcdesign.ru/index.php?showtopic=331689&pid=5237667
+   - https://dev.rcopen.com/forum/f91/topic331689/416
+
+ - - http://forum.rcdesign.ru/index.php?showtopic=331689&gopid=5237667
+   - https://dev.rcopen.com/forum/f91/topic331689/416
+
+ - - http://forum.rcdesign.ru/index.php?act=ST&view=findpost&p=5237667
+   - https://dev.rcopen.com/forum/f91/topic331689/416
+
+#
+# Forum topics
+#
+ - - http://forum.rcdesign.ru/index.php?showtopic=331689&start=1321
+   - https://dev.rcopen.com/forum/f91/topic331689/1321
+
+ - - http://forum.rcdesign.ru/index.php?showtopic=331689&st=1321
+   - https://dev.rcopen.com/forum/f91/topic331689/1321
+
+ - - http://forum.rcdesign.ru/index.php?showtopic=331689
+   - https://dev.rcopen.com/forum/f91/topic331689
+
+ - - http://forum.rcdesign.ru/index.php?act=ST&f=91&t=331689&st=1321
+   - https://dev.rcopen.com/forum/f91/topic331689/1321
+
+ - - http://forum.rcdesign.ru/index.php?act=ST&f=91&t=331689
+   - https://dev.rcopen.com/forum/f91/topic331689
+
+ - - http://forum.rcdesign.ru/index.php?act=Print&f=91&t=331689
+   - https://dev.rcopen.com/forum/f91/topic331689
+
+#
+# Forum sections
+#
+ - - http://forum.rcdesign.ru/index.php?showforum=91
+   - https://dev.rcopen.com/forum/f91
+
+ - - http://forum.rcdesign.ru/index.php?act=SF&f=91
+   - https://dev.rcopen.com/forum/f91
+
+#
+# Users
+#
+ - - http://forum.rcdesign.ru/index.php?showuser=31337
+   - https://dev.rcopen.com/member31337
+
+#
+# Albums and attachments
+#
+
+ - - http://forum.rcdesign.ru/index.php?act=Attach&type=blogentry&id=87055
+   - https://dev.rcopen.com/files/423044dcXXXXXXXXXXXXXXXX
+
+ - - http://forum.rcdesign.ru/index.php?act=attach&id=854249
+   - https://dev.rcopen.com/files/525f5c29XXXXXXXXXXXXXXXX
+
+ - - http://forum.rcdesign.ru/index.php?op=view_album&album=4175
+   - https://dev.rcopen.com/member72132/album/4e0492b2XXXXXXXXXXXXXXXX
+
+#
+# LoFi version (text)
+#
+
+# forum topics
+ - - http://forum.rcdesign.ru/lofiversion/index.php/t331689-34.html
+   - https://dev.rcopen.com/forum/f91/topic331689/1321
+
+ - - http://forum.rcdesign.ru/lofiversion/index.php/t331689.html
+   - https://dev.rcopen.com/forum/f91/topic331689
+
+ - - http://forum.rcdesign.ru/lofiversion/index.php?t331689-34.html
+   - https://dev.rcopen.com/forum/f91/topic331689/1321
+
+ - - http://forum.rcdesign.ru/lofiversion/index.php?t331689.html
+   - https://dev.rcopen.com/forum/f91/topic331689
+
+# forum sections
+ - - http://forum.rcdesign.ru/lofiversion/index.php/f91.html
+   - https://dev.rcopen.com/forum/f91
+
+ - - http://forum.rcdesign.ru/lofiversion/index.php?f91.html
+   - https://dev.rcopen.com/forum/f91
+
+# main page
+ - - http://forum.rcdesign.ru/lofiversion/index.php
+   - https://dev.rcopen.com/
+
+#
+# Default rules
+#
+# Skip links with known arguments and convert the rest to the index page
+#
+ - - http://forum.rcdesign.ru/uploads/monthly_01_2008/post-25836-1201464171_thumb.jpg
+   - https://dev.rcopen.com/files/000000000000000000000000
+
+ - - http://forum.rcdesign.ru/index.php
+   - https://dev.rcopen.com/
+
+ - - http://forum.rcdesign.ru/
+   - https://dev.rcopen.com/
+
+#
 # Extra tests
 #
 
@@ -62,3 +222,24 @@
 # if post is not found, link to a topic instead
  - - http://forum.rcdesign.ru/f91/thread331689-post999999999.html
    - https://dev.rcopen.com/forum/f91/topic331689
+
+# non-existent album
+ - - http://forum.rcdesign.ru/album.php?albumid=999999999
+   - https://dev.rcopen.com/member1/album/000000000000000000000000
+
+# non-existent attachments
+ - - http://forum.rcdesign.ru/attachment.php?attachmentid=999999999&thumb=1
+   - https://dev.rcopen.com/files/000000000000000000000000_sm
+
+ - - http://forum.rcdesign.ru/uploads/posts/9/9/9/9/9/9/999999999.thumb
+   - https://dev.rcopen.com/files/000000000000000000000000_sm
+
+ - - http://forum.rcdesign.ru/blog_attachment.php?attachmentid=999999999
+   - https://dev.rcopen.com/files/000000000000000000000000
+
+ - - http://forum.rcdesign.ru/picture.php?albumid=999999999&pictureid=999999999
+   - https://dev.rcopen.com/files/000000000000000000000000
+
+# non-existent avatar
+ - - http://forum.rcdesign.ru/customavatars/avatar999999999_9.gif
+   - https://dev.rcopen.com/files/000000000000000000000000_md
