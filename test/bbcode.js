@@ -172,6 +172,11 @@ describe('BBcode', function () {
                  '- **foo**\n- **bar**\n- baz');
   });
 
+  it('remove empty elements from a list', function () {
+    assert.equal(to_md(tokenize('[list]foo[*][url="http://example.com"] [/url][*]bar[/list]')),
+                 '- foo\n- bar');
+  });
+
   it('bubble up list elements #2', function () {
     assert.equal(to_md(tokenize('[b]foo[*]bar[*]baz[/b]')),
                  '**foo[\\*]bar[\\*]baz**');
@@ -253,6 +258,11 @@ describe('BBcode', function () {
     assert.equal(to_md(tokenize('<http://google.com>')), '\\<http://google.com>');
   });
 
+  it('remove empty links', function () {
+    assert.equal(to_md(tokenize('foo\n\n[url="http://example.com"] [/url]\n\nbar')),
+                 'foo\n\nbar');
+  });
+
   it('escape block tags - no escape necessary', function () {
     assert.equal(to_md(tokenize('foo\n-+-+-')),
                  'foo  \n-+-+-');
@@ -286,6 +296,10 @@ describe('BBcode', function () {
 
   it('escape urls', function () {
     assert.equal(to_md(tokenize('[url=http://test/ ()?1]foobar[/url]')), '[foobar](http://test/%20%28%29?1)');
+  });
+
+  it('avoid blacklisted schema in urls', function () {
+    assert.equal(to_md(tokenize('[url="javascript://"]foobar[/url]')), 'foobar');
   });
 
   it('render protocol-less urls #1', function () {
