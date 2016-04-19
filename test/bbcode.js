@@ -255,7 +255,8 @@ describe('BBcode', function () {
   });
 
   it('escape autolinks', function () {
-    assert.equal(to_md(tokenize('<http://google.com>')), '\\<http://google.com>');
+    assert.equal(to_md(tokenize('<http://example.com> <http://example.org>')),
+                 '\\<http://example.com> \\<http://example.org>');
   });
 
   it('remove empty links', function () {

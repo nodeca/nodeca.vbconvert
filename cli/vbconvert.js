@@ -25,6 +25,7 @@ module.exports.run = co.wrap(function* (N/*, args*/) {
 
   yield require('./_lib/usergroups')(N);
   yield require('./_lib/users')(N);
+  yield require('./_lib/usernotes')(N);
   yield require('./_lib/sections')(N);
   yield require('./_lib/topics')(N);
   yield require('./_lib/deletion_log')(N);
