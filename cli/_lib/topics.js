@@ -26,7 +26,7 @@ module.exports = co.wrap(function* (N) {
 
   const get_parser_param_id = thenify(memoizee(function (usergroup_ids, allowsmilie, callback) {
     N.settings.getByCategory(
-      'forum_markup',
+      'forum_posts_markup',
       { usergroup_ids },
       { alias: true }
     ).then(params => {
