@@ -75,7 +75,7 @@ module.exports = co.wrap(function* (N) {
 
     let authLink = new N.models.users.AuthLink();
 
-    authLink.user_id = user._id;
+    authLink.user    = user._id;
     authLink.type    = 'vb';
     authLink.email   = row.email;
     authLink.ts      = new Date(row.passworddate);
