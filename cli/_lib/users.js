@@ -59,12 +59,35 @@ module.exports = co.wrap(function* (N) {
     user.post_count     = row.posts;
     user.first_name     = html_unescape(row.firstname);
     user.last_name      = html_unescape(row.lastname);
-    user.usergroups     = [ mongoid[row.usergroupid] ];
+    user.usergroups     = [];
+
+    if (row.usergroupid === 3) {
+      // Process users with unconfirmed email:
+      //
+      //  - there are 25 users with old ids (< 200k) with forum messages,
+      //    which we're moving to "members" group
+      //
+      //  - the rest are users with new ids that we can just remove
+      //
+      if (row.userid > 200000) {
+        return;
+      }
+
+      // replace usergroup 3 with usergroup 2 (mapped to members)
+      user.usergroups.push(mongoid[2]);
+
+    } else if (mongoid[row.usergroupid]) {
+      user.usergroups.push(mongoid[row.usergroupid]);
+    }
 
     if (row.membergroupids) {
       user.usergroups = user.usergroups.concat(row.membergroupids.split(',').map(function (id) {
         return mongoid[id];
-      }));
+      }).filter(Boolean));
+    }
+
+    if (user.usergroups.length === 0) {
+      N.logger.warn('User has no usergroups: ' + row.userid);
     }
 
     if (hellbanned_ids.indexOf(row.userid) !== -1) {

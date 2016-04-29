@@ -3,7 +3,6 @@
 
 'use strict';
 
-const _  = require('lodash');
 const co = require('co');
 
 const can_view_forum             = 1;
@@ -15,9 +14,12 @@ const can_open_close_own_threads = 1024;
 module.exports = co.wrap(function* (N) {
   let conn = yield N.vbconvert.getConnection();
 
-  let rows = yield conn.query('SELECT usergroupid, title, forumpermissions FROM usergroup');
+  let rows = yield conn.query(`
+    SELECT usergroupid,title,forumpermissions,pmquota
+    FROM usergroup
+  `);
 
-  let mapping = _.invert(N.config.vbconvert.usergroups);
+  let mapping = N.config.vbconvert.usergroups;
 
   let store = N.settings.getStore('usergroup');
 
@@ -26,7 +28,10 @@ module.exports = co.wrap(function* (N) {
   yield rows.map(co.wrap(function* (row) {
     let usergroup, usergroup_id;
 
-    if (typeof mapping[row.usergroupid] !== 'undefined') {
+    if (mapping[row.usergroupid] === false) {
+      // ignore some usergroups
+      return;
+    } else if (typeof mapping[row.usergroupid] !== 'undefined') {
       usergroup_id = yield N.models.users.UserGroup.findIdByName(mapping[row.usergroupid]);
     } else {
       usergroup = new N.models.users.UserGroup({
@@ -56,7 +61,9 @@ module.exports = co.wrap(function* (N) {
       forum_can_view:         { value: !!(row.forumpermissions & can_view_forum) },
       forum_can_reply:        { value: !!(row.forumpermissions & can_post_threads) },
       forum_can_start_topics: { value: !!(row.forumpermissions & can_post_threads) },
-      forum_can_close_topic:  { value: !!(row.forumpermissions & can_open_close_own_threads) }
+      forum_can_close_topic:  { value: !!(row.forumpermissions & can_open_close_own_threads) },
+      can_send_messages:      { value: row.pmquota > 0 },
+      can_use_messages:       { value: row.pmquota > 0 }
     }, { usergroup_id });
   }));
 

@@ -12,11 +12,16 @@ vbconvert:
 
   # Usergroup mapping
   usergroups:
-    guests: 1
-    members: 2
-    administrators: 6
-    violators: 12
-    banned: 8
+    1: guests
+    2: members
+    6: administrators
+    8: banned
+    12: violators
+    3: false
+    4: false
+    5: false
+    9: false
+    29: false
 
   # Path to the folder where attachments are stored in
   files: '/tmp/www/uploads/posts'
