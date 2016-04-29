@@ -96,7 +96,7 @@ module.exports = co.wrap(function* (N) {
     }
 
     yield N.models.users.UserExtra.update(
-      { user_id: media.user_id },
+      { user: media.user_id },
       { $inc: { media_size: media.file_size } }
     );
 
