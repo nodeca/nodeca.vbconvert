@@ -57,7 +57,7 @@ module.exports = co.wrap(function* (N) {
 
       album.title       = row.title;
       album.description = row.description;
-      album.user_id     = user._id;
+      album.user        = user._id;
 
       if (row.createdate) {
         album._id = new mongoose.Types.ObjectId(row.createdate);

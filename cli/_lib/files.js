@@ -166,7 +166,7 @@ module.exports = co.wrap(function* (N) {
     }
 
     let def_album = yield N.models.users.Album.findOne(
-                            { user_id: user._id, 'default': true }
+                            { user: user._id, 'default': true }
                           );
 
     album_ids[0] = { id: def_album._id };

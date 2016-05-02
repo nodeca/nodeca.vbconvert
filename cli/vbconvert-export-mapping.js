@@ -144,7 +144,7 @@ module.exports.run = co.wrap(function* (N, args) {
 
       through2.obj((albummap, enc, callback) => {
         N.models.users.Album.findById(albummap.mongo)
-            .select('user_id')
+            .select('user')
             .lean(true)
             .exec(function (err, album) {
 
@@ -155,7 +155,7 @@ module.exports.run = co.wrap(function* (N, args) {
 
           bar.tick();
 
-          let user_hid = users_by_id[album.user_id].hid;
+          let user_hid = users_by_id[album.user].hid;
 
           ldb.albums.put(albummap.mysql, { user: user_hid, album: albummap.mongo });
           callback();
