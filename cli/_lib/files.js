@@ -26,8 +26,8 @@ module.exports = co.wrap(function* (N) {
     let media = new N.models.users.MediaInfo();
 
     media._id         = new mongoose.Types.ObjectId(filedata.dateline);
-    media.user_id     = user._id;
-    media.album_id    = album_id;
+    media.user        = user._id;
+    media.album       = album_id;
     media.ts          = new Date(filedata.dateline * 1000);
     media.file_name   = filedata.filename;
     media.description = filedata.caption;
@@ -96,7 +96,7 @@ module.exports = co.wrap(function* (N) {
     }
 
     yield N.models.users.UserExtra.update(
-      { user: media.user_id },
+      { user: media.user },
       { $inc: { media_size: media.file_size } }
     );
 
