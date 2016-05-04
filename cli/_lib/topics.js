@@ -20,7 +20,7 @@ module.exports = co.wrap(function* (N) {
 
 
   const get_default_usergroup = thenify(memoizee(function (callback) {
-    N.models.users.UserGroup.findOne({ short_name: 'members' }).exec(callback);
+    N.models.users.UserGroup.findOne({ short_name: 'members' }).lean(true).exec(callback);
   }, { async: true }));
 
 
@@ -31,7 +31,7 @@ module.exports = co.wrap(function* (N) {
       { alias: true }
     ).then(params => {
       process.nextTick(() => {
-        if (allowsmilie) {
+        if (!allowsmilie) {
           params.emoji = false;
         }
 
@@ -172,10 +172,10 @@ module.exports = co.wrap(function* (N) {
           hid,
           ts,
           md:         post.pagetext,
-          html:       post.pagetext,
+          html:       '<p>' + _.escape(post.pagetext) + '</p>',
           ip:         post.ipaddress,
           params_ref: params_id,
-          attach:     []
+          attach:     [] // an array in DB is required by parser
         };
 
         if (user._id) {
@@ -232,7 +232,7 @@ module.exports = co.wrap(function* (N) {
 
         post_bulk.insert(new_post);
         map_bulk.insert({
-          mysql_id: post.postid,
+          mysql:    post.postid,
           topic_id: topic._id,
           post_id:  new_post._id,
           post_hid: hid,
@@ -240,13 +240,8 @@ module.exports = co.wrap(function* (N) {
         });
       }
 
-      yield new Promise((resolve, reject) => {
-        post_bulk.execute(err => err ? reject(err) : resolve());
-      });
-
-      yield new Promise((resolve, reject) => {
-        map_bulk.execute(err => err ? reject(err) : resolve());
-      });
+      yield post_bulk.execute();
+      yield map_bulk.execute();
     }
 
 
@@ -344,18 +339,18 @@ module.exports = co.wrap(function* (N) {
     `);
 
     yield Promise.map(rows, co.wrap(function* (row) {
-      let post_mapping = yield N.models.vbconvert.PostMapping.findOne({
-        mysql_id: row.postid
-      }).lean(true);
+      let post_mapping = yield N.models.vbconvert.PostMapping.findOne()
+                                   .where('mysql', row.postid)
+                                   .lean(true);
 
-      let parent_post_mapping = yield N.models.vbconvert.PostMapping.findOne({
-        mysql_id: row.parentid
-      }).lean(true);
+      let parent_post_mapping = yield N.models.vbconvert.PostMapping.findOne()
+                                          .where('mysql', row.parentid)
+                                          .lean(true);
 
-      let post = yield N.models.forum.Post.findOne({
-        topic: parent_post_mapping.topic_id,
-        hid: parent_post_mapping.post_hid
-      }).lean(true);
+      let post = yield N.models.forum.Post.findOne()
+                           .where('topic', parent_post_mapping.topic_id)
+                           .where('hid', parent_post_mapping.post_hid)
+                           .lean(true);
 
       let topic = yield N.models.forum.Topic.findById(post.topic).lean(true);
 

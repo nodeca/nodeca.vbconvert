@@ -42,10 +42,10 @@ module.exports = co.wrap(function* (N) {
   yield Promise.map(rows, co.wrap(function* (row) {
     bar.tick();
 
-    let existing_user = yield N.models.users.User.findOne({ hid: row.userid });
-
-    // user with this id is already imported
-    if (existing_user) return;
+    if (yield N.models.users.User.findOne({ hid: row.userid }).lean(true)) {
+      // user with this id is already imported
+      return;
+    }
 
     let user = new N.models.users.User();
 

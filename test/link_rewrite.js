@@ -45,6 +45,7 @@ describe('link_rewrite', function () {
         describe('link_rewrite - ' + file, function () {
           let filename = path.join(root, file);
 
+          /* eslint-disable max-nested-callbacks */
           yaml.safeLoad(fs.readFileSync(filename, 'utf8'), { filename }).forEach(entry => {
             (have_mappings ? it : it.skip)(entry[0], done => {
               link_rewrite(entry[0], function (err, link) {

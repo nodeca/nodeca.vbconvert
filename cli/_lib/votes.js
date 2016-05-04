@@ -59,9 +59,9 @@ module.exports = co.wrap(function* (N) {
       // ignore votes casted for deleted users
       if (!users[row.touserid]) continue;
 
-      let post_mapping = yield N.models.vbconvert.PostMapping.findOne({
-        mysql_id: row.targetid
-      }).lean(true);
+      let post_mapping = yield N.models.vbconvert.PostMapping.findOne()
+                                   .where('mysql', row.targetid)
+                                   .lean(true);
 
       // voted for non-existent or not imported post
       if (!post_mapping) continue;
@@ -87,9 +87,7 @@ module.exports = co.wrap(function* (N) {
 
     if (!count) return;
 
-    yield new Promise((resolve, reject) => {
-      bulk.execute(err => err ? reject(err) : resolve());
-    });
+    yield bulk.execute();
   }), { concurrency: 100 });
 
   bar.terminate();

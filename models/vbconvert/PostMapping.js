@@ -8,7 +8,7 @@ var Schema   = Mongoose.Schema;
 module.exports = function (N, collectionName) {
 
   var PostMapping = new Schema({
-    mysql_id: Number,
+    mysql:    Number,
     topic_id: Schema.Types.ObjectId,
     post_id:  Schema.Types.ObjectId,
     post_hid: Number,
@@ -24,7 +24,7 @@ module.exports = function (N, collectionName) {
   //////////////////////////////////////////////////////////////////////////////
 
   // Ensure the post won't be imported twice
-  PostMapping.index({ mysql_id: 1 }, { unique: true });
+  PostMapping.index({ mysql: 1 }, { unique: true });
 
   // Get post text by topic + hid
   PostMapping.index({ topic_id: 1, post_hid: 1 });

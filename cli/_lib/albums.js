@@ -37,9 +37,9 @@ module.exports = co.wrap(function* (N) {
       bar.tick();
 
       let row = rows[i];
-      let album_mapping = yield N.models.vbconvert.AlbumMapping.findOne(
-                            { mysql: row.albumid }
-                          );
+      let album_mapping = yield N.models.vbconvert.AlbumMapping.findOne()
+                                    .where('mysql', row.albumid)
+                                    .lean(true);
 
       // already imported
       if (album_mapping) continue;

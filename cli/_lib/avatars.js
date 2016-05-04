@@ -41,7 +41,9 @@ module.exports = co.wrap(function* (N) {
 
     let tmpfile = '/tmp/vbconvert-' + (++counter) + '.jpg';
 
-    let user = yield N.models.users.User.findOne({ hid: row.userid }).lean(true);
+    let user = yield N.models.users.User.findOne()
+                         .where('hid', row.userid)
+                         .lean(true);
 
     // already imported
     if (user.avatar_id) return;

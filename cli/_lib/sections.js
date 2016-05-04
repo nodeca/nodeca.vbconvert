@@ -39,7 +39,9 @@ module.exports = co.wrap(function* (N) {
     // ignoring one inactive forum: vBCms Comments
     if (!(row.options & forum_active)) return;
 
-    let existing_section = yield N.models.forum.Section.findOne({ hid: row.forumid });
+    let existing_section = yield N.models.forum.Section.findOne()
+                                     .where('hid', row.forumid)
+                                     .lean(true);
 
     // section with this id is already imported
     if (existing_section) return;
@@ -70,7 +72,9 @@ module.exports = co.wrap(function* (N) {
     // top-level forum
     if (row.parentid < 0) return;
 
-    let parent = yield N.models.forum.Section.findOne({ hid: row.parentid });
+    let parent = yield N.models.forum.Section.findOne()
+                           .where('hid', row.parentid)
+                           .lean(true);
 
     yield N.models.forum.Section.update(
       { hid: row.forumid },
@@ -98,8 +102,13 @@ module.exports = co.wrap(function* (N) {
   if (!store) throw 'Settings store `section_usergroup` is not registered.';
 
   yield Promise.map(permissions, co.wrap(function* (row) {
-    let section  = yield N.models.forum.Section.findOne({ hid: row.forumid });
-    let groupmap = yield N.models.vbconvert.UserGroupMapping.findOne({ mysql: row.usergroupid });
+    let section  = yield N.models.forum.Section.findOne()
+                             .where('hid', row.forumid)
+                             .lean(true);
+
+    let groupmap = yield N.models.vbconvert.UserGroupMapping.findOne()
+                             .where('mysql', row.usergroupid)
+                             .lean(true);
 
     if (!section || !groupmap) return;
 

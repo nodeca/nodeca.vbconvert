@@ -48,7 +48,7 @@ module.exports = co.wrap(function* (N) {
   yield Promise.map(rows, co.wrap(function* (row) {
     bar.tick();
 
-    let user = yield N.models.users.User.findOne({ hid: row.userid });
+    let user = yield N.models.users.User.findOne({ hid: row.userid }).lean(true);
     let text = text_to_md(row.rcd_notepad);
 
     // all plugins are disabled, so we're only running parser to get default

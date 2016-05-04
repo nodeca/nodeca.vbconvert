@@ -114,7 +114,9 @@ module.exports = co.wrap(function* (N) {
     yield N.models.users.Album.update({ _id: album.id }, updateData);
 
     if (row.contenttypeid === POST) {
-      let postmapping = yield N.models.vbconvert.PostMapping.findOne({ mysql_id: row.contentid }).lean(true);
+      let postmapping = yield N.models.vbconvert.PostMapping.findOne()
+                                  .where('mysql', row.contentid)
+                                  .lean(true);
 
       if (postmapping) {
         yield N.models.forum.Post.update(
@@ -155,9 +157,9 @@ module.exports = co.wrap(function* (N) {
     for (let i = 0; i < rows.length; i++) {
       let row = rows[i];
 
-      let album_mapping = yield N.models.vbconvert.AlbumMapping.findOne(
-                                  { mysql: row.albumid }
-                                );
+      let album_mapping = yield N.models.vbconvert.AlbumMapping.findOne()
+                                    .where('mysql', row.albumid)
+                                    .lean(true);
 
       album_ids[album_mapping.mysql] = {
         id: album_mapping.mongo,
@@ -165,9 +167,10 @@ module.exports = co.wrap(function* (N) {
       };
     }
 
-    let def_album = yield N.models.users.Album.findOne(
-                            { user: user._id, 'default': true }
-                          );
+    let def_album = yield N.models.users.Album.findOne()
+                              .where('user', user._id)
+                              .where('default', true)
+                              .lean(true);
 
     album_ids[0] = { id: def_album._id };
 
@@ -191,9 +194,9 @@ module.exports = co.wrap(function* (N) {
 
       let row = rows[i];
 
-      let file_mapping = yield N.models.vbconvert.FileMapping.findOne(
-                                 { attachmentid: row.attachmentid }
-                               );
+      let file_mapping = yield N.models.vbconvert.FileMapping.findOne()
+                                   .where('attachmentid', row.attachmentid)
+                                   .lean(true);
 
       // already imported
       if (file_mapping) continue;

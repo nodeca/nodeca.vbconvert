@@ -85,7 +85,7 @@ module.exports.run = co.wrap(function* (N, args) {
   yield new Promise((resolve, reject) => {
     pump(
       N.models.vbconvert.PostMapping.collection.find({}, {
-        mysql_id: 1,
+        mysql:    1,
         topic_id: 1,
         post_hid: 1
       }).stream(),
@@ -93,7 +93,7 @@ module.exports.run = co.wrap(function* (N, args) {
       through2.obj((post, enc, callback) => {
         bar.tick();
 
-        ldb.posts.put(post.mysql_id, {
+        ldb.posts.put(post.mysql, {
           topic: topics_by_id[post.topic_id].hid,
           post:  post.post_hid
         });

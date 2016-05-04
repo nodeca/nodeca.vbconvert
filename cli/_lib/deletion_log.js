@@ -15,7 +15,7 @@ module.exports = co.wrap(function* (N) {
   let rows, bar;
 
   const get_user_by_hid = thenify(memoizee(function (hid, callback) {
-    N.models.users.User.findOne({ hid }).exec(callback);
+    N.models.users.User.findOne({ hid }).lean(true).exec(callback);
   }, { async: true }));
 
   //
@@ -63,7 +63,9 @@ module.exports = co.wrap(function* (N) {
     bar.tick();
 
     let user = yield get_user_by_hid(row.userid);
-    let post = yield N.models.vbconvert.PostMapping.findOne({ mysql_id: row.primaryid });
+    let post = yield N.models.vbconvert.PostMapping.findOne()
+                         .where('mysql', row.primaryid)
+                         .lean(true);
 
     if (!user) return;
 

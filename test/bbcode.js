@@ -411,4 +411,22 @@ describe('BBcode', function () {
     assert.equal(to_md(tokenize('[u][video]http://example.com[/video][/u]')),
                 'http://example.com');
   });
+
+  it('replace links #1', function () {
+    assert.equal(to_md(tokenize('[url]http://d1.example.com/123[/url]'), {
+      link_replacer() { return 'http://d2.example.com/456'; }
+    }), '<http://d2.example.com/456>');
+  });
+
+  it('replace links #2', function () {
+    assert.equal(to_md(tokenize('[url]http://d1.example.com/123[/url]'), {
+      link_replacer(u) { return u.match(/example/) ? '//d2.example.com/456' : u; }
+    }), '[//d2.example.com/456](//d2.example.com/456)');
+  });
+
+  it("don't replace text inside links (avoid nested links)", function () {
+    assert.equal(to_md(tokenize('[url="foobar"]http://d1.example.com/123[/url]'), {
+      link_replacer(u) { return u.match(/example/) ? '//d2.example.com/456' : u; }
+    }), '[http://d1.example.com/123](http://foobar)');
+  });
 });
