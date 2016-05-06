@@ -424,9 +424,9 @@ describe('BBcode', function () {
     }), '[//d2.example.com/456](//d2.example.com/456)');
   });
 
-  it("don't replace text inside links (avoid nested links)", function () {
+  it('regression: avoid nested links when replacing urls', function () {
     assert.equal(to_md(tokenize('[url="foobar"]http://d1.example.com/123[/url]'), {
       link_replacer(u) { return u.match(/example/) ? '//d2.example.com/456' : u; }
-    }), '[http://d1.example.com/123](http://foobar)');
+    }), '[//d2.example.com/456](http://foobar)');
   });
 });
