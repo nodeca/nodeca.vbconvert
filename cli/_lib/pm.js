@@ -34,6 +34,9 @@ module.exports = co.wrap(function* (N) {
       { usergroup_ids },
       { alias: true }
     ).then(params => {
+      // make sure quotes are not collapsed in imported messages
+      params.quote_collapse = false;
+
       process.nextTick(() => {
         if (!allowsmilie) {
           params.emoji = false;
@@ -176,14 +179,16 @@ module.exports = co.wrap(function* (N) {
         texts[pm.pmtextid].allowsmilie
       );
 
+      let message_text = html_unescape(texts[pm.pmtextid].message);
+
       let message = {
         _id:        new mongoose.Types.ObjectId(texts[pm.pmtextid].dateline),
         ts:         new Date(texts[pm.pmtextid].dateline * 1000),
         exists:     true,
         parent:     dialog._id,
         user:       poster._id,
-        html:       '<p>' + _.escape(texts[pm.pmtextid].message) + '</p>',
-        md:         texts[pm.pmtextid].message,
+        html:       '<p>' + _.escape(message_text) + '</p>',
+        md:         message_text,
         params_ref: params_id,
         attach:     [] // an array in DB is required by parser
       };
@@ -200,7 +205,7 @@ module.exports = co.wrap(function* (N) {
         to_user: user1.hid === pm.userid ? user2.hid : user1.hid,
         dialog:  dialog.common_id,
         message: message._id,
-        text:    texts[pm.pmtextid].message
+        text:    message_text
       });
     }
   });
