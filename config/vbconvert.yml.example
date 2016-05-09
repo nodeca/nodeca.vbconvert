@@ -70,6 +70,23 @@ vbconvert:
     ':confused:':      ':-/'
     ':?:':             ':question:'
 
+  # mapping between vB and nodeca infraction types
+  infraction_types:
+    5:  frequent_bump
+    6:  spam
+    7:  multiple_accounts
+    8:  warez
+    9:  no_price
+    10: bad_title
+    11: bad_city
+    12: duplicate_topic
+    13: personal_conversation
+    14: wrong_section
+    15: bad_profile_image
+    16: offtopic
+    17: bad_profile_data
+    18: overquoting
+
   # list of domains to force https on (subdomains included)
   force_https:
    - yandex.ru
