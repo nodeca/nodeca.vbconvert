@@ -9,6 +9,10 @@ const mongoose      = require('mongoose');
 const progress      = require('./utils').progress;
 const html_unescape = require('./utils').html_unescape;
 
+const UNCONFIRMED = 3;
+const MEMBERS     = 11;
+const VIOLATORS   = 12;
+
 
 module.exports = co.wrap(function* (N) {
   let usergroups = yield N.models.vbconvert.UserGroupMapping.find().lean(true);
@@ -61,7 +65,7 @@ module.exports = co.wrap(function* (N) {
     user.last_name      = html_unescape(row.lastname);
     user.usergroups     = [];
 
-    if (row.usergroupid === 3) {
+    if (row.usergroupid === UNCONFIRMED) {
       // Process users with unconfirmed email:
       //
       //  - there are 25 users with old ids (< 200k) with forum messages,
@@ -73,8 +77,23 @@ module.exports = co.wrap(function* (N) {
         return;
       }
 
-      // replace usergroup 3 with usergroup 2 (mapped to members)
-      user.usergroups.push(mongoid[2]);
+      // replace this usergroup with members
+      user.usergroups.push(mongoid[MEMBERS]);
+
+    } else if (row.usergroupid === VIOLATORS) {
+      // for violators: fetch old usergroup before ban, and add it as well
+      user.usergroups.push(mongoid[row.usergroupid]);
+
+      let result = yield conn.query(`
+        SELECT usergroupid FROM userban WHERE userid = ?
+      `, [ row.userid ]);
+      let ban = (result || [])[0];
+
+      if (ban.usergroupid && mongoid[ban.usergroupid]) {
+        user.usergroups.push(mongoid[ban.usergroupid]);
+      } else {
+        user.usergroups.push(mongoid[MEMBERS]);
+      }
 
     } else if (mongoid[row.usergroupid]) {
       user.usergroups.push(mongoid[row.usergroupid]);
