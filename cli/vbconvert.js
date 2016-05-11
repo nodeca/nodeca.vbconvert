@@ -32,6 +32,7 @@ module.exports.run = co.wrap(function* (N/*, args*/) {
   yield require('./_lib/deletion_log')(N);
   yield require('./_lib/infractions')(N);
   yield require('./_lib/section_cache')(N);
+  yield require('./_lib/subscriptions')(N);
   yield require('./_lib/votes')(N);
   yield require('./_lib/albums')(N);
   yield require('./_lib/avatars')(N);
