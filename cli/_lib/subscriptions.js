@@ -23,7 +23,7 @@ module.exports = co.wrap(function* (N) {
   //
 
   rows = yield conn.query(`
-    SELECT forumid,userid
+    SELECT userid,forumid,emailupdate
     FROM subscribeforum
     ORDER BY subscribeforumid ASC
   `);
@@ -47,6 +47,10 @@ module.exports = co.wrap(function* (N) {
 
     if (!section) return;
 
+    // in the old forum, 0 means no emails are sent, 1 means emails are sent
+    // for every message, 2 and 3 are daily/weekly digests
+    let type = row.emailupdate === 1 ? 'WATCHING' : 'TRACKING';
+
     count++;
     bulk.find({
       user:  user._id,
@@ -56,7 +60,7 @@ module.exports = co.wrap(function* (N) {
         user:    user._id,
         to:      section._id,
         to_type: N.models.users.Subscription.to_types.FORUM_SECTION,
-        type:    N.models.users.Subscription.types.TRACKING
+        type:    N.models.users.Subscription.types[type]
       }
     });
   }), { concurrency: 100 });
@@ -92,7 +96,7 @@ module.exports = co.wrap(function* (N) {
     let user = yield get_user_by_hid(userid);
 
     let rows = yield conn.query(`
-      SELECT userid,threadid
+      SELECT userid,threadid,emailupdate
       FROM subscribethread
       WHERE userid = ?
     `, [ userid ]);
@@ -114,6 +118,10 @@ module.exports = co.wrap(function* (N) {
 
       if (!topic) continue;
 
+      // in the old forum, 0 means no emails are sent, 1 means emails are sent
+      // for every message, 2 and 3 are daily/weekly digests
+      let type = row.emailupdate === 1 ? 'WATCHING' : 'TRACKING';
+
       count++;
       bulk.find({
         user:  user._id,
@@ -123,7 +131,7 @@ module.exports = co.wrap(function* (N) {
           user:    user._id,
           to:      topic._id,
           to_type: N.models.users.Subscription.to_types.FORUM_TOPIC,
-          type:    N.models.users.Subscription.types.TRACKING
+          type:    N.models.users.Subscription.types[type]
         }
       });
     }
