@@ -6,17 +6,13 @@
 const _  = require('lodash');
 const co = require('co');
 
-const can_view_forum             = 1;
-const can_post_threads           = 16;
-const can_open_close_own_threads = 1024;
-
 
 /* eslint-disable no-bitwise */
 module.exports = co.wrap(function* (N) {
   let conn = yield N.vbconvert.getConnection();
 
   let rows = yield conn.query(`
-    SELECT usergroupid,title,forumpermissions,pmquota
+    SELECT usergroupid,title
     FROM usergroup
   `);
 
@@ -27,17 +23,8 @@ module.exports = co.wrap(function* (N) {
   if (!store) throw 'Settings store `usergroup` is not registered.';
 
   for (let row of rows) {
-    row.settings = {
-      forum_can_view:         { value: !!(row.forumpermissions & can_view_forum) },
-      forum_can_reply:        { value: !!(row.forumpermissions & can_post_threads) },
-      forum_can_start_topics: { value: !!(row.forumpermissions & can_post_threads) },
-      forum_can_close_topic:  { value: !!(row.forumpermissions & can_open_close_own_threads) },
-      can_send_messages:      { value: row.pmquota > 0 }
-    };
-
     row.config = configs[row.usergroupid];
-
-    if (typeof row.config === 'string') row.config = { short_name: row.config };
+    row.settings = (row.config || {}).settings || {};
   }
 
   yield rows.map(co.wrap(function* (row) {
@@ -93,14 +80,11 @@ module.exports = co.wrap(function* (N) {
     if (!config) return;
 
     let usergroup = yield N.models.users.UserGroup.findOne({ short_name: config.short_name }).lean(true);
+    let should_be = row.settings;
 
-    let settings = yield store.get([
-      'forum_can_view',
-      'forum_can_reply',
-      'forum_can_start_topics',
-      'forum_can_close_topic',
-      'can_send_messages'
-    ], { usergroup_ids: [ usergroup._id ] });
+    if (!Object.keys(should_be).length) return;
+
+    let settings = yield store.get(Object.keys(should_be), { usergroup_ids: [ usergroup._id ] });
 
     if (config.parent) {
       let parent = _.find(rows, r => r.config && r.config.short_name === config.parent);
@@ -109,15 +93,6 @@ module.exports = co.wrap(function* (N) {
         settings[key] = parent.settings[key];
       }
     }
-
-    let should_be = row.settings;
-
-    // set force flag
-    Object.keys(should_be).forEach(key => {
-      if (config.force && !should_be[key].value) {
-        should_be[key].force = true;
-      }
-    });
 
     let update = {};
 
