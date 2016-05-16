@@ -15,17 +15,10 @@ vbconvert:
     # admin group
     6:
       short_name: administrators
-      settings:
-        forum_can_reply:        { value: true }
-        forum_can_start_topics: { value: true }
-        forum_can_close_topic:  { value: true }
 
     # base group - members
     11:
       short_name: members
-      settings:
-        forum_can_reply:        { value: true }
-        forum_can_start_topics: { value: true }
     10:
       short_name: novices
       parent: members
@@ -33,28 +26,19 @@ vbconvert:
       short_name: moderators
       parent: members
       settings:
-        can_see_infractions:    { value: true }
+        can_see_infractions: { value: true }
 
-    # base group - guests
+    # other groups
     1:
       short_name: guests
     12:
       short_name: violators
-      parent: guests
-      settings:
-        forum_can_reply:        { value: false, force: true }
-        forum_can_start_topics: { value: false, force: true }
-        forum_can_close_topic:  { value: false, force: true }
-
-    # other base groups
     2:
       short_name: just_registered
+      settings:
+        can_receive_email: { value: true }
     8:
       short_name: banned
-      settings:
-        forum_can_reply:        { value: false }
-        forum_can_start_topics: { value: false }
-        forum_can_close_topic:  { value: false }
     13:
       short_name: che
     14:
