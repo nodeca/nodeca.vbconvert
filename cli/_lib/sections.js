@@ -3,8 +3,7 @@
 
 'use strict';
 
-const co      = require('co');
-const Promise = require('bluebird');
+const co = require('co');
 
 // forum permissions
 const can_view_forum             = 1;
@@ -92,37 +91,72 @@ module.exports = co.wrap(function* (N) {
   // Set usergroup permissions
   //
 
-  let permissions = yield conn.query(`
+  let permissions_by_hid = {};
+
+  (yield conn.query(`
     SELECT forumid,usergroupid,forumpermissions
     FROM forumpermission
-  `);
+  `)).forEach(row => {
+    permissions_by_hid[row.forumid] = permissions_by_hid[row.forumid] || [];
+    permissions_by_hid[row.forumid].push(row);
+  });
 
   let store = N.settings.getStore('section_usergroup');
 
   if (!store) throw 'Settings store `section_usergroup` is not registered.';
 
-  yield Promise.map(permissions, co.wrap(function* (row) {
-    let section  = yield N.models.forum.Section.findOne()
-                             .where('hid', row.forumid)
-                             .lean(true);
-
-    let groupmap = yield N.models.vbconvert.UserGroupMapping.findOne()
-                             .where('mysql', row.usergroupid)
-                             .lean(true);
-
-    if (!section || !groupmap) return;
-
-    yield store.set({
-      forum_can_view:         { value: !!(row.forumpermissions & can_view_forum) },
-      forum_can_reply:        { value: !!(row.forumpermissions & can_post_threads) },
-      forum_can_start_topics: { value: !!(row.forumpermissions & can_post_threads) },
-      forum_can_close_topic:  { value: !!(row.forumpermissions & can_open_close_own_threads) }
-    }, { section_id: section._id, usergroup_id: groupmap.mongo });
-
-  // fix concurrency to 1 to avoid races
-  }), { concurrency: 1 });
-
+  // re-calculate default permissions
   yield store.updateInherited();
+
+  N.models.forum.Section.getChildren.clear();
+
+  for (let section_summary of yield N.models.forum.Section.getChildren()) {
+    let section = yield N.models.forum.Section.findOne()
+                            .where('_id', section_summary._id)
+                            .lean(true);
+
+    for (let row of permissions_by_hid[section.hid] || []) {
+      let groupmap = yield N.models.vbconvert.UserGroupMapping.findOne()
+                               .where('mysql', row.usergroupid)
+                               .lean(true);
+
+      if (!groupmap) continue;
+
+      let settings = yield N.settings.get([
+        'forum_can_view',
+        'forum_can_reply',
+        'forum_can_start_topics',
+        'forum_can_close_topic'
+      ], {
+        usergroup_ids: [ groupmap.mongo ],
+        section_id:    section._id
+      });
+
+      let should_be = {
+        forum_can_view:         !!(row.forumpermissions & can_view_forum),
+        forum_can_reply:        !!(row.forumpermissions & can_post_threads),
+        forum_can_start_topics: !!(row.forumpermissions & can_post_threads),
+        forum_can_close_topic:  !!(row.forumpermissions & can_open_close_own_threads)
+      };
+
+      let update = {};
+
+      Object.keys(should_be).forEach(key => {
+        if (settings[key] !== should_be[key]) {
+          update[key] = { value: should_be[key] };
+        }
+      });
+
+      if (Object.keys(update).length) {
+        yield store.set(update, {
+          section_id: section._id,
+          usergroup_id: groupmap.mongo
+        });
+      }
+    }
+
+    yield store.updateInherited(section._id);
+  }
 
   conn.release();
   N.logger.info('Section import finished');
