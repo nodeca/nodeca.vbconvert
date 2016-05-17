@@ -70,9 +70,6 @@ module.exports = co.wrap(function* (N) {
   }));
 
 
-  yield store.updateInherited();
-
-
   // update permissions
   yield rows.map(co.wrap(function* (row) {
     let config = row.config;
@@ -106,8 +103,6 @@ module.exports = co.wrap(function* (N) {
 
     yield store.set(update, { usergroup_id: usergroup._id });
   }));
-
-  yield store.updateInherited();
 
   conn.release();
   N.logger.info('UserGroup import finished');
