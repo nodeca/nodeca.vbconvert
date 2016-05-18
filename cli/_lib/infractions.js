@@ -104,6 +104,7 @@ module.exports = co.wrap(function* (N) {
     let entry = {
       _id:    new mongoose.Types.ObjectId(row.bandate),
       user:   user._id,
+      type:   'to_violators',
       expire: new Date(row.liftdate * 1000)
     };
 
