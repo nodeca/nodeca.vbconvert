@@ -429,4 +429,9 @@ describe('BBcode', function () {
       link_replacer(u) { return u.match(/example/) ? '//d2.example.com/456' : u; }
     }), '[//d2.example.com/456](http://foobar)');
   });
+
+  it('regression: avoid crash when list items are quoted', function () {
+    assert.equal(to_md(tokenize('[list][quote][*]test[/quote][/list]')),
+                '- > [\\*]\n  > \n  > test');
+  });
 });
