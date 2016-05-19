@@ -26,7 +26,9 @@ vbconvert:
       short_name: moderators
       parent: members
       settings:
-        can_see_infractions: { value: true }
+        can_see_infractions:           { value: true }
+        cannot_receive_infractions:    { value: true }
+        users_mod_can_add_infractions: { value: true }
 
     # other groups
     1:
@@ -45,6 +47,12 @@ vbconvert:
       short_name: losers
     30:
       short_name: frozen
+
+  # Permissions for imported moderators assigned to specific sections
+  moderator_permissions:
+    forum_mod_can_delete_topics:   { value: true }
+    forum_mod_can_close_topic:     { value: true }
+    forum_mod_can_add_infractions: { value: true }
 
   # Path to the folder where attachments are stored in
   files: '/tmp/www/uploads/posts'

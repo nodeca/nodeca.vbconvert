@@ -22,6 +22,7 @@ const forum_prefix_required     = 131072;
 /* eslint-disable no-bitwise */
 module.exports = co.wrap(function* (N) {
   let conn = yield N.vbconvert.getConnection();
+  let store;
 
   // select all sections except link-only
   let rows = yield conn.query(`
@@ -101,12 +102,9 @@ module.exports = co.wrap(function* (N) {
     permissions_by_hid[row.forumid].push(row);
   });
 
-  let store = N.settings.getStore('section_usergroup');
+  store = N.settings.getStore('section_usergroup');
 
   if (!store) throw 'Settings store `section_usergroup` is not registered.';
-
-  // re-calculate default permissions
-  yield store.updateInherited();
 
   N.models.forum.Section.getChildren.clear();
 
@@ -154,8 +152,38 @@ module.exports = co.wrap(function* (N) {
         });
       }
     }
+  }
 
-    yield store.updateInherited(section._id);
+  //
+  // Set moderator permissions
+  //
+
+  let moderator_permissions = yield conn.query(`
+    SELECT userid,forumid
+    FROM moderator
+  `);
+
+  store = N.settings.getStore('section_moderator');
+
+  if (!store) throw 'Settings store `section_moderator` is not registered.';
+
+  for (let row of moderator_permissions) {
+    let section = yield N.models.forum.Section.findOne()
+                            .where('hid', row.forumid)
+                            .lean(true);
+
+    let user = yield N.models.users.User.findOne()
+                         .where('hid', row.userid)
+                         .lean(true);
+
+    if (!section || !user) continue;
+
+    let update = N.config.vbconvert.moderator_permissions;
+
+    yield store.set(update, {
+      section_id: section._id,
+      user_id: user._id
+    });
   }
 
   conn.release();
