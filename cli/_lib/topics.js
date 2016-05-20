@@ -251,7 +251,7 @@ module.exports = co.wrap(function* (N) {
 
     // each fetched post is assigned a consecutive hid starting with 1,
     // so the last hid will be equal to the number of posts
-    topic.last_post_hid = posts.length;
+    topic.last_post_counter = posts.length;
 
     topic.st = thread.open ?
                N.models.forum.Topic.statuses.OPEN :
