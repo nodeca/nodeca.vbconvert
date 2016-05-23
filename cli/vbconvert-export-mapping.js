@@ -4,7 +4,7 @@
 'use strict';
 
 const _           = require('lodash');
-const co          = require('co');
+const co          = require('bluebird-co').co;
 const level       = require('level');
 const mkdirp      = require('mkdirp');
 const path        = require('path');

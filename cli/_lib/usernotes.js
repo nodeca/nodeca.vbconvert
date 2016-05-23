@@ -4,7 +4,7 @@
 'use strict';
 
 const Promise   = require('bluebird');
-const co        = require('co');
+const co        = require('bluebird-co').co;
 const progress  = require('./utils').progress;
 
 

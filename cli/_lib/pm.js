@@ -5,11 +5,10 @@
 
 const _             = require('lodash');
 const Promise       = require('bluebird');
-const co            = require('co');
+const co            = require('bluebird-co').co;
 const mongoose      = require('mongoose');
-const memoizee      = require('memoizee');
 const unserialize   = require('phpunserialize');
-const thenify       = require('thenify');
+const memoize       = require('promise-memoize');
 const html_unescape = require('./utils').html_unescape;
 const progress      = require('./utils').progress;
 
@@ -18,18 +17,18 @@ module.exports = co.wrap(function* (N) {
   const conn = yield N.vbconvert.getConnection();
 
 
-  const get_user_by_hid = thenify(memoizee(function (hid, callback) {
-    N.models.users.User.findOne({ hid }).lean(true).exec(callback);
-  }, { async: true }));
+  const get_user_by_hid = memoize(function (hid) {
+    return N.models.users.User.findOne({ hid }).lean(true);
+  });
 
 
-  const get_default_usergroup = thenify(memoizee(function (callback) {
-    N.models.users.UserGroup.findOne({ short_name: 'members' }).lean(true).exec(callback);
-  }, { async: true }));
+  const get_default_usergroup = memoize(function () {
+    return N.models.users.UserGroup.findOne({ short_name: 'members' }).lean(true);
+  });
 
 
-  const get_parser_param_id = thenify(memoizee(function (usergroup_ids, allowsmilie, callback) {
-    N.settings.getByCategory(
+  const get_parser_param_id = memoize(function (usergroup_ids, allowsmilie) {
+    return N.settings.getByCategory(
       'messages_markup',
       { usergroup_ids },
       { alias: true }
@@ -37,17 +36,13 @@ module.exports = co.wrap(function* (N) {
       // make sure quotes are not collapsed in imported messages
       params.quote_collapse = false;
 
-      process.nextTick(() => {
-        if (!allowsmilie) {
-          params.emoji = false;
-        }
+      if (!allowsmilie) {
+        params.emoji = false;
+      }
 
-        N.models.core.MessageParams.setParams(params, callback);
-      });
-    }, err => {
-      process.nextTick(() => callback(err));
+      return N.models.core.MessageParams.setParams(params);
     });
-  }, { async: true, primitive: true }));
+  });
 
 
   let all_pms = (yield conn.query('SELECT pmid,userid,pmtextid,parentpmid,messageread FROM pm ORDER BY pmid ASC'))
@@ -303,6 +298,10 @@ module.exports = co.wrap(function* (N) {
   }), { concurrency: 100 });
 
   bar.terminate();
+
+  get_user_by_hid.clear();
+  get_default_usergroup.clear();
+  get_parser_param_id.clear();
   conn.release();
   N.logger.info('PM import finished');
 });

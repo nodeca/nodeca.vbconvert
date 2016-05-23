@@ -3,20 +3,19 @@
 
 'use strict';
 
-const Promise   = require('bluebird');
-const co        = require('co');
-const memoizee  = require('memoizee');
-const thenify   = require('thenify');
-const progress  = require('./utils').progress;
+const Promise  = require('bluebird');
+const co       = require('bluebird-co').co;
+const memoize  = require('promise-memoize');
+const progress = require('./utils').progress;
 
 
 module.exports = co.wrap(function* (N) {
   let conn = yield N.vbconvert.getConnection();
   let rows, bar;
 
-  const get_user_by_hid = thenify(memoizee(function (hid, callback) {
-    N.models.users.User.findOne({ hid }).lean(true).exec(callback);
-  }, { async: true }));
+  const get_user_by_hid = memoize(function (hid) {
+    return N.models.users.User.findOne({ hid }).lean(true);
+  });
 
   //
   // Section subscriptions
@@ -141,6 +140,7 @@ module.exports = co.wrap(function* (N) {
 
   bar.terminate();
 
+  get_user_by_hid.clear();
   conn.release();
   N.logger.info('Subscription import finished');
 });

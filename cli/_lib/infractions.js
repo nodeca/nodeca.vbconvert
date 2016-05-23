@@ -4,10 +4,9 @@
 'use strict';
 
 const Promise       = require('bluebird');
-const co            = require('co');
-const memoizee      = require('memoizee');
+const co            = require('bluebird-co').co;
 const mongoose      = require('mongoose');
-const thenify       = require('thenify');
+const memoize       = require('promise-memoize');
 const html_unescape = require('./utils').html_unescape;
 const progress      = require('./utils').progress;
 
@@ -16,9 +15,9 @@ module.exports = co.wrap(function* (N) {
   let conn = yield N.vbconvert.getConnection();
   let rows, bar;
 
-  const get_user_by_hid = thenify(memoizee(function (hid, callback) {
-    N.models.users.User.findOne({ hid }).lean(true).exec(callback);
-  }, { async: true }));
+  const get_user_by_hid = memoize(function (hid) {
+    return N.models.users.User.findOne({ hid }).lean(true);
+  });
 
   // remove old infractions in case import is restarted
   yield N.models.users.Infraction.remove({});
@@ -116,6 +115,7 @@ module.exports = co.wrap(function* (N) {
 
   bar.terminate();
 
+  get_user_by_hid.clear();
   conn.release();
   N.logger.info('Infraction import finished');
 });

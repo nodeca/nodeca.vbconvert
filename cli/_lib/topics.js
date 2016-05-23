@@ -6,11 +6,10 @@
 
 const _             = require('lodash');
 const Promise       = require('bluebird');
-const co            = require('co');
-const memoizee      = require('memoizee');
+const co            = require('bluebird-co').co;
 const mongoose      = require('mongoose');
+const memoize       = require('promise-memoize');
 const progress      = require('./utils').progress;
-const thenify       = require('thenify');
 const html_unescape = require('./utils').html_unescape;
 const POST          = 1; // content type for posts
 
@@ -19,28 +18,24 @@ module.exports = co.wrap(function* (N) {
   var conn, users, sections;
 
 
-  const get_default_usergroup = thenify(memoizee(function (callback) {
-    N.models.users.UserGroup.findOne({ short_name: 'members' }).lean(true).exec(callback);
-  }, { async: true }));
+  const get_default_usergroup = memoize(function () {
+    return N.models.users.UserGroup.findOne({ short_name: 'members' }).lean(true);
+  });
 
 
-  const get_parser_param_id = thenify(memoizee(function (usergroup_ids, allowsmilie, callback) {
-    N.settings.getByCategory(
+  const get_parser_param_id = memoize(function (usergroup_ids, allowsmilie) {
+    return N.settings.getByCategory(
       'forum_posts_markup',
       { usergroup_ids },
       { alias: true }
     ).then(params => {
-      process.nextTick(() => {
-        if (!allowsmilie) {
-          params.emoji = false;
-        }
+      if (!allowsmilie) {
+        params.emoji = false;
+      }
 
-        N.models.core.MessageParams.setParams(params, callback);
-      });
-    }, err => {
-      process.nextTick(() => callback(err));
+      return N.models.core.MessageParams.setParams(params);
     });
-  }, { async: true, primitive: true }));
+  });
 
 
   // Import a single topic by its id
@@ -375,6 +370,8 @@ module.exports = co.wrap(function* (N) {
   //
   // Finalize
   //
+  get_default_usergroup.clear();
+  get_parser_param_id.clear();
   conn.release();
   N.logger.info('Topic import finished');
 });

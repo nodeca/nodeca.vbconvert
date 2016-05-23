@@ -5,7 +5,7 @@
 
 const _           = require('lodash');
 const Promise     = require('bluebird');
-const co          = require('co');
+const co          = require('bluebird-co').co;
 const fs          = require('mz/fs');
 const sharp       = require('sharp');
 const path        = require('path');

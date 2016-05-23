@@ -3,7 +3,7 @@
 
 'use strict';
 
-const co = require('co');
+const co = require('bluebird-co').co;
 
 // forum permissions
 const can_view_forum             = 1;
