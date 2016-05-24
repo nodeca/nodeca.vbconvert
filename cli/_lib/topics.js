@@ -122,18 +122,27 @@ module.exports = co.wrap(function* (N) {
       };
       let hid = 0;
 
-      for (let i = 0; i < posts.length; i++) {
-        let post = posts[i];
+      let usergroup_params = {};
+
+      for (let post of posts) {
         let id   = new mongoose.Types.ObjectId(post.dateline);
         let ts   = new Date(post.dateline * 1000);
         let user = users[post.userid] || {};
 
         hid++;
 
-        let params_id = yield get_parser_param_id(
-          users[post.userid] ? users[post.userid].usergroups : [ (yield get_default_usergroup())._id ],
-          post.allowsmilie
-        );
+        let key = (user.usergroups || []).join(',') + ';' + String(!!post.allowsmilie);
+
+        // cache parser params locally, this prevents stack overflow
+        // when yielding synchronous functions into bluebird-co
+        if (!usergroup_params[key]) {
+          usergroup_params[key] = yield get_parser_param_id(
+            user.usergroups || (yield get_default_usergroup()),
+            post.allowsmilie
+          );
+        }
+
+        let params_id = usergroup_params[key];
 
         if (hid === 1) {
           cache_hb.first_post = id;
