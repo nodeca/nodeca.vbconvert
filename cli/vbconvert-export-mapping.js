@@ -4,6 +4,7 @@
 'use strict';
 
 const _           = require('lodash');
+const Promise     = require('bluebird');
 const co          = require('bluebird-co').co;
 const level       = require('level');
 const mkdirp      = require('mkdirp');
@@ -82,7 +83,7 @@ module.exports.run = co.wrap(function* (N, args) {
   total = yield N.models.vbconvert.PostMapping.count();
   bar = progress(' posts :current/:total [:bar] :percent', total);
 
-  yield new Promise((resolve, reject) => {
+  yield Promise.fromCallback(callback => {
     pump(
       N.models.vbconvert.PostMapping.collection.find({}, {
         mysql:    1,
@@ -101,10 +102,7 @@ module.exports.run = co.wrap(function* (N, args) {
         callback();
       }),
 
-      err => {
-        if (err) reject(err);
-        else resolve();
-      }
+      callback
     );
   });
 
@@ -138,7 +136,7 @@ module.exports.run = co.wrap(function* (N, args) {
   total = yield N.models.vbconvert.AlbumMapping.count();
   bar = progress(' albums :current/:total [:bar] :percent', total);
 
-  yield new Promise((resolve, reject) => {
+  yield Promise.fromCallback(callback => {
     pump(
       N.models.vbconvert.AlbumMapping.collection.find({}).stream(),
 
@@ -162,10 +160,7 @@ module.exports.run = co.wrap(function* (N, args) {
         });
       }),
 
-      err => {
-        if (err) reject(err);
-        else resolve();
-      }
+      callback
     );
   });
 
@@ -179,7 +174,7 @@ module.exports.run = co.wrap(function* (N, args) {
   total = yield N.models.vbconvert.FileMapping.count();
   bar = progress(' files :current/:total [:bar] :percent', total);
 
-  yield new Promise((resolve, reject) => {
+  yield Promise.fromCallback(callback => {
     pump(
       N.models.vbconvert.FileMapping.collection.aggregate([ {
         $lookup: {
@@ -209,20 +204,14 @@ module.exports.run = co.wrap(function* (N, args) {
         callback();
       }),
 
-      err => {
-        if (err) reject(err);
-        else resolve();
-      }
+      callback
     );
   });
 
   bar.terminate();
 
-  yield Object.keys(ldb).map(name => new Promise((resolve, reject) => {
-    ldb[name].close(err => {
-      if (err) reject(err);
-      else resolve();
-    });
+  yield Object.keys(ldb).map(name => Promise.fromCallback(callback => {
+    ldb[name].close(callback);
   }));
 
   N.logger.info('Export finished');
