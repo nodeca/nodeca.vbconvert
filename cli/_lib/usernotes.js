@@ -54,7 +54,7 @@ module.exports = co.wrap(function* (N) {
     // all plugins are disabled, so we're only running parser to get default
     // layout; note that attachments, user_info, etc. are not submitted
     // because they are currently only used in plugins
-    let parse_result = yield N.parse({ text, options: {} });
+    let parse_result = yield N.parser.md2html({ text, options: {} });
 
     yield N.models.users.UserNote.update({
       from: user._id,
