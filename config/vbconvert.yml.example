@@ -28,6 +28,7 @@ vbconvert:
       settings:
         can_see_infractions:           { value: true }
         cannot_receive_infractions:    { value: true }
+        cannot_be_ignored:             { value: true }
         users_mod_can_add_infractions: { value: true }
 
     # other groups
