@@ -63,6 +63,10 @@ module.exports = co.wrap(function* (N) {
       infraction.reason = html_unescape(row.customreason);
     }
 
+    if (infraction.type !== 'custom') {
+      infraction.reason = N.i18n.t(N.config.locales[0], 'users.infractions.types.' + infraction.type);
+    }
+
     if (row.postid) {
       let post = yield N.models.vbconvert.PostMapping.findOne({ mysql: row.postid });
 
