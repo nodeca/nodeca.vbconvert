@@ -188,7 +188,18 @@ module.exports = co.wrap(function* (N) {
         attach:     [] // an array in DB is required by parser
       };
 
-      dialog.last_message = message._id;
+      let preview_data = yield N.parser.md2preview({
+        text: message.md,
+        limit: 500,
+        link2text: true
+      });
+
+      dialog.cache = {
+        last_message: message._id,
+        last_user: message.user,
+        last_ts: message.ts,
+        preview: preview_data.preview
+      };
 
       if (pm.messageread === 0) dialog.unread++;
 
