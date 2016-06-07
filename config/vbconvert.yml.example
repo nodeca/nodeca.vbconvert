@@ -30,6 +30,7 @@ vbconvert:
         cannot_receive_infractions:    { value: true }
         cannot_be_ignored:             { value: true }
         users_mod_can_add_infractions: { value: true }
+        forum_show_ignored:            { value: true }
 
     # other groups
     1:
