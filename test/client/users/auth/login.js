@@ -47,8 +47,10 @@ describe('Login', function () {
     TEST.browser
       .do.auth()
       .do.open(TEST.N.router.linkTo('users.auth.login.show'))
-      .do.type('#login_email_or_nick', login)
-      .do.type('#login_pass', password)
+      .do.fill('form[data-on-submit="users.auth.login.plain_exec"]', {
+        email_or_nick: login,
+        pass: password
+      })
       .do.click('button[type="submit"]')
       .do.wait('.user-member-page')
       .test.attribute('.navbar-auth__avatar', 'data-user-id', String(user._id))
