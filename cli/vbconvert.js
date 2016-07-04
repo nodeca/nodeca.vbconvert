@@ -23,10 +23,14 @@ module.exports.commandLineArguments = [
 module.exports.run = co.wrap(function* (N/*, args*/) {
   yield N.wire.emit('init:models', N);
 
+  // load N.router, it's needed to convert bbcode to markdown
+  yield N.wire.emit('init:bundle', N);
+
   yield require('./_lib/usergroups')(N);
   yield require('./_lib/users')(N);
   yield require('./_lib/pm')(N);
   yield require('./_lib/usernotes')(N);
+  yield require('./_lib/moderator_notes')(N);
   yield require('./_lib/ignore')(N);
   yield require('./_lib/sections')(N);
   yield require('./_lib/topics')(N);
