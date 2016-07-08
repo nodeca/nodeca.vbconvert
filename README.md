@@ -18,8 +18,8 @@ sudo apt-get install build-essential software-properties-common
 
 ```sh
 cd nodeca
-npm i git+https://github.com/nodeca/nodeca.vbconvert.git
-cp node_modules/nodeca.vbconvert/config/vbconvert.yml.example config/vbconvert.yml
+npm i nodeca/nodeca.vbconvert
+npm i rcdesign/rcd-nodeca
 ```
 
 3\. Install percona mysql version:
