@@ -46,8 +46,7 @@ module.exports = co.wrap(function* (N) {
       id:          row.usernoteid,
       text,
       options,
-      attachments: [],
-      image_info:  {}
+      attachments: []
     } ];
 
     let parsed = yield parse_bbcode(bbcode_data);
