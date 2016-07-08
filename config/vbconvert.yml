@@ -1,11 +1,7 @@
-applications:
-  - nodeca.vbconvert
-
 vbconvert:
-
   # Base url of the new forum;
   # used for quotes and snippet (topic, post) urls
-  destination: 'https://dev.rcopen.com/'
+  destination: 'https://rcopen.com/'
 
   # Connection details for mysql
   database: 'mysql://root@localhost/vbforum'
