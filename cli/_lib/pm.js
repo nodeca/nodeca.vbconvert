@@ -29,7 +29,7 @@ module.exports = co.wrap(function* (N) {
 
   const get_parser_param_id = memoize(function (usergroup_ids, allowsmilie) {
     return N.settings.getByCategory(
-      'messages_markup',
+      'dialogs_markup',
       { usergroup_ids },
       { alias: true }
     ).then(params => {
