@@ -58,6 +58,9 @@ vbconvert:
   # Path to the folder with avatar original pictures ("big" ones)
   avatars: '/tmp/www/custombigprofilepics'
 
+  # Section for abuse reports
+  abuse_report_section: 103
+
   # Original smilies -> markdown-it smilies
   smiley_map:
     ':mellow:':        ':)' # ?
