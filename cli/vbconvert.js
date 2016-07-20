@@ -42,6 +42,7 @@ module.exports.run = co.wrap(function* (N/*, args*/) {
   yield require('./_lib/albums')(N);
   yield require('./_lib/avatars')(N);
   yield require('./_lib/files')(N);
+  yield require('./_lib/custom')(N);
 
   process.exit(0);
 });

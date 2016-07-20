@@ -61,6 +61,9 @@ vbconvert:
   # Section for abuse reports
   abuse_report_section: 103
 
+  # Section for abuse reports
+  registered_user_group: just_registered
+
   # Original smilies -> markdown-it smilies
   smiley_map:
     ':mellow:':        ':)' # ?

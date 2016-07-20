@@ -186,23 +186,6 @@ module.exports = co.wrap(function* (N) {
     });
   }
 
-  //
-  // Set abuse report section
-  //
-  // TODO: consider moving it to site-specific file, something like "custom.js"
-  //
-  if (N.config.vbconvert.abuse_report_section) {
-    store = N.settings.getStore('global');
-
-    if (!store) throw 'Settings store `global` is not registered.';
-
-    let section = yield N.models.forum.Section.findOne()
-                            .where('hid', N.config.vbconvert.abuse_report_section)
-                            .lean(true);
-
-    yield store.set({ general_abuse_report_section: { value: section._id.toString() } });
-  }
-
   conn.release();
   N.logger.info('Section import finished');
 });
