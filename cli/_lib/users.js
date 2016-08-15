@@ -36,7 +36,8 @@ module.exports = co.wrap(function* (N) {
   let rows = yield conn.query(`
     SELECT userid,usergroupid,membergroupids,username,email,password,salt,
            passworddate,ipaddress,joindate,lastactivity,posts,icq,skype,
-           birthday_search,field5 as firstname,field6 as lastname
+           CAST(birthday_search as char) as birthday,
+           field5 as firstname,field6 as lastname
     FROM user JOIN userfield USING(userid)
     ORDER BY userid ASC
   `);
@@ -46,14 +47,14 @@ module.exports = co.wrap(function* (N) {
   yield Promise.map(rows, co.wrap(function* (row) {
     bar.tick();
 
-    if (yield N.models.users.User.findOne({ hid: row.userid }).lean(true)) {
-      // user with this id is already imported
-      return;
+    let user = yield N.models.users.User.findOne({ hid: row.userid }).lean(false);
+
+    if (!user) {
+      user = new N.models.users.User({
+        _id: new mongoose.Types.ObjectId(row.joindate)
+      });
     }
 
-    let user = new N.models.users.User();
-
-    user._id            = new mongoose.Types.ObjectId(row.joindate);
     user.hid            = row.userid;
     user.nick           = html_unescape(row.username);
     user.email          = row.email;
@@ -69,8 +70,12 @@ module.exports = co.wrap(function* (N) {
     if (row.icq && Number(row.icq)) user.about.icq = row.icq;
     if (row.skype) user.about.skype = row.skype;
 
-    if (typeof row.birthday_search === 'object' && row.birthday_search !== null) {
-      user.about.birthday = row.birthday_search;
+    if (row.birthday) {
+      let date = new Date(row.birthday);
+
+      if (!isNaN(date)) {
+        user.about.birthday = date;
+      }
     }
 
     if (row.usergroupid === UNCONFIRMED) {
