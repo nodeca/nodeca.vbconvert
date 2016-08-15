@@ -34,9 +34,9 @@ module.exports = co.wrap(function* (N) {
   }
 
   let rows = yield conn.query(`
-    SELECT userid,usergroupid,membergroupids,username,email,
-           password,salt,passworddate,ipaddress,joindate,lastactivity,posts,
-           field5 as firstname,field6 as lastname
+    SELECT userid,usergroupid,membergroupids,username,email,password,salt,
+           passworddate,ipaddress,joindate,lastactivity,posts,icq,skype,
+           birthday_search,field5 as firstname,field6 as lastname
     FROM user JOIN userfield USING(userid)
     ORDER BY userid ASC
   `);
@@ -64,6 +64,14 @@ module.exports = co.wrap(function* (N) {
     user.first_name     = html_unescape(row.firstname);
     user.last_name      = html_unescape(row.lastname);
     user.usergroups     = [];
+    user.about          = {};
+
+    if (row.icq && Number(row.icq)) user.about.icq = row.icq;
+    if (row.skype) user.about.skype = row.skype;
+
+    if (typeof row.birthday_search === 'object' && row.birthday_search !== null) {
+      user.about.birthday = row.birthday_search;
+    }
 
     if (row.usergroupid === UNCONFIRMED) {
       // Process users with unconfirmed email:
