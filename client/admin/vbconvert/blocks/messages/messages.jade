@@ -1,7 +1,7 @@
 - self.add_raw_data('messages_task', self.task_info);
 
-#vbconvert-task-messages.vbconvert-widget
-  h4
+#vbconvert-task-messages.rebuild-widget
+  .rebuild-widget__title
     = self.t('caption')
     = ' '
     small(data-bind='visible: started, text: (current() / total() * 100 || 0).toFixed(2) + "%"'
@@ -14,7 +14,7 @@
   )
 
   div
-    button.btn.btn-default(
+    button.btn.btn-secondary(
       data-on-click='admin.vbconvert.blocks.messages.start'
       data-bind='visible: !started()'
     )= self.t('start')
