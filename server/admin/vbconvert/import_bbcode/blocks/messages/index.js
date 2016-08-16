@@ -1,12 +1,12 @@
-// Add a widget displaying post import progress
+// Add a widget displaying PM import progress
 //
 
 'use strict';
 
 
 module.exports = function (N) {
-  N.wire.after('server:admin.vbconvert', { priority: 20 }, function* forum_posts_task_widget(env) {
-    let data = yield N.queue.worker('vbconvert_forum_posts_import').status();
+  N.wire.after('server:admin.vbconvert.import_bbcode', { priority: 40 }, function* messages_task_widget(env) {
+    let data = yield N.queue.worker('vbconvert_messages_import').status();
 
     let task_info = {};
 
@@ -16,6 +16,6 @@ module.exports = function (N) {
                           data.chunks.active + data.chunks.pending;
     }
 
-    env.res.blocks.push({ name: 'forum_posts', task_info });
+    env.res.blocks.push({ name: 'messages', task_info });
   });
 };

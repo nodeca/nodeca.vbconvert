@@ -1,4 +1,4 @@
 router:
   http.get:
-    admin.vbconvert:
+    admin.vbconvert.import_bbcode:
       "/vbconvert": ~

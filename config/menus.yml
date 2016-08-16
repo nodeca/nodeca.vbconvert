@@ -2,8 +2,8 @@ menus:
   admin:
     navbar:
       vbconvert:
-        to: admin.vbconvert
+        to: admin.vbconvert.import_bbcode
         priority: 200
         submenu:
           import_bbcode:
-            to: admin.vbconvert
+            to: admin.vbconvert.import_bbcode

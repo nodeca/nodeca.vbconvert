@@ -8,4 +8,4 @@
       h1.page-head__title= self.head.title
 
     each block in self.blocks
-      != self.partial('@admin.vbconvert.blocks.' + block.name, block)
+      != self.partial('@admin.vbconvert.import_bbcode.blocks.' + block.name, block)
