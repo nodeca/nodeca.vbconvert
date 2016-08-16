@@ -15,12 +15,12 @@
 
   div
     button.btn.btn-secondary(
-      data-on-click='admin.vbconvert.blocks.forum_posts.start'
+      data-on-click='admin.vbconvert.import_bbcode.blocks.forum_posts.start'
       data-bind='visible: !started()'
     )= self.t('start')
 
     button.btn.btn-danger(
-      data-on-click='admin.vbconvert.blocks.forum_posts.stop'
+      data-on-click='admin.vbconvert.import_bbcode.blocks.forum_posts.stop'
       data-bind='visible: started'
       style='display: none'
     )= self.t('stop')

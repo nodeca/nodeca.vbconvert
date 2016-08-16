@@ -39,7 +39,7 @@ function update_task_status(task_info) {
 }
 
 
-N.wire.on('navigate.done:admin.vbconvert', function vbconvert_messages_task_widget_setup() {
+N.wire.on('navigate.done:admin.vbconvert.import_bbcode', function vbconvert_messages_task_widget_setup() {
   if (!$(SELECTOR).length) return;
 
   var current = N.runtime.page_data.messages_task.current || 0;
@@ -57,7 +57,7 @@ N.wire.on('navigate.done:admin.vbconvert', function vbconvert_messages_task_widg
 });
 
 
-N.wire.on('navigate.exit:admin.vbconvert', function vbconvert_messages_widget_teardown() {
+N.wire.on('navigate.exit:admin.vbconvert.import_bbcode', function vbconvert_messages_widget_teardown() {
   if (!$(SELECTOR).length) return;
 
   view = null;
@@ -67,7 +67,7 @@ N.wire.on('navigate.exit:admin.vbconvert', function vbconvert_messages_widget_te
 });
 
 
-N.wire.once('navigate.done:admin.vbconvert', function vbconvert_messages_task_widget_setup_handlers() {
+N.wire.once('navigate.done:admin.vbconvert.import_bbcode', function vbconvert_messages_task_widget_setup_handlers() {
 
   // Click on "start" button
   //
