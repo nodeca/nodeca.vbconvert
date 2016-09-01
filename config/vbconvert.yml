@@ -36,13 +36,18 @@ vbconvert:
     2:
       short_name: just_registered
       settings:
+        can_edit_profile:  { value: true }
         can_receive_email: { value: true }
     8:
       short_name: banned
     13:
       short_name: che
+      settings:
+        can_edit_profile:  { value: true }
     14:
       short_name: losers
+      settings:
+        can_edit_profile:  { value: true }
     30:
       short_name: frozen
 
