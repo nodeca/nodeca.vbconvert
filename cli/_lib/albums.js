@@ -13,11 +13,11 @@ const ALBUM     = 8; // content type for albums
 module.exports = co.wrap(function* (N) {
   let conn = yield N.vbconvert.getConnection();
 
-  let rows = yield conn.query('SELECT count(*) AS count FROM album');
+  let rows = (yield conn.query('SELECT count(*) AS count FROM album'))[0];
 
   let bar = progress(' albums :current/:total [:bar] :percent', rows[0].count);
 
-  let userids = yield conn.query('SELECT userid FROM album GROUP BY userid ORDER BY userid ASC');
+  let userids = (yield conn.query('SELECT userid FROM album GROUP BY userid ORDER BY userid ASC'))[0];
 
   yield Promise.map(userids, co.wrap(function* (row) {
     let userid = row.userid;
@@ -26,12 +26,12 @@ module.exports = co.wrap(function* (N) {
     // ignore albums belonging to deleted users
     if (!user) return;
 
-    let rows = yield conn.query(`
+    let rows = (yield conn.query(`
       SELECT albumid,title,description,createdate,lastpicturedate
       FROM album
       WHERE userid = ?
       ORDER BY albumid ASC
-    `, [ userid ]);
+    `, [ userid ]))[0];
 
     for (let i = 0; i < rows.length; i++) {
       bar.tick();
@@ -44,12 +44,12 @@ module.exports = co.wrap(function* (N) {
       // already imported
       if (album_mapping) continue;
 
-      let datelines = yield conn.query(`
+      let datelines = (yield conn.query(`
         SELECT dateline
         FROM attachment
         WHERE contenttypeid = ? AND contentid = ?
         ORDER BY dateline ASC
-      `, [ ALBUM, row.albumid ]);
+      `, [ ALBUM, row.albumid ]))[0];
 
       datelines = datelines || [];
 

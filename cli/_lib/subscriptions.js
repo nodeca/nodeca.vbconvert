@@ -21,11 +21,11 @@ module.exports = co.wrap(function* (N) {
   // Section subscriptions
   //
 
-  rows = yield conn.query(`
+  rows = (yield conn.query(`
     SELECT userid,forumid,emailupdate
     FROM subscribeforum
     ORDER BY subscribeforumid ASC
-  `);
+  `))[0];
 
   bar = progress(' section subscriptions :current/:total [:bar] :percent', rows.length);
 
@@ -74,31 +74,25 @@ module.exports = co.wrap(function* (N) {
   // For each user we bulk-insert all her subscriptions
   //
 
-  rows = yield conn.query(`
-    SELECT primaryid,userid,reason
-    FROM deletionlog
-    WHERE type='post'
-  `);
-
-  rows = yield conn.query('SELECT count(*) AS count FROM subscribethread');
+  rows = (yield conn.query('SELECT count(*) AS count FROM subscribethread'))[0];
 
   bar = progress(' topic subscriptions :current/:total [:bar] :percent', rows[0].count);
 
-  let userids = yield conn.query(`
+  let userids = (yield conn.query(`
     SELECT userid FROM subscribethread
     GROUP BY userid
     ORDER BY userid ASC
-  `);
+  `))[0];
 
   yield Promise.map(userids, co.wrap(function* (userid_row) {
     let userid = userid_row.userid;
     let user = yield get_user_by_hid(userid);
 
-    let rows = yield conn.query(`
+    let rows = (yield conn.query(`
       SELECT userid,threadid,emailupdate
       FROM subscribethread
       WHERE userid = ?
-    `, [ userid ]);
+    `, [ userid ]))[0];
 
     let bulk = N.models.users.Subscription.collection.initializeUnorderedBulkOp();
     let count = 0;

@@ -9,7 +9,7 @@ const co = require('bluebird-co').co;
 module.exports = co.wrap(function* (N) {
   let conn = yield N.vbconvert.getConnection();
 
-  let forums = yield conn.query('SELECT forumid FROM forum ORDER BY forumid ASC');
+  let forums = (yield conn.query('SELECT forumid FROM forum ORDER BY forumid ASC'))[0];
 
   for (let i = 0; i < forums.length; i++) {
     let forum = forums[i];

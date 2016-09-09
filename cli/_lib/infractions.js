@@ -26,11 +26,11 @@ module.exports = co.wrap(function* (N) {
   //
   // Import infractions
   //
-  rows = yield conn.query(`
+  rows = (yield conn.query(`
     SELECT postid,userid,infractionlevelid,whoadded,points,dateline,customreason,expires
     FROM infraction
     ORDER BY infractionid ASC
-  `);
+  `))[0];
 
   bar = progress(' infractions :current/:total [:bar] :percent', rows.length);
 
@@ -84,11 +84,11 @@ module.exports = co.wrap(function* (N) {
   //
   // Import consequences for infractions
   //
-  rows = yield conn.query(`
+  rows = (yield conn.query(`
     SELECT userid,bandate,liftdate
     FROM userban
     ORDER BY bandate ASC
-  `);
+  `))[0];
 
   let bulk = N.models.users.UserPenalty.collection.initializeOrderedBulkOp();
   let count = 0;

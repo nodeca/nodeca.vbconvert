@@ -18,7 +18,7 @@ module.exports = co.wrap(function* (N) {
   });
 
 
-  let rows = yield conn.query('SELECT * FROM userlist WHERE type="ignore"');
+  let rows = (yield conn.query('SELECT * FROM userlist WHERE type="ignore"'))[0];
 
   let bar = progress(' ignores :current/:total [:bar] :percent', rows.length);
 

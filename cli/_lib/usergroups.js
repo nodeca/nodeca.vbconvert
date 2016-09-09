@@ -11,10 +11,10 @@ const co = require('bluebird-co').co;
 module.exports = co.wrap(function* (N) {
   let conn = yield N.vbconvert.getConnection();
 
-  let rows = yield conn.query(`
+  let rows = (yield conn.query(`
     SELECT usergroupid,title
     FROM usergroup
-  `);
+  `))[0];
 
   let configs = N.config.vbconvert.usergroups;
 

@@ -25,12 +25,12 @@ module.exports = co.wrap(function* (N) {
   let store;
 
   // select all sections except link-only
-  let rows = yield conn.query(`
+  let rows = (yield conn.query(`
     SELECT forumid,title,description,options,excludable,parentid,displayorder
     FROM forum
     WHERE link = ''
     ORDER BY forumid ASC
-  `);
+  `))[0];
 
   //
   // Create sections
@@ -97,7 +97,7 @@ module.exports = co.wrap(function* (N) {
   (yield conn.query(`
     SELECT forumid,usergroupid,forumpermissions
     FROM forumpermission
-  `)).forEach(row => {
+  `))[0].forEach(row => {
     permissions_by_hid[row.forumid] = permissions_by_hid[row.forumid] || [];
     permissions_by_hid[row.forumid].push(row);
   });
@@ -158,10 +158,10 @@ module.exports = co.wrap(function* (N) {
   // Set moderator permissions
   //
 
-  let moderator_permissions = yield conn.query(`
+  let moderator_permissions = (yield conn.query(`
     SELECT userid,forumid
     FROM moderator
-  `);
+  `))[0];
 
   store = N.settings.getStore('section_moderator');
 

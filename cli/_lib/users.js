@@ -25,7 +25,7 @@ module.exports = co.wrap(function* (N) {
 
   let conn = yield N.vbconvert.getConnection();
 
-  let gi_rows = yield conn.query('SELECT value FROM setting WHERE varname = "globalignore" LIMIT 1');
+  let gi_rows = (yield conn.query('SELECT value FROM setting WHERE varname = "globalignore" LIMIT 1'))[0];
 
   let hellbanned_ids = [];
 
@@ -33,14 +33,14 @@ module.exports = co.wrap(function* (N) {
     hellbanned_ids = gi_rows[0].value.split(' ').map(Number);
   }
 
-  let rows = yield conn.query(`
+  let rows = (yield conn.query(`
     SELECT userid,usergroupid,membergroupids,username,email,password,salt,
            passworddate,ipaddress,joindate,lastactivity,posts,icq,skype,
            CAST(birthday_search as char) as birthday,
            field5 as firstname,field6 as lastname
     FROM user JOIN userfield USING(userid)
     ORDER BY userid ASC
-  `);
+  `))[0];
 
   let bar = progress(' users :current/:total [:bar] :percent', rows.length);
 
@@ -97,9 +97,9 @@ module.exports = co.wrap(function* (N) {
       // for violators: fetch old usergroup before ban, and add it as well
       user.usergroups.push(mongoid[row.usergroupid]);
 
-      let result = yield conn.query(`
+      let result = (yield conn.query(`
         SELECT usergroupid FROM userban WHERE userid = ?
-      `, [ row.userid ]);
+      `, [ row.userid ]))[0];
       let ban = (result || [])[0];
 
       if (ban.usergroupid && mongoid[ban.usergroupid]) {

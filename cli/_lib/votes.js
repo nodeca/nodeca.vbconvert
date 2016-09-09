@@ -26,15 +26,15 @@ module.exports = co.wrap(function* (N) {
   });
 
 
-  let rows = yield conn.query('SELECT count(*) AS count FROM votes');
+  let rows = (yield conn.query('SELECT count(*) AS count FROM votes'))[0];
 
   let bar = progress(' votes :current/:total [:bar] :percent', rows[0].count);
 
-  let userids = yield conn.query(`
+  let userids = (yield conn.query(`
     SELECT fromuserid FROM votes
     GROUP BY fromuserid
     ORDER BY fromuserid ASC
-  `);
+  `))[0];
 
   yield Promise.map(userids, co.wrap(function* (userid_row) {
     let fromuserid = userid_row.fromuserid;
@@ -42,11 +42,11 @@ module.exports = co.wrap(function* (N) {
     // ignore votes casted by deleted users
     if (!users[fromuserid]) return;
 
-    let rows = yield conn.query(`
+    let rows = (yield conn.query(`
       SELECT targetid,vote,fromuserid,touserid,date
       FROM votes
       WHERE fromuserid = ? AND contenttypeid = ?
-    `, [ fromuserid, POST ]);
+    `, [ fromuserid, POST ]))[0];
 
     let bulk = N.models.users.Vote.collection.initializeUnorderedBulkOp();
     let count = 0;

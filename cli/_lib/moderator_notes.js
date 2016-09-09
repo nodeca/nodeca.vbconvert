@@ -16,7 +16,7 @@ module.exports = co.wrap(function* (N) {
 
   let conn = yield N.vbconvert.getConnection();
 
-  let rows = yield conn.query('SELECT * FROM usernote');
+  let rows = (yield conn.query('SELECT * FROM usernote'))[0];
 
   let bar = progress(' mod notes :current/:total [:bar] :percent', rows.length);
 

@@ -132,11 +132,11 @@ module.exports = co.wrap(function* (N) {
 
   const conn = yield N.vbconvert.getConnection();
 
-  let rows = yield conn.query('SELECT count(*) AS count FROM attachment');
+  let rows = (yield conn.query('SELECT count(*) AS count FROM attachment'))[0];
 
   let bar = progress(' files :current/:total [:bar] :percent', rows[0].count);
 
-  let userids = yield conn.query('SELECT userid FROM attachment GROUP BY userid ORDER BY userid ASC');
+  let userids = (yield conn.query('SELECT userid FROM attachment GROUP BY userid ORDER BY userid ASC'))[0];
 
   yield Promise.map(userids, co.wrap(function* (row) {
     let rows;
@@ -147,10 +147,10 @@ module.exports = co.wrap(function* (N) {
     // ignore content owned by deleted users
     if (!user) return;
 
-    rows = yield conn.query(`
+    rows = (yield conn.query(`
       SELECT albumid,coverattachmentid
       FROM album WHERE userid = ? ORDER BY albumid ASC
-    `, [ userid ]);
+    `, [ userid ]))[0];
 
     let album_ids = {};
 
@@ -174,7 +174,7 @@ module.exports = co.wrap(function* (N) {
 
     album_ids[0] = { id: def_album._id };
 
-    rows = yield conn.query(`
+    rows = (yield conn.query(`
       SELECT filedata.userid AS filedataowner,
              filedataid,attachment.attachmentid,extension,filename,
              caption,contentid,contenttypeid,attachment.dateline,
@@ -187,7 +187,7 @@ module.exports = co.wrap(function* (N) {
       LEFT JOIN picturelegacy
              ON picturelegacy.attachmentid = attachment.attachmentid
       WHERE attachment.userid = ? ORDER BY attachmentid ASC
-   `, [ userid ]);
+   `, [ userid ]))[0];
 
     for (let i = 0; i < rows.length; i++) {
       if (i) bar.tick();

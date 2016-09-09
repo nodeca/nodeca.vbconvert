@@ -21,11 +21,11 @@ module.exports = co.wrap(function* (N) {
   // Fetch deleted topics
   //
 
-  rows = yield conn.query(`
+  rows = (yield conn.query(`
     SELECT primaryid,userid,reason
     FROM deletionlog
     WHERE type='thread'
-  `);
+  `))[0];
 
   bar = progress(' deleted topics :current/:total [:bar] :percent', rows.length);
 
@@ -50,11 +50,11 @@ module.exports = co.wrap(function* (N) {
   // Fetch deleted posts
   //
 
-  rows = yield conn.query(`
+  rows = (yield conn.query(`
     SELECT primaryid,userid,reason
     FROM deletionlog
     WHERE type='post'
-  `);
+  `))[0];
 
   bar = progress(' deleted posts :current/:total [:bar] :percent', rows.length);
 

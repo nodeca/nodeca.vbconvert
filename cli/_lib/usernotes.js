@@ -35,13 +35,13 @@ module.exports = co.wrap(function* (N) {
   let conn = yield N.vbconvert.getConnection();
   let rows, bar;
 
-  rows = yield conn.query(`
+  rows = (yield conn.query(`
     SELECT userid,rcd_notepad
     FROM usertextfield
     WHERE NOT ISNULL(rcd_notepad)
       AND rcd_notepad != ''
       AND rcd_notepad != 'Здесь можно хранить любые заметки.'
-  `);
+  `))[0];
 
   bar = progress(' usernotes :current/:total [:bar] :percent', rows.length);
 

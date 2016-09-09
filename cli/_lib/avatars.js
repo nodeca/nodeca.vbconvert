@@ -25,13 +25,13 @@ module.exports = co.wrap(function* (N) {
 
   let conn = yield N.vbconvert.getConnection();
 
-  let rows = yield conn.query(`
+  let rows = (yield conn.query(`
     SELECT userid,width,height,bigpicrevision,dateline,
            sel_top,sel_left,sel_width,sel_height
     FROM custombigpic JOIN user USING(userid)
     WHERE bigpicsaved = 1
     ORDER BY userid ASC
-  `);
+  `))[0];
 
   let bar = progress(' avatars :current/:total [:bar] :percent', rows.length);
   let counter = 0;

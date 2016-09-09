@@ -45,7 +45,7 @@ module.exports = co.wrap(function* (N) {
   });
 
 
-  let all_pms = (yield conn.query('SELECT pmid,userid,pmtextid,parentpmid,messageread FROM pm ORDER BY pmid ASC'))
+  let all_pms = (yield conn.query('SELECT pmid,userid,pmtextid,parentpmid,messageread FROM pm ORDER BY pmid ASC'))[0]
                   .map(p => ({
                     pmid:        p.pmid,
                     userid:      p.userid,
@@ -126,10 +126,10 @@ module.exports = co.wrap(function* (N) {
     let pms       = get_relative(root_pm).sort((a, b) => a.pmid - b.pmid);
     let pmtextids = _.map(pms, 'pmtextid');
     let texts     = _.keyBy(
-      yield conn.query(`
+      (yield conn.query(`
         SELECT * FROM pmtext
         WHERE pmtextid IN (${pmtextids.map(Number).join(',')})
-      `),
+      `))[0],
       'pmtextid'
     );
     let user1     = (yield get_user_by_hid(fromuserid)) ||
@@ -230,7 +230,7 @@ module.exports = co.wrap(function* (N) {
 
       let root_pmtext = (yield conn.query(`
         SELECT * FROM pmtext WHERE pmtextid = ?
-      `, [ root_pm.pmtextid ]))[0];
+      `, [ root_pm.pmtextid ]))[0][0];
 
       if (!root_pmtext) {
         // message exists, but message text doesn't; skip those

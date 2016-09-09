@@ -50,7 +50,7 @@ module.exports = co.wrap(function* (N) {
       SELECT threadid,forumid,title,views,dateline,visible,open,sticky
       FROM thread WHERE threadid = ?
       ORDER BY threadid ASC
-    `, [ threadid ]))[0];
+    `, [ threadid ]))[0][0];
 
 
     //
@@ -90,7 +90,7 @@ module.exports = co.wrap(function* (N) {
     //
     // Fetch posts from this thread from SQL
     //
-    posts = yield conn.query(`
+    posts = (yield conn.query(`
       SELECT threadid,postid,parentid,pagetext,dateline,ipaddress,userid,username,visible,allowsmilie,
              GROUP_CONCAT(vote) AS votes,GROUP_CONCAT(fromuserid) AS casters
       FROM post
@@ -98,7 +98,7 @@ module.exports = co.wrap(function* (N) {
       WHERE threadid = ?
       GROUP BY postid
       ORDER BY postid ASC
-    `, [ POST, thread.threadid ]);
+    `, [ POST, thread.threadid ]))[0];
 
     // empty topic, e.g. http://forum.rcdesign.ru/f90/thread121809.html
     if (posts.length === 0) {
@@ -312,7 +312,7 @@ module.exports = co.wrap(function* (N) {
   // Import topics and posts
   //
   {
-    let rows = yield conn.query('SELECT threadid FROM thread ORDER BY threadid ASC');
+    let rows = (yield conn.query('SELECT threadid FROM thread ORDER BY threadid ASC'))[0];
 
     let bar = progress(' topics :current/:total [:bar] :percent', rows.length);
 
@@ -335,12 +335,12 @@ module.exports = co.wrap(function* (N) {
   // Link posts that reply to a different topic
   //
   {
-    let rows = yield conn.query(`
+    let rows = (yield conn.query(`
       SELECT post.postid,post.parentid
       FROM post
       JOIN post AS parent
            ON (post.parentid = parent.postid AND post.threadid != parent.threadid)
-    `);
+    `))[0];
 
     yield Promise.map(rows, co.wrap(function* (row) {
       let post_mapping = yield N.models.vbconvert.PostMapping.findOne()
