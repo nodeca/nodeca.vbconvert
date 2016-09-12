@@ -53,7 +53,10 @@ describe('Login', function () {
       })
       .do.click('button[type="submit"]')
       .do.wait('.user-member-page')
-      .test.attribute('.navbar-auth__avatar', 'data-user-id', String(user._id))
+      .test.evaluate(function (user_id) {
+        /* global $ */
+        return JSON.parse($('#runtime').text()).user_id === user_id;
+      }, String(user._id))
       .run(true, done);
   });
 });
