@@ -16,7 +16,13 @@ module.exports = co.wrap(function* (N) {
     FROM usergroup
   `))[0];
 
-  let configs = N.config.vbconvert.usergroups;
+  let configs = {};
+
+  for (let usergroupid of Object.keys(N.config.vbconvert.usergroups)) {
+    configs[usergroupid] = typeof N.config.vbconvert.usergroups[usergroupid] === 'string' ?
+                           { short_name: N.config.vbconvert.usergroups[usergroupid] } :
+                           N.config.vbconvert.usergroups[usergroupid];
+  }
 
   let store = N.settings.getStore('usergroup');
 

@@ -7,49 +7,31 @@ vbconvert:
   database: 'mysql://root@localhost/vbforum'
 
   # Usergroup mapping
+  #
+  # Full syntax:
+  #
+  #  <mysql_id>:
+  #    short_name: <short_name>
+  #    parent:     <parent>
+  #    settings:
+  #      <name>:   { value: true, force: false }
+  #
+  # Shortcut:
+  #
+  #  <mysql_id>: <short_name>
+  #
   usergroups:
-    # admin group
-    6:
-      short_name: administrators
-
-    # base group - members
-    11:
-      short_name: members
-    10:
-      short_name: novices
-      parent: members
-    7:
-      short_name: moderators
-      parent: members
-      settings:
-        can_see_infractions:           { value: true }
-        cannot_receive_infractions:    { value: true }
-        cannot_be_ignored:             { value: true }
-        users_mod_can_add_infractions: { value: true }
-        forum_show_ignored:            { value: true }
-
-    # other groups
-    1:
-      short_name: guests
-    12:
-      short_name: violators
-    2:
-      short_name: just_registered
-      settings:
-        can_edit_profile:  { value: true }
-        can_receive_email: { value: true }
-    8:
-      short_name: banned
-    13:
-      short_name: che
-      settings:
-        can_edit_profile:  { value: true }
-    14:
-      short_name: losers
-      settings:
-        can_edit_profile:  { value: true }
-    30:
-      short_name: frozen
+    1:  guests
+    2:  just_registered
+    6:  administrators
+    7:  moderators
+    8:  banned
+    10: novices
+    11: members
+    12: violators
+    13: che
+    14: losers
+    30: frozen
 
   # Permissions for imported moderators assigned to specific sections
   moderator_permissions:
