@@ -3,12 +3,12 @@
 
 'use strict';
 
-const _  = require('lodash');
-const co = require('bluebird-co').co;
+const _       = require('lodash');
+const Promise = require('bluebird');
 
 
 /* eslint-disable no-bitwise */
-module.exports = co.wrap(function* (N) {
+module.exports = Promise.coroutine(function* (N) {
   let conn = yield N.vbconvert.getConnection();
 
   let rows = (yield conn.query(`
@@ -33,7 +33,7 @@ module.exports = co.wrap(function* (N) {
     row.settings = (row.config || {}).settings || {};
   }
 
-  yield rows.map(co.wrap(function* (row) {
+  yield Promise.map(rows, Promise.coroutine(function* (row) {
     let usergroup, config = row.config;
 
     // ignore some usergroups
@@ -62,7 +62,7 @@ module.exports = co.wrap(function* (N) {
 
 
   // update parent_group
-  yield rows.map(co.wrap(function* (row) {
+  yield Promise.map(rows, Promise.coroutine(function* (row) {
     let config = row.config;
 
     if (!config) return;
@@ -77,7 +77,7 @@ module.exports = co.wrap(function* (N) {
 
 
   // update permissions
-  yield rows.map(co.wrap(function* (row) {
+  yield Promise.map(rows, Promise.coroutine(function* (row) {
     let config = row.config;
 
     if (!config) return;

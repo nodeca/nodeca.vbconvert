@@ -5,7 +5,6 @@
 
 const _           = require('lodash');
 const Promise     = require('bluebird');
-const co          = require('bluebird-co').co;
 const fs          = require('mz/fs');
 const sharp       = require('sharp');
 const path        = require('path');
@@ -14,7 +13,7 @@ const resizeParse = require('nodeca.users/server/_lib/resize_parse');
 const resize      = require('nodeca.users/models/users/_lib/resize');
 
 
-module.exports = co.wrap(function* (N) {
+module.exports = Promise.coroutine(function* (N) {
   let config     = resizeParse(N.config.users.avatars);
   let min_width  = _.reduce(config.resize, function (acc, obj) {
     return Math.max(acc, obj.width);
@@ -36,7 +35,7 @@ module.exports = co.wrap(function* (N) {
   let bar = progress(' avatars :current/:total [:bar] :percent', rows.length);
   let counter = 0;
 
-  yield Promise.map(rows, co.wrap(function* (row) {
+  yield Promise.map(rows, Promise.coroutine(function* (row) {
     bar.tick();
 
     let tmpfile = '/tmp/vbconvert-' + (++counter) + '.jpg';

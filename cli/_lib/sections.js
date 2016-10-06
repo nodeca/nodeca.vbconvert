@@ -3,7 +3,7 @@
 
 'use strict';
 
-const co = require('bluebird-co').co;
+const Promise = require('bluebird');
 
 // forum permissions
 const can_view_forum             = 1;
@@ -20,7 +20,7 @@ const forum_prefix_required     = 131072;
 
 
 /* eslint-disable no-bitwise */
-module.exports = co.wrap(function* (N) {
+module.exports = Promise.coroutine(function* (N) {
   let conn = yield N.vbconvert.getConnection();
   let store;
 
@@ -35,7 +35,7 @@ module.exports = co.wrap(function* (N) {
   //
   // Create sections
   //
-  yield rows.map(co.wrap(function* (row) {
+  yield rows.map(Promise.coroutine(function* (row) {
     // ignoring one inactive forum: vBCms Comments
     if (!(row.options & forum_active)) return;
 
@@ -68,7 +68,7 @@ module.exports = co.wrap(function* (N) {
   //
   // Link each section with its parent
   //
-  yield rows.map(co.wrap(function* (row) {
+  yield rows.map(Promise.coroutine(function* (row) {
     // top-level forum
     if (row.parentid < 0) return;
 

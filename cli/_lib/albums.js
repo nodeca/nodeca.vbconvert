@@ -4,13 +4,12 @@
 'use strict';
 
 const Promise   = require('bluebird');
-const co        = require('bluebird-co').co;
 const mongoose  = require('mongoose');
 const progress  = require('./utils').progress;
 const ALBUM     = 8; // content type for albums
 
 
-module.exports = co.wrap(function* (N) {
+module.exports = Promise.coroutine(function* (N) {
   let conn = yield N.vbconvert.getConnection();
 
   let rows = (yield conn.query('SELECT count(*) AS count FROM album'))[0];
@@ -19,7 +18,7 @@ module.exports = co.wrap(function* (N) {
 
   let userids = (yield conn.query('SELECT userid FROM album GROUP BY userid ORDER BY userid ASC'))[0];
 
-  yield Promise.map(userids, co.wrap(function* (row) {
+  yield Promise.map(userids, Promise.coroutine(function* (row) {
     let userid = row.userid;
     let user = yield N.models.users.User.findOne({ hid: userid }).lean(true);
 

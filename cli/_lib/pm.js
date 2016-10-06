@@ -5,7 +5,6 @@
 
 const _             = require('lodash');
 const Promise       = require('bluebird');
-const co            = require('bluebird-co').co;
 const mongoose      = require('mongoose');
 const unserialize   = require('phpunserialize');
 const memoize       = require('promise-memoize');
@@ -13,7 +12,7 @@ const html_unescape = require('./utils').html_unescape;
 const progress      = require('./utils').progress;
 
 
-module.exports = co.wrap(function* (N) {
+module.exports = Promise.coroutine(function* (N) {
   const conn = yield N.vbconvert.getConnection();
 
 
@@ -122,7 +121,7 @@ module.exports = co.wrap(function* (N) {
   // Process dialog owned by user `fromuserid` with `touserid`,
   // starting with a message `root_pm`.
   //
-  const import_dialog = co.wrap(function* (root_pm, fromuserid, touserid, result) {
+  const import_dialog = Promise.coroutine(function* (root_pm, fromuserid, touserid, result) {
     let pms       = get_relative(root_pm).sort((a, b) => a.pmid - b.pmid);
     let pmtextids = _.map(pms, 'pmtextid');
     let texts     = _.keyBy(
@@ -222,7 +221,7 @@ module.exports = co.wrap(function* (N) {
   all_pms = null;
   old_maps = null;
 
-  yield Promise.map(Object.keys(pm_by_user), co.wrap(function* (userid) {
+  yield Promise.map(Object.keys(pm_by_user), Promise.coroutine(function* (userid) {
     userid = +userid;
 
     for (let root_pm of pm_by_user[userid]) {

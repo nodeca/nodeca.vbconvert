@@ -5,7 +5,6 @@
 
 const _           = require('lodash');
 const Promise     = require('bluebird');
-const co          = require('bluebird-co').co;
 const fs          = require('mz/fs');
 const mime        = require('mime-types').lookup;
 const mongoose    = require('mongoose');
@@ -17,12 +16,12 @@ const ALBUM       = 8; // content type for albums
 const POST        = 1; // content type for posts
 
 
-module.exports = co.wrap(function* (N) {
+module.exports = Promise.coroutine(function* (N) {
   let mediaConfig = resizeParse(N.config.users.uploads);
 
   // Chopped-down version of N.models.users.MediaInfo.createFile
   //
-  const create_file = co.wrap(function* (filedata, filepath, user, album_id) {
+  const create_file = Promise.coroutine(function* (filedata, filepath, user, album_id) {
     let media = new N.models.users.MediaInfo();
 
     media._id         = new mongoose.Types.ObjectId(filedata.dateline);
@@ -79,7 +78,7 @@ module.exports = co.wrap(function* (N) {
 
   // Create file, add it to album and add it to post if necessary
   //
-  const add_file = co.wrap(function* add_file(row, user, album_ids) {
+  const add_file = Promise.coroutine(function* add_file(row, user, album_ids) {
     let albumid = album_ids[row.contenttypeid === ALBUM ? row.contentid : 0].id;
     let filepath = path.join(N.config.vbconvert.files,
           String(row.filedataowner).split('').join('/'),
@@ -138,7 +137,7 @@ module.exports = co.wrap(function* (N) {
 
   let userids = (yield conn.query('SELECT userid FROM attachment GROUP BY userid ORDER BY userid ASC'))[0];
 
-  yield Promise.map(userids, co.wrap(function* (row) {
+  yield Promise.map(userids, Promise.coroutine(function* (row) {
     let rows;
     let userid = row.userid;
 

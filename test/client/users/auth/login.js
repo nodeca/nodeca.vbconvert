@@ -1,9 +1,9 @@
 'use strict';
 
 
-const randomBytes = require('crypto').randomBytes;
-const co          = require('bluebird-co').co;
+const Promise     = require('bluebird');
 const crypto      = require('crypto');
+const randomBytes = require('crypto').randomBytes;
 
 
 function md5(string) {
@@ -20,7 +20,7 @@ describe('Login', function () {
 
   // Create new user with vb authlink
   //
-  before(co.wrap(function* () {
+  before(Promise.coroutine(function* () {
     user = new TEST.N.models.users.User({
       nick: login
     });

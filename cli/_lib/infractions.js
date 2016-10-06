@@ -4,14 +4,13 @@
 'use strict';
 
 const Promise       = require('bluebird');
-const co            = require('bluebird-co').co;
 const mongoose      = require('mongoose');
 const memoize       = require('promise-memoize');
 const html_unescape = require('./utils').html_unescape;
 const progress      = require('./utils').progress;
 
 
-module.exports = co.wrap(function* (N) {
+module.exports = Promise.coroutine(function* (N) {
   let conn = yield N.vbconvert.getConnection();
   let rows, bar;
 
@@ -34,7 +33,7 @@ module.exports = co.wrap(function* (N) {
 
   bar = progress(' infractions :current/:total [:bar] :percent', rows.length);
 
-  yield Promise.map(rows, co.wrap(function* (row) {
+  yield Promise.map(rows, Promise.coroutine(function* (row) {
     bar.tick();
 
     let user = yield get_user_by_hid(row.userid);
@@ -97,7 +96,7 @@ module.exports = co.wrap(function* (N) {
 
   bar = progress(' infractions (bans) :current/:total [:bar] :percent', rows.length);
 
-  yield Promise.map(rows, co.wrap(function* (row) {
+  yield Promise.map(rows, Promise.coroutine(function* (row) {
     bar.tick();
 
     let user = yield get_user_by_hid(row.userid);

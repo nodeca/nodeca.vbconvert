@@ -3,9 +3,8 @@
 
 'use strict';
 
-const Promise   = require('bluebird');
-const co        = require('bluebird-co').co;
-const progress  = require('./utils').progress;
+const Promise  = require('bluebird');
+const progress = require('./utils').progress;
 
 
 // Convert plain text to markdown,
@@ -31,7 +30,7 @@ function text_to_md(text) {
 }
 
 
-module.exports = co.wrap(function* (N) {
+module.exports = Promise.coroutine(function* (N) {
   let conn = yield N.vbconvert.getConnection();
   let rows, bar;
 
@@ -45,7 +44,7 @@ module.exports = co.wrap(function* (N) {
 
   bar = progress(' usernotes :current/:total [:bar] :percent', rows.length);
 
-  yield Promise.map(rows, co.wrap(function* (row) {
+  yield Promise.map(rows, Promise.coroutine(function* (row) {
     bar.tick();
 
     let user = yield N.models.users.User.findOne({ hid: row.userid }).lean(true);

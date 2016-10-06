@@ -4,7 +4,6 @@
 'use strict';
 
 const Promise       = require('bluebird');
-const co            = require('bluebird-co').co;
 const mongoose      = require('mongoose');
 const progress      = require('./utils').progress;
 const html_unescape = require('./utils').html_unescape;
@@ -14,7 +13,7 @@ const MEMBERS     = 11;
 const VIOLATORS   = 12;
 
 
-module.exports = co.wrap(function* (N) {
+module.exports = Promise.coroutine(function* (N) {
   let usergroups = yield N.models.vbconvert.UserGroupMapping.find().lean(true);
 
   let mongoid = {};
@@ -44,7 +43,7 @@ module.exports = co.wrap(function* (N) {
 
   let bar = progress(' users :current/:total [:bar] :percent', rows.length);
 
-  yield Promise.map(rows, co.wrap(function* (row) {
+  yield Promise.map(rows, Promise.coroutine(function* (row) {
     bar.tick();
 
     let user = yield N.models.users.User.findOne({ hid: row.userid }).lean(false);

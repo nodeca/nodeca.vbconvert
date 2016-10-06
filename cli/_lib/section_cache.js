@@ -3,10 +3,10 @@
 
 'use strict';
 
-const co = require('bluebird-co').co;
+const Promise = require('bluebird');
 
 
-module.exports = co.wrap(function* (N) {
+module.exports = Promise.coroutine(function* (N) {
   let conn = yield N.vbconvert.getConnection();
 
   let forums = (yield conn.query('SELECT forumid FROM forum ORDER BY forumid ASC'))[0];

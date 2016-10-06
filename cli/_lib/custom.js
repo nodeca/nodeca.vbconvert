@@ -3,9 +3,10 @@
 
 'use strict';
 
-const co = require('bluebird-co').co;
+const Promise = require('bluebird');
 
-module.exports = co.wrap(function* (N) {
+
+module.exports = Promise.coroutine(function* (N) {
   let store = N.settings.getStore('global');
 
   if (!store) throw 'Settings store `global` is not registered.';

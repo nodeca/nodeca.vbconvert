@@ -6,7 +6,6 @@
 
 const _             = require('lodash');
 const Promise       = require('bluebird');
-const co            = require('bluebird-co').co;
 const mongoose      = require('mongoose');
 const memoize       = require('promise-memoize');
 const progress      = require('./utils').progress;
@@ -14,7 +13,7 @@ const html_unescape = require('./utils').html_unescape;
 const POST          = 1; // content type for posts
 
 
-module.exports = co.wrap(function* (N) {
+module.exports = Promise.coroutine(function* (N) {
   var conn, users, sections;
 
 
@@ -40,7 +39,7 @@ module.exports = co.wrap(function* (N) {
 
   // Import a single topic by its id
   //
-  const import_topic = co.wrap(function* (threadid) {
+  const import_topic = Promise.coroutine(function* (threadid) {
     var thread, posts, topic;
 
     //
@@ -342,7 +341,7 @@ module.exports = co.wrap(function* (N) {
            ON (post.parentid = parent.postid AND post.threadid != parent.threadid)
     `))[0];
 
-    yield Promise.map(rows, co.wrap(function* (row) {
+    yield Promise.map(rows, Promise.coroutine(function* (row) {
       let post_mapping = yield N.models.vbconvert.PostMapping.findOne()
                                    .where('mysql', row.postid)
                                    .lean(true);

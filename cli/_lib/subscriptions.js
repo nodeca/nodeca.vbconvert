@@ -4,12 +4,11 @@
 'use strict';
 
 const Promise  = require('bluebird');
-const co       = require('bluebird-co').co;
 const memoize  = require('promise-memoize');
 const progress = require('./utils').progress;
 
 
-module.exports = co.wrap(function* (N) {
+module.exports = Promise.coroutine(function* (N) {
   let conn = yield N.vbconvert.getConnection();
   let rows, bar;
 
@@ -32,7 +31,7 @@ module.exports = co.wrap(function* (N) {
   let bulk = N.models.users.Subscription.collection.initializeUnorderedBulkOp();
   let count = 0;
 
-  yield Promise.map(rows, co.wrap(function* (row) {
+  yield Promise.map(rows, Promise.coroutine(function* (row) {
     bar.tick();
 
     let user = yield get_user_by_hid(row.userid);
@@ -84,7 +83,7 @@ module.exports = co.wrap(function* (N) {
     ORDER BY userid ASC
   `))[0];
 
-  yield Promise.map(userids, co.wrap(function* (userid_row) {
+  yield Promise.map(userids, Promise.coroutine(function* (userid_row) {
     let userid = userid_row.userid;
     let user = yield get_user_by_hid(userid);
 

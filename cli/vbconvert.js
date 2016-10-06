@@ -3,7 +3,7 @@
 
 'use strict';
 
-const co = require('bluebird-co').co;
+const Promise = require('bluebird');
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -20,7 +20,7 @@ module.exports.commandLineArguments = [
 ];
 
 
-module.exports.run = co.wrap(function* (N/*, args*/) {
+module.exports.run = Promise.coroutine(function* (N/*, args*/) {
   yield N.wire.emit('init:models', N);
 
   // load N.router, it's needed to convert bbcode to markdown
@@ -44,5 +44,5 @@ module.exports.run = co.wrap(function* (N/*, args*/) {
   yield require('./_lib/files')(N);
   yield require('./_lib/custom')(N);
 
-  process.exit(0);
+  yield N.wire.emit('exit.shutdown');
 });

@@ -4,13 +4,12 @@
 'use strict';
 
 const Promise   = require('bluebird');
-const co        = require('bluebird-co').co;
 const mongoose  = require('mongoose');
 const progress  = require('./utils').progress;
 const POST      = 1; // content type for posts
 
 
-module.exports = co.wrap(function* (N) {
+module.exports = Promise.coroutine(function* (N) {
   //
   // Establish MySQL connection
   //
@@ -36,7 +35,7 @@ module.exports = co.wrap(function* (N) {
     ORDER BY fromuserid ASC
   `))[0];
 
-  yield Promise.map(userids, co.wrap(function* (userid_row) {
+  yield Promise.map(userids, Promise.coroutine(function* (userid_row) {
     let fromuserid = userid_row.fromuserid;
 
     // ignore votes casted by deleted users

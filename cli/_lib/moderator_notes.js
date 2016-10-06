@@ -4,14 +4,13 @@
 'use strict';
 
 const Promise       = require('bluebird');
-const co            = require('bluebird-co').co;
 const mongoose      = require('mongoose');
 const html_unescape = require('./utils').html_unescape;
 const progress      = require('./utils').progress;
 const options       = require('nodeca.users/server/users/mod_notes/_parse_options');
 
 
-module.exports = co.wrap(function* (N) {
+module.exports = Promise.coroutine(function* (N) {
   const parse_bbcode = require('../../lib/parse_bbcode')(N);
 
   let conn = yield N.vbconvert.getConnection();
@@ -26,7 +25,7 @@ module.exports = co.wrap(function* (N) {
   let bulk = N.models.users.ModeratorNote.collection.initializeOrderedBulkOp();
   let count = 0;
 
-  yield Promise.map(rows, co.wrap(function* (row) {
+  yield Promise.map(rows, Promise.coroutine(function* (row) {
     bar.tick();
 
     let user   = yield N.models.users.User.findOne({ hid: row.userid }).lean(true);

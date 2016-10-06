@@ -3,15 +3,14 @@
 
 'use strict';
 
-const _           = require('lodash');
-const Promise     = require('bluebird');
-const co          = require('bluebird-co').co;
-const level       = require('level');
-const mkdirp      = require('mkdirp');
-const path        = require('path');
-const pump        = require('pump');
-const through2    = require('through2');
-const progress    = require('./_lib/utils').progress;
+const _        = require('lodash');
+const Promise  = require('bluebird');
+const level    = require('level');
+const mkdirp   = require('mkdirp');
+const path     = require('path');
+const pump     = require('pump');
+const through2 = require('through2');
+const progress = require('./_lib/utils').progress;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -36,7 +35,7 @@ module.exports.commandLineArguments = [
 ];
 
 
-module.exports.run = co.wrap(function* (N, args) {
+module.exports.run = Promise.coroutine(function* (N, args) {
   let total, bar, ldb = {};
 
   yield N.wire.emit('init:models', N);
@@ -198,7 +197,7 @@ module.exports.run = co.wrap(function* (N, args) {
           ldb.blogaids.put(file.blogaid_legacy, { attachment: file.attachmentid });
         }
 
-        let user_hid = users_by_id[file.media[0].user_id].hid;
+        let user_hid = users_by_id[file.media[0].user].hid;
 
         ldb.attachments.put(file.attachmentid, { user: user_hid, media: file.media_id });
         callback();
@@ -210,11 +209,11 @@ module.exports.run = co.wrap(function* (N, args) {
 
   bar.terminate();
 
-  yield Object.keys(ldb).map(name => Promise.fromCallback(callback => {
+  yield Promise.map(Object.keys(ldb), name => Promise.fromCallback(callback => {
     ldb[name].close(callback);
   }));
 
   N.logger.info('Export finished');
 
-  process.exit(0);
+  yield N.wire.emit('exit.shutdown');
 });
