@@ -128,6 +128,13 @@ module.exports = Promise.coroutine(function* (N) {
         let ts   = new Date(post.dateline * 1000);
         let user = users[post.userid] || {};
 
+        // mark poster as an active user
+        if (!user.active) {
+          user.active = true;
+
+          yield N.models.users.User.update({ _id: user._id }, { $set: { active: true } });
+        }
+
         hid++;
 
         let key = (user.usergroups || []).join(',') + ';' + String(!!post.allowsmilie);

@@ -25,6 +25,11 @@ module.exports = Promise.coroutine(function* (N) {
     // ignore albums belonging to deleted users
     if (!user) return;
 
+    // mark user as active
+    if (!user.active) {
+      yield N.models.users.User.update({ _id: user._id }, { $set: { active: true } });
+    }
+
     let rows = (yield conn.query(`
       SELECT albumid,title,description,createdate,lastpicturedate
       FROM album

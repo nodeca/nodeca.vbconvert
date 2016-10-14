@@ -168,6 +168,13 @@ module.exports = Promise.coroutine(function* (N) {
 
       let poster = user1.hid === texts[pm.pmtextid].fromuserid ? user1 : user2;
 
+      // mark sender of this message as an active user
+      if (!poster.active) {
+        poster.active = true;
+
+        yield N.models.users.User.update({ _id: poster._id }, { $set: { active: true } });
+      }
+
       let params_id = yield get_parser_param_id(
         poster.usergroups ? poster.usergroups : [ (yield get_default_usergroup())._id ],
         texts[pm.pmtextid].allowsmilie

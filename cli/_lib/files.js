@@ -146,6 +146,11 @@ module.exports = Promise.coroutine(function* (N) {
     // ignore content owned by deleted users
     if (!user) return;
 
+    // mark user as active
+    if (!user.active) {
+      yield N.models.users.User.update({ _id: user._id }, { $set: { active: true } });
+    }
+
     rows = (yield conn.query(`
       SELECT albumid,coverattachmentid
       FROM album WHERE userid = ? ORDER BY albumid ASC
