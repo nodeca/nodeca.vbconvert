@@ -8,10 +8,11 @@
   "license": "MIT",
   "repository": "nodeca/nodeca.vbconvert",
   "dependencies": {
+    "lodash": "^4.16.4",
     "mysql2": "1.0.0-rc.12",
-    "progress": "tj/node-progress",
     "path-to-regexp": "1",
-    "phpunserialize": "~1.0.1"
+    "phpunserialize": "~1.0.1",
+    "progress": "tj/node-progress"
   },
   "browserify": {
     "transform": [
