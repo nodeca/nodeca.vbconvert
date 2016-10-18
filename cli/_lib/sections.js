@@ -35,7 +35,7 @@ module.exports = Promise.coroutine(function* (N) {
   //
   // Create sections
   //
-  yield rows.map(Promise.coroutine(function* (row) {
+  yield Promise.map(rows, Promise.coroutine(function* (row) {
     // ignoring one inactive forum: vBCms Comments
     if (!(row.options & forum_active)) return;
 
@@ -68,7 +68,7 @@ module.exports = Promise.coroutine(function* (N) {
   //
   // Link each section with its parent
   //
-  yield rows.map(Promise.coroutine(function* (row) {
+  yield Promise.map(rows, Promise.coroutine(function* (row) {
     // top-level forum
     if (row.parentid < 0) return;
 
