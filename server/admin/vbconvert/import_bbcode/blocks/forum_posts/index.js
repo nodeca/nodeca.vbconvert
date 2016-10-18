@@ -6,14 +6,14 @@
 
 module.exports = function (N) {
   N.wire.after('server:admin.vbconvert.import_bbcode', { priority: 20 }, function* forum_posts_task_widget(env) {
-    let data = yield N.queue.worker('vbconvert_forum_posts_import').status();
-
+    let task = yield N.queue.getTask('vbconvert_forum_posts_import');
     let task_info = {};
 
-    if (data && data.state === 'aggregating') {
-      task_info.current = data.chunks.done + data.chunks.errored;
-      task_info.total   = data.chunks.done + data.chunks.errored +
-                          data.chunks.active + data.chunks.pending;
+    if (task && task.state !== 'finished') {
+      task_info = {
+        current: task.progress,
+        total:   task.total
+      };
     }
 
     env.res.blocks.push({ name: 'forum_posts', task_info });
