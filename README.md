@@ -58,9 +58,9 @@ service mysql start
 Launch
 ------
 
-```sh
-./nodeca.js vbconvert
-```
+ - drop mongodb databases (`nodeca`, `nodeca-files`)
+ - drop redis database
+ - run `./nodeca.js vbconvert`
 
 Run tests for link mapping
 --------------------------
