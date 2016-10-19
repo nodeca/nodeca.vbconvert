@@ -44,6 +44,8 @@ module.exports = Promise.coroutine(function* (N) {
                          .where('hid', row.userid)
                          .lean(true);
 
+    if (!user) return;
+
     // already imported
     if (user.avatar_id) return;
 
