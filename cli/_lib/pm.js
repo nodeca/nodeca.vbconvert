@@ -44,129 +44,152 @@ module.exports = Promise.coroutine(function* (N) {
   });
 
 
-  let all_pms = (yield conn.query('SELECT pmid,userid,pmtextid,parentpmid,messageread FROM pm ORDER BY pmid ASC'))[0]
-                  .map(p => ({
-                    pmid:        p.pmid,
-                    userid:      p.userid,
-                    pmtextid:    p.pmtextid,
-                    parentpmid:  p.parentpmid,
-                    messageread: p.messageread,
-                    dialogids:   {}
-                  }));
-  let pm_by_parent = {};
-  let pm_by_text = {};
-  let pm_by_user = {};
-  let pm_by_id = _.keyBy(all_pms, 'pmid');
-
-  all_pms.forEach(pm => {
-    let parentid = pm.parentpmid;
-
-    if (parentid !== 0) {
-      pm_by_parent[parentid] = pm_by_parent[parentid] || [];
-      pm_by_parent[parentid].push(pm);
-    }
-  });
-
-  all_pms.forEach(pm => {
-    let textid = pm.pmtextid;
-
-    pm_by_text[textid] = pm_by_text[textid] || [];
-    pm_by_text[textid].push(pm);
-  });
-
-  all_pms.forEach(pm => {
-    let userid = pm.userid;
-
-    pm_by_user[userid] = pm_by_user[userid] || [];
-    pm_by_user[userid].push(pm);
-  });
-
-
-  // Find all posts in the same thread as the current one
+  // Fetch all dialogs and return dialog chains (array of arrays). Note that
+  // each dialog chain can include multiple users (CC's, BCC's), so each
+  // chain will need to be split later.
   //
-  function get_relative(root_pm, acc) {
-    acc = acc || [ root_pm ];
+  // Return value (each subarray contains ids of dialogs related to each other):
+  // [ [ pmid, pmid, pmid, ... ], [ pmid, pmid, pmid, ... ], ... ]
+  //
+  const link_dialog_messages = Promise.coroutine(function* () {
+    // TODO: this function consumes a lot of memory, check a way to improve this
+    let all_pms = (yield conn.query('SELECT pmid,pmtextid,parentpmid FROM pm ORDER BY pmid ASC'))[0];
+    let linked_pms = {};
+    let pm_by_parent = {};
+    let pm_by_text = {};
+    let pm_by_id = _.keyBy(all_pms, 'pmid');
+    let result = [];
 
-    // Assume another post is related to current one if either:
-    //
-    //  1. pmtextid is the same (two copies of the same text)
-    //  2. parentpmid matches pmid (child)
-    //  3. pmid matches parentpmid (parent)
-    //  4. parentpmid matches parentpmid (siblings)
-    //
-    let found = [].concat(pm_by_text[root_pm.pmtextid] || [])
-                  .concat(pm_by_parent[root_pm.pmid] || []);
+    all_pms.forEach(pm => {
+      let parentid = pm.parentpmid;
 
-    if (root_pm.parentpmid) {
-      found = found.concat(pm_by_parent[root_pm.parentpmid] || []);
-
-      if (pm_by_id[root_pm.parentpmid]) {
-        found.push(pm_by_id[root_pm.parentpmid]);
+      if (parentid !== 0) {
+        pm_by_parent[parentid] = pm_by_parent[parentid] || [];
+        pm_by_parent[parentid].push(pm);
       }
+    });
+
+    all_pms.forEach(pm => {
+      let textid = pm.pmtextid;
+
+      pm_by_text[textid] = pm_by_text[textid] || [];
+      pm_by_text[textid].push(pm);
+    });
+
+    // Find all posts in the same thread as the current one
+    //
+    function get_relative(root_pm, acc) {
+      acc = acc || [ root_pm ];
+
+      // Assume another post is related to current one if either:
+      //
+      //  1. pmtextid is the same (two copies of the same text)
+      //  2. parentpmid matches pmid (child)
+      //  3. pmid matches parentpmid (parent)
+      //  4. parentpmid matches parentpmid (siblings)
+      //
+      let found = [].concat(pm_by_text[root_pm.pmtextid] || [])
+                    .concat(pm_by_parent[root_pm.pmid] || []);
+
+      if (root_pm.parentpmid) {
+        found = found.concat(pm_by_parent[root_pm.parentpmid] || []);
+
+        if (pm_by_id[root_pm.parentpmid]) {
+          found.push(pm_by_id[root_pm.parentpmid]);
+        }
+      }
+
+      for (let i = 0; i < found.length; i++) {
+        let pm = found[i];
+
+        if (_.findIndex(acc, p => p.pmid === pm.pmid) !== -1) continue;
+
+        acc.push(pm);
+
+        acc = get_relative(pm, acc);
+      }
+
+      return acc;
     }
 
-    for (let i = 0; i < found.length; i++) {
-      let pm = found[i];
+    all_pms.forEach(root_pm => {
+      if (linked_pms[root_pm.pmid]) return;
 
-      if (_.findIndex(acc, p => p.pmid === pm.pmid) !== -1) continue;
+      let chain = [];
 
-      acc.push(pm);
+      get_relative(root_pm).forEach(pm => {
+        linked_pms[pm.pmid] = true;
+        chain.push(pm.pmid);
+      });
 
-      acc = get_relative(pm, acc);
-    }
+      result.push(chain.sort());
+    });
 
-    return acc;
-  }
+    return result;
+  });
+
 
   // Process dialog owned by user `fromuserid` with `touserid`,
   // starting with a message `root_pm`.
   //
-  const import_dialog = Promise.coroutine(function* (root_pm, fromuserid, touserid, result) {
-    let pms       = get_relative(root_pm).sort((a, b) => a.pmid - b.pmid);
-    let pmtextids = _.map(pms, 'pmtextid');
-    let texts     = _.keyBy(
-      (yield conn.query(`
-        SELECT * FROM pmtext
-        WHERE pmtextid IN (${pmtextids.map(Number).join(',')})
-      `))[0],
-      'pmtextid'
-    );
-    let user1     = (yield get_user_by_hid(fromuserid)) ||
-                    { hid: fromuserid, _id: new mongoose.Types.ObjectId('000000000000000000000000') };
-    let user2     = (yield get_user_by_hid(touserid)) ||
-                    { hid: touserid,   _id: new mongoose.Types.ObjectId('000000000000000000000000') };
+  /* eslint-disable max-depth */
+  const import_dialog = Promise.coroutine(function* (pms, root_pm, fromuserid, touserid, data) {
+    // check if it's imported previously in this run
+    for (let mapping of data.mappings) {
+      if (mapping.mysql === root_pm.pmid && mapping.to_user === touserid) {
+        return;
+      }
+    }
+
+    let user1 = (yield get_user_by_hid(fromuserid)) ||
+                { hid: fromuserid, _id: new mongoose.Types.ObjectId('000000000000000000000000') };
+    let user2 = (yield get_user_by_hid(touserid)) ||
+                { hid: touserid,   _id: new mongoose.Types.ObjectId('000000000000000000000000') };
 
     let dialog = {
-      _id:       new mongoose.Types.ObjectId(texts[root_pm.pmtextid].dateline),
-      common_id: new mongoose.Types.ObjectId(texts[root_pm.pmtextid].dateline),
-      title:     html_unescape(texts[root_pm.pmtextid].title),
+      _id:       new mongoose.Types.ObjectId(root_pm.dateline),
+      common_id: new mongoose.Types.ObjectId(root_pm.dateline),
+      title:     html_unescape(root_pm.title),
       user:      user1._id,
       to:        user2._id,
       exists:    true,
       unread:    0
     };
 
-    result.dialogs.push(dialog);
-
-    // check if dialog was already imported before for another user,
-    // get common_id if that's the case
-    for (let pm of pms) {
-      if (pm.dialogids[fromuserid]) {
-        dialog.common_id = pm.dialogids[fromuserid];
-      }
-    }
+    data.dialogs.push(dialog);
 
     for (let pm of pms) {
-      if (!texts[pm.pmtextid]) continue;
-      if (pm.userid !== fromuserid) continue;
-
       // check if they have the same title (break the chain otherwise)
-      if (texts[pm.pmtextid].title.replace(/^Re:/, '').trim() !==
-          texts[root_pm.pmtextid].title.replace(/^Re:/, '').trim()) {
+      if (pm.title.replace(/^Re:/, '').trim() !==
+          root_pm.title.replace(/^Re:/, '').trim()) {
         continue;
       }
 
-      let poster = user1.hid === texts[pm.pmtextid].fromuserid ? user1 : user2;
+      // if dialog was already imported before for another user,
+      // get common_id from there
+      if (pm.userid === touserid) {
+        for (let mapping of data.mappings) {
+          if (mapping.mysql === pm.pmid && mapping.to_user === fromuserid) {
+            dialog.common_id = mapping.dialog;
+          }
+        }
+      }
+
+      if (pm.userid !== fromuserid) {
+        continue;
+      }
+
+      let to_users = unserialize(pm.touserarray);
+
+      // check that other party is either sender or recipient of this message
+      if (!(touserid === pm.fromuserid ||
+            to_users[touserid] ||
+            (to_users.cc && to_users.cc[touserid]) ||
+            (to_users.bcc && to_users.bcc[touserid]))) {
+        continue;
+      }
+
+      let poster = user1.hid === pm.fromuserid ? user1 : user2;
 
       // mark sender of this message as an active user
       if (!poster.active) {
@@ -177,14 +200,14 @@ module.exports = Promise.coroutine(function* (N) {
 
       let params_id = yield get_parser_param_id(
         poster.usergroups ? poster.usergroups : [ (yield get_default_usergroup())._id ],
-        texts[pm.pmtextid].allowsmilie
+        pm.allowsmilie
       );
 
-      let message_text = html_unescape(texts[pm.pmtextid].message);
+      let message_text = html_unescape(pm.message);
 
       let message = {
-        _id:        new mongoose.Types.ObjectId(texts[pm.pmtextid].dateline),
-        ts:         new Date(texts[pm.pmtextid].dateline * 1000),
+        _id:        new mongoose.Types.ObjectId(pm.dateline),
+        ts:         new Date(pm.dateline * 1000),
         exists:     true,
         parent:     dialog._id,
         user:       poster._id,
@@ -203,10 +226,8 @@ module.exports = Promise.coroutine(function* (N) {
 
       if (pm.messageread === 0) dialog.unread++;
 
-      pm.dialogids[touserid] = dialog.common_id;
-
-      result.messages.push(message);
-      result.map.push({
+      data.messages.push(message);
+      data.mappings.push({
         mysql:   pm.pmid,
         to_user: user1.hid === pm.userid ? user2.hid : user1.hid,
         dialog:  dialog.common_id,
@@ -216,38 +237,41 @@ module.exports = Promise.coroutine(function* (N) {
     }
   });
 
-  let bar = progress(' pm :current/:total [:bar] :percent', all_pms.length);
+  let dialog_chains = yield link_dialog_messages();
+  let pm_count = (yield conn.query('SELECT count(*) AS total FROM pm'))[0][0].total;
+  let bar = progress(' pm :current/:total [:bar] :percent', pm_count);
 
-  let old_maps = yield N.models.vbconvert.PMMapping.find().lean(true);
+  // dialogs in different chains are guaranteed to be in different dialogs,
+  // so we can import chains in parallel
+  yield Promise.map(dialog_chains, Promise.coroutine(function* (chain) {
+    // if first message is imported, we can assume the rest is imported also
+    if (yield N.models.vbconvert.PMMapping.findOne({ mysql: chain[0] }).lean(true)) {
+      return;
+    }
 
-  old_maps.forEach(m => {
-    pm_by_id[m.mysql].dialogids[m.to_user] = m.dialog;
-  });
+    let data = {
+      dialogs: [],
+      messages: [],
+      mappings: []
+    };
 
-  // it'll be no longer used, so clean up memory a bit
-  all_pms = null;
-  old_maps = null;
+    let pms = (yield conn.query(`
+      SELECT pm.*, pmtext.*
+      FROM pm JOIN pmtext USING(pmtextid)
+      WHERE pmid IN (${chain.join(',')})
+      ORDER BY pmid ASC
+    `))[0];
 
-  yield Promise.map(Object.keys(pm_by_user), Promise.coroutine(function* (userid) {
-    userid = +userid;
-
-    for (let root_pm of pm_by_user[userid]) {
+    for (let root_pm of pms) {
       bar.tick();
 
-      let root_pmtext = (yield conn.query(`
-        SELECT * FROM pmtext WHERE pmtextid = ?
-      `, [ root_pm.pmtextid ]))[0][0];
-
-      if (!root_pmtext) {
-        // message exists, but message text doesn't; skip those
-        continue;
-      }
+      let userid = root_pm.userid;
 
       // Copy this message for each user;
       // if no users are listed, copy for each CC;
       // if no users are listed or CC'd, copy for each BCC
       //
-      let to_users    = unserialize(root_pmtext.touserarray);
+      let to_users    = unserialize(root_pm.touserarray);
       let to_users_k  = _.without(Object.keys(to_users), 'cc', 'bcc');
 
       if (to_users_k.length === 0) {
@@ -261,7 +285,7 @@ module.exports = Promise.coroutine(function* (N) {
       let recipients;
 
       // determine who user is communicating with (could be sender or recipient)
-      if (+root_pmtext.fromuserid === userid) {
+      if (+root_pm.fromuserid === userid) {
         recipients = to_users_k.map(Number);
 
         // a user sent pm to multiple people including herself, remove her from CC
@@ -269,42 +293,38 @@ module.exports = Promise.coroutine(function* (N) {
           recipients = _.without(recipients, userid);
         }
       } else {
-        recipients = [ +root_pmtext.fromuserid ];
+        recipients = [ +root_pm.fromuserid ];
       }
 
       // safeguard to ensure all messages are imported, shouldn't happen normally
       if (recipients.length === 0) {
-        N.logger.warn('No recipients found for message=' + root_pm.pmid + ', ' + root_pmtext.touserarray);
+        N.logger.warn('No recipients found for message=' + root_pm.pmid + ', ' + root_pm.touserarray);
       }
 
-      let data = {
-        dialogs: [],
-        messages: [],
-        map: []
-      };
-
-      for (let user of recipients) {
-        // check if already imported
-        if (root_pm.dialogids[user]) continue;
-
-        yield import_dialog(root_pm, userid, user, data);
+      for (let recipient of recipients) {
+        yield import_dialog(pms, root_pm, userid, recipient, data);
       }
+    }
 
-      if (data.dialogs.length > 0) {
-        let bulk;
+    // Bulk-insert items from a single dialog chain.
+    //
+    // Note that in case convertor fails there will be no data loss,
+    // but some dialogs may be imported twice.
+    //
+    if (data.dialogs.length > 0) {
+      let bulk;
 
-        bulk = N.models.users.Dialog.collection.initializeOrderedBulkOp();
-        data.dialogs.forEach(d => { bulk.insert(d); });
-        yield bulk.execute();
+      bulk = N.models.users.Dialog.collection.initializeOrderedBulkOp();
+      data.dialogs.forEach(d => { bulk.insert(d); });
+      yield bulk.execute();
 
-        bulk = N.models.users.DlgMessage.collection.initializeOrderedBulkOp();
-        data.messages.forEach(d => { bulk.insert(d); });
-        yield bulk.execute();
+      bulk = N.models.users.DlgMessage.collection.initializeOrderedBulkOp();
+      data.messages.forEach(d => { bulk.insert(d); });
+      yield bulk.execute();
 
-        bulk = N.models.vbconvert.PMMapping.collection.initializeOrderedBulkOp();
-        data.map.forEach(d => { bulk.insert(d); });
-        yield bulk.execute();
-      }
+      bulk = N.models.vbconvert.PMMapping.collection.initializeOrderedBulkOp();
+      data.mappings.forEach(d => { bulk.insert(d); });
+      yield bulk.execute();
     }
   }), { concurrency: 100 });
 
