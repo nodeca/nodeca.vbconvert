@@ -185,7 +185,8 @@ module.exports = Promise.coroutine(function* (N) {
       if (!(touserid === pm.fromuserid ||
             to_users[touserid] ||
             (to_users.cc && to_users.cc[touserid]) ||
-            (to_users.bcc && to_users.bcc[touserid]))) {
+            (to_users.bcc && to_users.bcc[touserid]) ||
+            !touserid)) {
         continue;
       }
 
