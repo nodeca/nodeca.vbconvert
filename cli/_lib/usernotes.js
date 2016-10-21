@@ -42,7 +42,7 @@ module.exports = Promise.coroutine(function* (N) {
       AND rcd_notepad != 'Здесь можно хранить любые заметки.'
   `))[0];
 
-  bar = progress(' usernotes :current/:total [:bar] :percent', rows.length);
+  bar = progress(' usernotes :current/:total :percent', rows.length);
 
   yield Promise.map(rows, Promise.coroutine(function* (row) {
     bar.tick();

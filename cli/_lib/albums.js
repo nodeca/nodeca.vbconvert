@@ -14,7 +14,7 @@ module.exports = Promise.coroutine(function* (N) {
 
   let rows = (yield conn.query('SELECT count(*) AS count FROM album'))[0];
 
-  let bar = progress(' albums :current/:total [:bar] :percent', rows[0].count);
+  let bar = progress(' albums :current/:total :percent', rows[0].count);
 
   let userids = (yield conn.query('SELECT userid FROM album GROUP BY userid ORDER BY userid ASC'))[0];
 

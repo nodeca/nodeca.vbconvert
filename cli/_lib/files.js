@@ -133,7 +133,7 @@ module.exports = Promise.coroutine(function* (N) {
 
   let rows = (yield conn.query('SELECT count(*) AS count FROM attachment'))[0];
 
-  let bar = progress(' files :current/:total [:bar] :percent', rows[0].count);
+  let bar = progress(' files :current/:total :percent', rows[0].count);
 
   let userids = (yield conn.query('SELECT userid FROM attachment GROUP BY userid ORDER BY userid ASC'))[0];
 

@@ -26,7 +26,7 @@ module.exports = Promise.coroutine(function* (N) {
     ORDER BY subscribeforumid ASC
   `))[0];
 
-  bar = progress(' section subscriptions :current/:total [:bar] :percent', rows.length);
+  bar = progress(' section subscriptions :current/:total :percent', rows.length);
 
   let bulk = N.models.users.Subscription.collection.initializeUnorderedBulkOp();
   let count = 0;
@@ -75,7 +75,7 @@ module.exports = Promise.coroutine(function* (N) {
 
   rows = (yield conn.query('SELECT count(*) AS count FROM subscribethread'))[0];
 
-  bar = progress(' topic subscriptions :current/:total [:bar] :percent', rows[0].count);
+  bar = progress(' topic subscriptions :current/:total :percent', rows[0].count);
 
   let userids = (yield conn.query(`
     SELECT userid FROM subscribethread

@@ -320,7 +320,7 @@ module.exports = Promise.coroutine(function* (N) {
   {
     let rows = (yield conn.query('SELECT threadid FROM thread ORDER BY threadid ASC'))[0];
 
-    let bar = progress(' topics :current/:total [:bar] :percent', rows.length);
+    let bar = progress(' topics :current/:total :percent', rows.length);
 
     yield Promise.map(rows, function (row) {
       return import_topic(row.threadid).then(() => {

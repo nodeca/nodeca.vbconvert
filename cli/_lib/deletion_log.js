@@ -26,7 +26,7 @@ module.exports = Promise.coroutine(function* (N) {
     WHERE type='thread'
   `))[0];
 
-  bar = progress(' deleted topics :current/:total [:bar] :percent', rows.length);
+  bar = progress(' deleted topics :current/:total :percent', rows.length);
 
   yield Promise.map(rows, Promise.coroutine(function* (row) {
     bar.tick();
@@ -55,7 +55,7 @@ module.exports = Promise.coroutine(function* (N) {
     WHERE type='post'
   `))[0];
 
-  bar = progress(' deleted posts :current/:total [:bar] :percent', rows.length);
+  bar = progress(' deleted posts :current/:total :percent', rows.length);
 
   yield Promise.map(rows, Promise.coroutine(function* (row) {
     bar.tick();

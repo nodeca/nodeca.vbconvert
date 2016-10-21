@@ -17,7 +17,7 @@ module.exports = Promise.coroutine(function* (N) {
 
   let rows = (yield conn.query('SELECT * FROM usernote'))[0];
 
-  let bar = progress(' mod notes :current/:total [:bar] :percent', rows.length);
+  let bar = progress(' mod notes :current/:total :percent', rows.length);
 
   // re-import all moderator notes from scratch every time
   yield N.models.users.ModeratorNote.remove({});

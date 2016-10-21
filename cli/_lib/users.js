@@ -41,7 +41,7 @@ module.exports = Promise.coroutine(function* (N) {
     ORDER BY userid ASC
   `))[0];
 
-  let bar = progress(' users :current/:total [:bar] :percent', rows.length);
+  let bar = progress(' users :current/:total :percent', rows.length);
 
   yield Promise.map(rows, Promise.coroutine(function* (row) {
     bar.tick();

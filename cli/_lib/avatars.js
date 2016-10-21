@@ -32,7 +32,7 @@ module.exports = Promise.coroutine(function* (N) {
     ORDER BY userid ASC
   `))[0];
 
-  let bar = progress(' avatars :current/:total [:bar] :percent', rows.length);
+  let bar = progress(' avatars :current/:total :percent', rows.length);
   let counter = 0;
 
   yield Promise.map(rows, Promise.coroutine(function* (row) {

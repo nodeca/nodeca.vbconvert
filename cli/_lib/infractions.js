@@ -31,7 +31,7 @@ module.exports = Promise.coroutine(function* (N) {
     ORDER BY infractionid ASC
   `))[0];
 
-  bar = progress(' infractions :current/:total [:bar] :percent', rows.length);
+  bar = progress(' infractions :current/:total :percent', rows.length);
 
   yield Promise.map(rows, Promise.coroutine(function* (row) {
     bar.tick();
@@ -94,7 +94,7 @@ module.exports = Promise.coroutine(function* (N) {
 
   rows = rows.filter(row => !!row.liftdate);
 
-  bar = progress(' infractions (bans) :current/:total [:bar] :percent', rows.length);
+  bar = progress(' infractions (bans) :current/:total :percent', rows.length);
 
   yield Promise.map(rows, Promise.coroutine(function* (row) {
     bar.tick();

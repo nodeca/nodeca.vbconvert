@@ -1,7 +1,7 @@
 
 'use strict';
 
-const ProgressBar = require('progress');
+const _ = require('lodash');
 
 const html_entities = {
   '&amp;':  '&',
@@ -20,23 +20,43 @@ module.exports.html_unescape = function (text) {
 };
 
 
-// Wrapper for 'progress'
+// Simple progress bar implementation
 //
 module.exports.progress = function (text, total) {
-  if (!process.stderr.isTTY) {
-    return {
-      tick() {},
-      terminate() {}
-    };
-  }
+  let terminated = false;
+  let current = 0;
 
-  return new ProgressBar(text, {
-    stream: process.stderr,
-    complete: '=',
-    incomplete: ' ',
-    width: 40,
-    clear: true,
-    total,
-    renderThrottle: 300
-  });
+  let refresh_progress = _.throttle(() => {
+    process.stderr.write('\r');
+    process.stderr.clearLine();
+
+    process.stderr.write(
+      text.replace(/:current/g, current)
+          .replace(/:total/g,   total)
+          .replace(/:percent/g, (current / total * 100).toFixed(1) + '%')
+    );
+  }, 300);
+
+  let bar = {
+    tick(diff = 1) {
+      current += diff;
+
+      if (!process.stderr.isTTY) return;
+      if (terminated) return;
+
+      refresh_progress();
+    },
+
+    terminate() {
+      if (!process.stderr.isTTY) return;
+      if (terminated) return;
+
+      process.stderr.write('\r');
+      process.stderr.clearLine();
+    }
+  };
+
+  bar.tick(0);
+
+  return bar;
 };

@@ -240,7 +240,7 @@ module.exports = Promise.coroutine(function* (N) {
 
   let dialog_chains = yield link_dialog_messages();
   let pm_count = (yield conn.query('SELECT count(*) AS total FROM pm'))[0][0].total;
-  let bar = progress(' pm :current/:total [:bar] :percent', pm_count);
+  let bar = progress(' pm :current/:total :percent', pm_count);
 
   // dialogs in different chains are guaranteed to be in different dialogs,
   // so we can import chains in parallel

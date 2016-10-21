@@ -27,7 +27,7 @@ module.exports = Promise.coroutine(function* (N) {
 
   let rows = (yield conn.query('SELECT count(*) AS count FROM votes'))[0];
 
-  let bar = progress(' votes :current/:total [:bar] :percent', rows[0].count);
+  let bar = progress(' votes :current/:total :percent', rows[0].count);
 
   let userids = (yield conn.query(`
     SELECT fromuserid FROM votes

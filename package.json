@@ -11,8 +11,7 @@
     "lodash": "^4.16.4",
     "mysql2": "~1.1.1",
     "path-to-regexp": "1",
-    "phpunserialize": "~1.0.1",
-    "progress": "tj/node-progress"
+    "phpunserialize": "~1.0.1"
   },
   "browserify": {
     "transform": [

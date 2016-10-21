@@ -19,7 +19,7 @@ module.exports = Promise.coroutine(function* (N) {
 
   let rows = (yield conn.query('SELECT * FROM userlist WHERE type="ignore"'))[0];
 
-  let bar = progress(' ignores :current/:total [:bar] :percent', rows.length);
+  let bar = progress(' ignores :current/:total :percent', rows.length);
 
   let bulk = N.models.users.Ignore.collection.initializeUnorderedBulkOp();
   let count = 0;
