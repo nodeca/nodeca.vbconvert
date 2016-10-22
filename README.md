@@ -60,7 +60,7 @@ Launch
 
  - drop mongodb databases (`nodeca`, `nodeca-files`)
  - drop redis database
- - run `./nodeca.js vbconvert`
+ - run `./server.js vbconvert`
 
 Run tests for link mapping
 --------------------------
@@ -68,7 +68,7 @@ Run tests for link mapping
 To test link mapping, run:
 
 ```sh
-NODECA_ENV=development ./nodeca.js test nodeca.vbconvert
+NODECA_ENV=development ./server.js test nodeca.vbconvert
 ```
 
 Link mapping tests are only run if you have a database with a real data. Otherwise (e.g. on travis) they are skipped entirely.
