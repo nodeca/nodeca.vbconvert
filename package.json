@@ -8,7 +8,7 @@
   "license": "MIT",
   "repository": "nodeca/nodeca.vbconvert",
   "dependencies": {
-    "lodash": "~4.16.5",
+    "lodash": "~4.17.1",
     "mysql2": "~1.1.1",
     "path-to-regexp": "1",
     "phpunserialize": "~1.0.1"
