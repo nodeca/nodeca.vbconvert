@@ -22,12 +22,12 @@ vbconvert:
   #
   usergroups:
     1:  guests
-    2:  just_registered
+    2:  incomplete_profile # upgrades to just_registered
     6:  administrators
     7:  moderators
     8:  banned
-    10: novices
-    11: members
+    10: incomplete_profile # upgrades to novices
+    11: incomplete_profile # upgrades to members
     12: violators
     13: che
     14: losers

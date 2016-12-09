@@ -66,16 +66,11 @@ module.exports = Promise.coroutine(function* (N) {
     user.usergroups     = [];
     user.about          = {};
 
+    // force users to resubmit birthday and location
+    user.incomplete_profile = true;
+
     if (row.icq && Number(row.icq)) user.about.icq = row.icq;
     if (row.skype) user.about.skype = row.skype;
-
-    if (row.birthday) {
-      let date = new Date(row.birthday);
-
-      if (!isNaN(date)) {
-        user.about.birthday = date;
-      }
-    }
 
     if (row.usergroupid === UNCONFIRMED) {
       // Process users with unconfirmed email:
