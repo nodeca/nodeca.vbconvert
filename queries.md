@@ -53,3 +53,8 @@ Object.keys(stats).sort(function (a, b) {
 print('total domains: ', Object.keys(stats).length);
 ```
 
+Find users with visually similar (homoglyphic) nicknames:
+
+```js
+db.users.users.aggregate([{$group:{_id:'$nick_normalized',sum:{$sum:1}}},{$match:{sum:{$ne:1}}},{$sort:{_id:1}}])
+```
