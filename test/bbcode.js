@@ -237,9 +237,26 @@ describe('BBcode', function () {
     assert.equal(to_md(tokenize('[foo](bar)')), '\\[foo](bar)');
   });
 
-  it('escape block tags', function () {
+  it('escape block tags: hr and lheading', function () {
     assert.equal(to_md(tokenize('foo\n-------')),
                  'foo  \n\\-------');
+  });
+
+  it('escape block tags: hr', function () {
+    assert.equal(to_md(tokenize('foo\n- - -')),
+                 'foo  \n\\- - -');
+  });
+
+  it('escape block tags: lheading', function () {
+    assert.equal(to_md(tokenize('foo\n-')),
+                 'foo  \n\\-');
+  });
+
+  it('escape block tags: no escape necessary', function () {
+    assert.equal(to_md(tokenize('foo\n-=-')),
+                 'foo  \n-=-');
+    assert.equal(to_md(tokenize('foo\n= =')),
+                 'foo  \n= =');
   });
 
   it('escape quotes', function () {
