@@ -21,4 +21,7 @@ module.exports = Promise.coroutine(function* (N) {
 
     yield store.set({ general_abuse_report_section: { value: section._id.toString() } });
   }
+
+  // disable headings in forum posts
+  yield store.set({ forum_markup_heading: { value: false } });
 });
