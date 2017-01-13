@@ -70,14 +70,14 @@ module.exports = Promise.coroutine(function* (N) {
         from:  users[row.fromuserid]._id,
         to:    users[row.touserid]._id,
         'for': post_mapping.post_id,
-        type:  N.models.users.Vote.types.FORUM_POST
+        type:  N.shared.content_type.FORUM_POST
       }).upsert().update({
         $setOnInsert: {
           _id:   new mongoose.Types.ObjectId(row.date),
           from:  users[row.fromuserid]._id,
           to:    users[row.touserid]._id,
           'for': post_mapping.post_id,
-          type:  N.models.users.Vote.types.FORUM_POST,
+          type:  N.shared.content_type.FORUM_POST,
           hb:    users[row.fromuserid].hb,
           value: Number(row.vote)
         }

@@ -57,7 +57,7 @@ module.exports = Promise.coroutine(function* (N) {
       $setOnInsert: {
         user:    user._id,
         to:      section._id,
-        to_type: N.models.users.Subscription.to_types.FORUM_SECTION,
+        to_type: N.shared.content_type.FORUM_SECTION,
         type:    N.models.users.Subscription.types[type]
       }
     });
@@ -122,7 +122,7 @@ module.exports = Promise.coroutine(function* (N) {
         $setOnInsert: {
           user:    user._id,
           to:      topic._id,
-          to_type: N.models.users.Subscription.to_types.FORUM_TOPIC,
+          to_type: N.shared.content_type.FORUM_TOPIC,
           type:    N.models.users.Subscription.types[type]
         }
       });

@@ -71,7 +71,7 @@ module.exports = Promise.coroutine(function* (N) {
 
       if (post) {
         infraction.src = post.post_id;
-        infraction.src_type = 'FORUM_POST';
+        infraction.src_type = N.shared.content_type.FORUM_POST;
       }
     }
 
