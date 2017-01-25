@@ -48,7 +48,10 @@ vbconvert:
   # Section for abuse reports
   abuse_report_section: 103
 
-  # Section for abuse reports
+  # Market section (disable is_searchable for it and its subsections)
+  market_section: 31
+
+  # Usergroup for newly registered users
   registered_user_group: just_registered
 
   # Original smilies -> markdown-it smilies
