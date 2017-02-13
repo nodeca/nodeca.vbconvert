@@ -328,6 +328,11 @@ describe('BBcode', function () {
     assert.equal(to_md(tokenize('[url=www.foo.bar]www.foo.bar[/url]')), '<http://www.foo.bar>');
   });
 
+  it('replace url tag with autolink if content matches url param', function () {
+    assert.equal(to_md(tokenize('[url=http://example.com/_foo%%20%25bar_] http://example.com/_foo%%20%25bar_ [/url]')),
+                 '<http://example.com/_foo%25%20%25bar_>');
+  });
+
   it("don't render banned links", function () {
     assert.equal(to_md(tokenize('[url]www.*****.bar[/url]')), 'www.\\*\\*\\*\\*\\*.bar');
   });
