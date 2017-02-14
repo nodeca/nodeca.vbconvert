@@ -46,4 +46,21 @@ module.exports = Promise.coroutine(function* (N) {
       { multi: true }
     );
   }
+
+  //
+  // Import ban lists
+  //
+  let conn = yield N.vbconvert.getConnection();
+
+  let censorwords = (yield conn.query("SELECT value FROM setting WHERE varname='censorwords'"))[0][0].value;
+
+  yield store.set({ content_filter_urls: { value: censorwords.replace(/\s+/g, '\n') } });
+
+  let banip = (yield conn.query("SELECT value FROM setting WHERE varname='banip'"))[0][0].value;
+
+  yield store.set({ ban_ip: { value: banip } });
+
+  let banemail = (yield conn.query("SELECT data FROM datastore WHERE title='banemail'"))[0][0].data;
+
+  yield store.set({ ban_email: { value: banemail } });
 });
