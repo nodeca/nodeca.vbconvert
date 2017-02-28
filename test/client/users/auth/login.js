@@ -51,7 +51,7 @@ describe('Login', function () {
         email_or_nick: login,
         pass: password
       })
-      .do.click('button[type="submit"]')
+      .do.click('form[data-on-submit="users.auth.login.plain_exec"] button[type="submit"]')
       .do.wait('.user-member-page')
       .test.evaluate(function (user_id) {
         /* global $ */
