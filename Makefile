@@ -28,6 +28,12 @@ test-ci:
 	git clone git://github.com/nodeca/nodeca.git ${TMP_PATH}
 	mkdir -p ${TMP_PATH}/nodeca_modules
 	cp -r . ${TMP_PATH}/nodeca_modules/${NPM_PACKAGE}
+
+	test -n "${TRAVIS_BRANCH}" && test "${TRAVIS_BRANCH}" != "master" && \
+		cd ${TMP_PATH} && \
+		git rev-parse --verify "origin/${TRAVIS_BRANCH}" && \
+		git checkout -b "${TRAVIS_BRANCH}" "origin/${TRAVIS_BRANCH}" || true
+
 	cd ${TMP_PATH} && $(MAKE) deps-ci
 	echo 'applications:\n - nodeca.vbconvert' > ${TMP_PATH}/config/additional.yml
 	cd ${TMP_PATH} && NODECA_APP=${NPM_PACKAGE} $(MAKE) test
