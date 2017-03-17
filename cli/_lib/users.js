@@ -122,22 +122,22 @@ module.exports = Promise.coroutine(function* (N) {
 
     yield user.save();
 
-    let authLink = new N.models.users.AuthLink();
+    let authProvider = new N.models.users.AuthProvider();
 
-    authLink.user    = user._id;
-    authLink.type    = 'vb';
-    authLink.email   = row.email;
-    authLink.ts      = new Date(row.passworddate);
-    authLink.last_ts = new Date(row.passworddate);
-    authLink.ip      = row.ipaddress;
-    authLink.last_ip = row.ipaddress;
-    authLink._id     = new mongoose.Types.ObjectId(authLink.ts / 1000);
-    authLink.meta    = {
+    authProvider.user    = user._id;
+    authProvider.type    = 'vb';
+    authProvider.email   = row.email;
+    authProvider.ts      = new Date(row.passworddate);
+    authProvider.last_ts = new Date(row.passworddate);
+    authProvider.ip      = row.ipaddress;
+    authProvider.last_ip = row.ipaddress;
+    authProvider._id     = new mongoose.Types.ObjectId(authProvider.ts / 1000);
+    authProvider.meta    = {
       pass: row.password,
       salt: row.salt
     };
 
-    yield authLink.save();
+    yield authProvider.save();
   }), { concurrency: 100 });
 
   bar.terminate();

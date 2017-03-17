@@ -18,7 +18,7 @@ describe('Login', function () {
   let user;
 
 
-  // Create new user with vb authlink
+  // Create new user with vb authprovider
   //
   before(Promise.coroutine(function* () {
     user = new TEST.N.models.users.User({
@@ -27,7 +27,7 @@ describe('Login', function () {
 
     yield user.save();
 
-    let authLink = new TEST.N.models.users.AuthLink({
+    let authProvider = new TEST.N.models.users.AuthProvider({
       type: 'vb',
       email,
       user: user._id,
@@ -39,11 +39,11 @@ describe('Login', function () {
       last_ip: '127.0.0.1'
     });
 
-    yield authLink.save();
+    yield authProvider.save();
   }));
 
 
-  it('should authorize with vb authlink', function (done) {
+  it('should authorize with vb authprovider', function (done) {
     TEST.browser
       .do.auth()
       .do.open(TEST.N.router.linkTo('users.auth.login.show'))
