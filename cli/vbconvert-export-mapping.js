@@ -140,23 +140,23 @@ module.exports.run = Promise.coroutine(function* (N, args) {
       N.models.vbconvert.AlbumMapping.collection.find({}).stream(),
 
       through2.obj((albummap, enc, callback) => {
-        N.models.users.Album.findById(albummap.mongo)
-            .select('user')
-            .lean(true)
-            .exec(function (err, album) {
+        N.models.users.Album
+          .findById(albummap.mongo)
+          .select('user')
+          .lean(true)
+          .exec((err, album) => {
+            if (err) {
+              callback(err);
+              return;
+            }
 
-          if (err) {
-            callback(err);
-            return;
-          }
+            bar.tick();
 
-          bar.tick();
+            let user_hid = users_by_id[album.user].hid;
 
-          let user_hid = users_by_id[album.user].hid;
-
-          ldb.albums.put(albummap.mysql, { user: user_hid, album: albummap.mongo });
-          callback();
-        });
+            ldb.albums.put(albummap.mysql, { user: user_hid, album: albummap.mongo });
+            callback();
+          });
       }),
 
       callback
