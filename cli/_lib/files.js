@@ -78,7 +78,7 @@ module.exports = Promise.coroutine(function* (N) {
 
   // Create file, add it to album and add it to post if necessary
   //
-  const add_file = Promise.coroutine(function* add_file(row, user, album_ids) {
+  const add_file = Promise.coroutine(function* _add_file(row, user, album_ids) {
     let albumid = album_ids[row.contenttypeid === ALBUM ? row.contentid : 0].id;
     let filepath = path.join(N.config.vbconvert.files,
           String(row.filedataowner).split('').join('/'),
