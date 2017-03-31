@@ -3,8 +3,6 @@
 
 'use strict';
 
-const Promise = require('bluebird');
-
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -17,32 +15,58 @@ module.exports.parserParameters  = {
 
 
 module.exports.commandLineArguments = [
+  {
+    args:     [ '-m', '--module' ],
+    options: {
+      dest:   'module',
+      help:   'Run specified import scripts only (for debugging)',
+      type:   'string',
+      action: 'append'
+    }
+  }
 ];
 
 
-module.exports.run = Promise.coroutine(function* (N/*, args*/) {
-  yield N.wire.emit('init:models', N);
+// List of modules (from _lib/*.js) to run
+const module_list = [
+  'usergroups',
+  'users',
+  'pm',
+  'usernotes',
+  'moderator_notes',
+  'ignore',
+  'sections',
+  'nntp',
+  'topics',
+  'deletion_log',
+  'infractions',
+  'section_cache',
+  'subscriptions',
+  'votes',
+  'albums',
+  'avatars',
+  'files',
+  'custom'
+];
+
+
+module.exports.run = async function (N, args) {
+  await N.wire.emit('init:models', N);
 
   // load N.router, it's needed to convert bbcode to markdown
-  yield N.wire.emit('init:bundle', N);
+  await N.wire.emit('init:bundle', N);
 
-  yield require('./_lib/usergroups')(N);
-  yield require('./_lib/users')(N);
-  yield require('./_lib/pm')(N);
-  yield require('./_lib/usernotes')(N);
-  yield require('./_lib/moderator_notes')(N);
-  yield require('./_lib/ignore')(N);
-  yield require('./_lib/sections')(N);
-  yield require('./_lib/topics')(N);
-  yield require('./_lib/deletion_log')(N);
-  yield require('./_lib/infractions')(N);
-  yield require('./_lib/section_cache')(N);
-  yield require('./_lib/subscriptions')(N);
-  yield require('./_lib/votes')(N);
-  yield require('./_lib/albums')(N);
-  yield require('./_lib/avatars')(N);
-  yield require('./_lib/files')(N);
-  yield require('./_lib/custom')(N);
+  let modules = module_list;
 
-  yield N.wire.emit('exit.shutdown');
-});
+  if (args.module) {
+    modules = args.module;
+
+    for (let m of modules) {
+      if (module_list.indexOf(m) === -1) throw `Unknown vbconvert module: ${m}`;
+    }
+  }
+
+  for (let m of modules) await require('./_lib/' + m)(N);
+
+  return N.wire.emit('exit.shutdown');
+};
