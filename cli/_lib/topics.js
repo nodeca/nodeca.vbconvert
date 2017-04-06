@@ -179,6 +179,7 @@ module.exports = Promise.coroutine(function* (N) {
         let new_post = {
           _id:        id,
           topic:      topic._id,
+          section:    topic.section,
           hid,
           ts,
           md:         post.pagetext,
