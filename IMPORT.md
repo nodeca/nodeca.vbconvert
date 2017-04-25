@@ -88,6 +88,7 @@ Import, part 2 (admin panel)
 6. Core -> Rebuild -> External links
 7. Core -> Rebuild -> Images info
 8. Core -> Rebuild -> Posts
-9. Core -> Dashboard -> Online
-10. Core -> Rebuild -> Messages
-11. Core -> Search -> Reindex
+9. Core -> NNTP -> Rebuild all
+10. Core -> Dashboard -> Online
+11. Core -> Rebuild -> Messages
+12. Core -> Search -> Reindex
