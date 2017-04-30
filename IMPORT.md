@@ -26,11 +26,16 @@ Unpack:
 ```sh
 mkdir /tmp/extract
 lzop -d ./vzdump-openvz-101-*.tar.lzo -c | tar xv -C /tmp/extract
+service mysql stop
+# Check mysql does not run and kill if needed
+ps ax | grep mysql
+kill `cat /var/run/mysqld/mysqld.pid`
 rm -rf /var/lib/mysql
 cp -a /tmp/extract/var/lib/mysql /var/lib/mysql
 chown mysql:mysql -Rv /var/lib/mysql
 ln -s /tmp/extract/var/www/forum.rcdesign.ru/www /tmp/www
-#dpkg-reconfigure percona-server-server-5.6
+# Leave empty password field when asked, we reset it in next step
+dpkg-reconfigure percona-server-server-5.6
 ```
 
 Reset mysql permissions:
@@ -38,7 +43,6 @@ Reset mysql permissions:
 ```sh
 service mysql stop
 mysqld_safe --skip-grant-tables &
-echo "UPDATE mysql.user SET plugin = '' WHERE plugin = 'mysql_old_password'; FLUSH PRIVILEGES;" | mysql
 echo "FLUSH PRIVILEGES; SET PASSWORD FOR 'root'@'localhost' = '';" | mysql
 kill `cat /var/run/mysqld/mysqld.pid`
 service mysql start
