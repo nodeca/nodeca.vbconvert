@@ -1,6 +1,8 @@
 nodeca.convert
 ==============
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/nodeca/nodeca.vbconvert.svg)](https://greenkeeper.io/)
+
 [![Build Status](https://travis-ci.org/nodeca/nodeca.vbconvert.svg?branch=master)](https://travis-ci.org/nodeca/nodeca.vbconvert)
 
 Convert forum database from vBulletin to Nodeca.
