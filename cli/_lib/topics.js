@@ -12,6 +12,12 @@ const progress      = require('./utils').progress;
 const html_unescape = require('./utils').html_unescape;
 const POST          = 1; // content type for posts
 
+const prefixes = {
+  forsale: 'Продам: ',
+  guveup:  'Отдам: ',
+  wanted:  'Куплю: '
+};
+
 
 module.exports = Promise.coroutine(function* (N) {
   var conn, users, sections;
@@ -46,7 +52,7 @@ module.exports = Promise.coroutine(function* (N) {
     // Fetch this thread from SQL
     //
     thread = (yield conn.query(`
-      SELECT threadid,forumid,title,views,dateline,visible,open,sticky
+      SELECT threadid,forumid,title,prefixid,views,dateline,visible,open,sticky
       FROM thread WHERE threadid = ?
       ORDER BY threadid ASC
     `, [ threadid ]))[0][0];
@@ -58,11 +64,17 @@ module.exports = Promise.coroutine(function* (N) {
     //
     if (!sections[thread.forumid]) return;
 
+    let prefix = '';
+
+    if (thread.prefixid && prefixes[thread.prefixid]) {
+      prefix = prefixes[thread.prefixid];
+    }
+
     topic = {
       _id:         new mongoose.Types.ObjectId(thread.dateline),
       hid:         thread.threadid,
       section:     sections[thread.forumid]._id,
-      title:       html_unescape(thread.title),
+      title:       prefix + html_unescape(thread.title),
       views_count: thread.views,
       version:     0
     };
