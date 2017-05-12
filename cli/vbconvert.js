@@ -56,17 +56,29 @@ module.exports.run = async function (N, args) {
   // load N.router, it's needed to convert bbcode to markdown
   await N.wire.emit('init:bundle', N);
 
-  let modules = module_list;
-
   if (args.module) {
-    modules = args.module;
+    let modules = args.module;
 
     for (let m of modules) {
       if (module_list.indexOf(m) === -1) throw `Unknown vbconvert module: ${m}`;
     }
-  }
 
-  for (let m of modules) await require('./_lib/' + m)(N);
+    for (let m of modules) {
+      await require('./_lib/' + m)(N);
+    }
+  } else {
+    let modules = module_list;
+
+    for (let m of modules) {
+      if (await N.redis.sismemberAsync('vbconvert:all', m)) continue;
+
+      await require('./_lib/' + m)(N);
+
+      await N.redis.saddAsync('vbconvert:all', m);
+    }
+
+    await N.redis.delAsync('vbconvert:all');
+  }
 
   return N.wire.emit('exit.shutdown');
 };

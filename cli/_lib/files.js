@@ -141,6 +141,15 @@ module.exports = Promise.coroutine(function* (N) {
     let rows;
     let userid = row.userid;
 
+    let already_imported = yield N.redis.zscoreAsync('vbconvert:files', userid);
+
+    // if all files for this user were already imported,
+    // amount of those files is stored in redis, so we can skip faster
+    if (already_imported !== null) {
+      bar.tick(Number(already_imported));
+      return;
+    }
+
     let user = yield N.models.users.User.findOne({ hid: userid }).lean(true);
 
     // ignore content owned by deleted users
@@ -226,10 +235,11 @@ module.exports = Promise.coroutine(function* (N) {
       yield file_mapping.save();
     }
 
-    bar.tick();
+    yield N.redis.zaddAsync('vbconvert:files', rows.length, userid);
   }), { concurrency: 100 });
 
   bar.terminate();
   conn.release();
+  yield N.redis.delAsync('vbconvert:files');
   N.logger.info('File import finished');
 });
