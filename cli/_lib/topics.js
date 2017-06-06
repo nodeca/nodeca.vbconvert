@@ -196,7 +196,6 @@ module.exports = Promise.coroutine(function* (N) {
           ts,
           md:         post.pagetext,
           html:       '<p>' + _.escape(post.pagetext) + '</p>',
-          revision:   0,
           ip:         post.ipaddress,
           params_ref: params_id,
           attach:     [] // an array in DB is required by parser
