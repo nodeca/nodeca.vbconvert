@@ -46,6 +46,9 @@ module.exports = Promise.coroutine(function* (N) {
   yield Promise.map(rows, Promise.coroutine(function* (row) {
     bar.tick();
 
+    // don't import admin (hid=1, it's now a bot)
+    if (row.userid === N.config.bots.default_bot_hid) return;
+
     let user = yield N.models.users.User.findOne({ hid: row.userid }).lean(false);
 
     if (!user) {

@@ -20,7 +20,9 @@ const prefixes = {
 
 
 module.exports = Promise.coroutine(function* (N) {
-  var conn, users, sections;
+  let conn, users, sections;
+
+  let empty_sections = _.zipObject(N.config.vbconvert.empty_sections || []);
 
 
   const get_default_usergroup = memoize(function () {
@@ -63,6 +65,9 @@ module.exports = Promise.coroutine(function* (N) {
     // can be imported.
     //
     if (!sections[thread.forumid]) return;
+
+    // don't import topics in specified sections
+    if (empty_sections.hasOwnProperty(thread.forumid)) return;
 
     let prefix = '';
 
@@ -139,6 +144,11 @@ module.exports = Promise.coroutine(function* (N) {
         let id   = new mongoose.Types.ObjectId(post.dateline);
         let ts   = new Date(post.dateline * 1000);
         let user = users[post.userid] || {};
+
+        // change author of all messages in abuse report section to a bot
+        if (thread.forumid === N.config.vbconvert.abuse_report_section) {
+          user = users[N.config.bots.default_bot_hid] || {};
+        }
 
         // mark poster as an active user
         if (!user.active) {
@@ -280,7 +290,14 @@ module.exports = Promise.coroutine(function* (N) {
                N.models.forum.Topic.statuses.OPEN :
                N.models.forum.Topic.statuses.CLOSED;
 
-    if (users[posts[0].userid] && users[posts[0].userid].hb) {
+    let user = users[posts[0].userid] || {};
+
+    // change author of all messages in abuse report section to a bot
+    if (thread.forumid === N.config.vbconvert.abuse_report_section) {
+      user = users[N.config.bots.default_bot_hid] || {};
+    }
+
+    if (user.hb) {
       topic.ste = topic.st;
       topic.st  = N.models.forum.Topic.statuses.HB;
     } else if (thread.sticky) {

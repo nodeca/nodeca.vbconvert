@@ -48,6 +48,9 @@ vbconvert:
   # Section for abuse reports
   abuse_report_section: 103
 
+  # Skip import for infraction logs
+  empty_sections: [ 104 ]
+
   # Market section (disable is_searchable for it and its subsections)
   market_section: 31
 
