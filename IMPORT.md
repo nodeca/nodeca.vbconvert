@@ -43,6 +43,7 @@ Reset mysql permissions:
 ```sh
 service mysql stop
 mysqld_safe --skip-grant-tables &
+echo "UPDATE mysql.user SET plugin = '' WHERE plugin = 'mysql_old_password'; FLUSH PRIVILEGES;" | mysql
 echo "FLUSH PRIVILEGES; SET PASSWORD FOR 'root'@'localhost' = '';" | mysql
 kill `cat /var/run/mysqld/mysqld.pid`
 service mysql start
