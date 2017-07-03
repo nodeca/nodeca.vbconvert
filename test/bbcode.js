@@ -207,8 +207,8 @@ describe('BBcode', function () {
   });
 
   it('render post references inside quote tag', function () {
-    assert.deepEqual(to_md(tokenize('[quote= user name; 1234 ]bzzz[/quote]'), {
-      posts: { 1234: 'http://example.org/' }
+    assert.deepEqual(to_md(tokenize('[quote=1234]bzzz[/quote]'), {
+      quote_param_to_link(param) { return param === '1234' ? 'http://example.org/' : ''; }
     }), 'http://example.org/\n> bzzz');
   });
 
