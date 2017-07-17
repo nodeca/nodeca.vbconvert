@@ -47,31 +47,26 @@ describe('link_rewrite', function () {
 
           /* eslint-disable max-nested-callbacks */
           yaml.safeLoad(fs.readFileSync(filename, 'utf8'), { filename }).forEach(entry => {
-            (have_mappings ? it : it.skip)(entry[0], done => {
-              link_rewrite(entry[0], function (err, link) {
-                assert(!err);
+            (have_mappings ? it : it.skip)(entry[0], async function () {
+              let link = await link_rewrite(entry[0]);
 
-                // change domain to make it independent from config
-                let u = url.parse(N.router.linkTo(link.apiPath, link.params));
+              // change domain to make it independent from config
+              let u = url.parse(N.router.linkTo(link.apiPath, link.params));
 
-                u.protocol = 'https:';
-                u.host = 'dev.rcopen.com';
-                u.hash = link.hash;
+              u.protocol = 'https:';
+              u.host = 'dev.rcopen.com';
+              u.hash = link.hash;
 
-                // replace X with hex characters, needed for objectids
-                if (entry[1].indexOf('X') !== -1) {
-                  let reg = new RegExp(_.escapeRegExp(entry[1]).replace(/X/g, '[a-fA-F0-9]'));
+              // replace X with hex characters, needed for objectids
+              if (entry[1].indexOf('X') !== -1) {
+                let reg = new RegExp(_.escapeRegExp(entry[1]).replace(/X/g, '[a-fA-F0-9]'));
 
-                  if (url.format(u).match(reg)) {
-                    done();
-                    return;
-                  }
+                if (url.format(u).match(reg)) {
+                  return;
                 }
+              }
 
-                assert.equal(url.format(u), entry[1]);
-
-                done();
-              });
+              assert.equal(url.format(u), entry[1]);
             });
           });
         });

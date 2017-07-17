@@ -1,0 +1,26 @@
+- self.add_raw_data('blog_comments_task', self.task_info);
+
+#vbconvert-task-blog-comments.rebuild-widget
+  .rebuild-widget__title
+    = self.t('caption')
+    = ' '
+    small(data-bind='visible: started, text: (current() / total() * 100 || 0).toFixed(2) + "%"'
+    )
+
+  .rebuild-widget__progress.progress
+    .progress-bar(
+      data-bind='style: { width: (current() / total() * 100).toFixed(4) + "%" }, visible: current() !== total()'
+      style='display: none'
+    )
+
+  div
+    button.btn.btn-secondary(
+      data-on-click='admin.vbconvert.import_bbcode.blocks.blog_comments.start'
+      data-bind='visible: !started()'
+    )= self.t('start')
+
+    button.btn.btn-danger(
+      data-on-click='admin.vbconvert.import_bbcode.blocks.blog_comments.stop'
+      data-bind='visible: started'
+      style='display: none'
+    )= self.t('stop')

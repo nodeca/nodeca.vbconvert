@@ -41,6 +41,8 @@ const module_list = [
   'deletion_log',
   'infractions',
   'section_cache',
+  'blog_entries',
+  'blog_comments',
   'subscriptions',
   'votes',
   'albums',

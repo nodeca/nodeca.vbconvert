@@ -193,7 +193,7 @@ module.exports = Promise.coroutine(function* (N) {
       let poster = user1.hid === pm.fromuserid ? user1 : user2;
 
       // mark sender of this message as an active user
-      if (!poster.active) {
+      if (!poster.active && String(poster._id) !== '000000000000000000000000') {
         poster.active = true;
 
         yield N.models.users.User.update({ _id: poster._id }, { $set: { active: true } });

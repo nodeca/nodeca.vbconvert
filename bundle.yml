@@ -1,6 +1,6 @@
 bundles:
   frontend:
-    - convert
+    - vbconvert
 
 
 packages:
@@ -9,4 +9,4 @@ packages:
       - client/admin
       - server/admin
 
-  convert: {}
+  vbconvert: {}

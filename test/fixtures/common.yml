@@ -79,6 +79,18 @@
    - https://dev.rcopen.com/files/46f2167fXXXXXXXXXXXXXXXX
 
 #
+# Blogs
+#
+ - - http://forum.rcdesign.ru/blogs/
+   - https://dev.rcopen.com/blogs
+
+ - - http://forum.rcdesign.ru/blogs/349/
+   - https://dev.rcopen.com/blogs/349
+
+ - - http://forum.rcdesign.ru/blogs/349/blog11594.html
+   - https://dev.rcopen.com/blogs/349/11594
+
+#
 # Avatars
 #
  - - http://forum.rcdesign.ru/customavatars/avatar4752_8.gif
@@ -249,3 +261,19 @@
 # non-existent avatar
  - - http://forum.rcdesign.ru/customavatars/avatar999999999_9.gif
    - https://dev.rcopen.com/files/000000000000000000000000_md
+
+# it should substitute user id in blogs for the real one
+ - - http://forum.rcdesign.ru/blogs/99999/blog11594.html
+   - https://dev.rcopen.com/blogs/349/11594
+
+# non-existent blog entry
+ - - http://forum.rcdesign.ru/blogs/99999/blog999999999.html
+   - https://dev.rcopen.com/blogs/99999/999999999
+
+# make sure trailing slash doesn't make a difference
+# (all other tests should be with trailing slash if applicable)
+ - - http://forum.rcdesign.ru/blogs
+   - https://dev.rcopen.com/blogs
+
+ - - http://forum.rcdesign.ru
+   - https://dev.rcopen.com/

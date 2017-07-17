@@ -12,16 +12,20 @@ const path        = require('path');
 const progress    = require('./utils').progress;
 const resize      = require('nodeca.users/models/users/_lib/resize');
 const resizeParse = require('nodeca.users/server/_lib/resize_parse');
-const ALBUM       = 8; // content type for albums
-const POST        = 1; // content type for posts
+
+// content types are from `contenttype` table in mysql
+const POST       = 1;
+//const GROUP    = 7;
+const ALBUM      = 8;
+const BLOG_ENTRY = 15;
 
 
-module.exports = Promise.coroutine(function* (N) {
+module.exports = async function (N) {
   let mediaConfig = resizeParse(N.config.users.uploads);
 
   // Chopped-down version of N.models.users.MediaInfo.createFile
   //
-  const create_file = Promise.coroutine(function* (filedata, filepath, user, album_id) {
+  async function create_file(filedata, filepath, user, album_id) {
     let media = new N.models.users.MediaInfo();
 
     media._id         = new mongoose.Types.ObjectId(filedata.dateline);
@@ -35,7 +39,7 @@ module.exports = Promise.coroutine(function* (N) {
 
     // Just save if file is not an image
     if (supportedImageFormats.indexOf(filedata.extension) === -1) {
-      let stats = yield fs.stat(filepath);
+      let stats = await fs.stat(filepath);
 
       let storeOptions = {
         _id: new mongoose.Types.ObjectId(filedata.dateline),
@@ -45,7 +49,7 @@ module.exports = Promise.coroutine(function* (N) {
         }
       };
 
-      let info = yield N.models.core.File.put(filepath, storeOptions);
+      let info = await N.models.core.File.put(filepath, storeOptions);
 
       media.type      = N.models.users.MediaInfo.types.BINARY;
       media.media_id  = info._id;
@@ -55,7 +59,7 @@ module.exports = Promise.coroutine(function* (N) {
 
       resizeConfig.orig.skip_size = Infinity;
 
-      let data = yield resize(
+      let data = await resize(
         filepath,
         {
           store:   N.models.core.File,
@@ -71,14 +75,14 @@ module.exports = Promise.coroutine(function* (N) {
       media.file_size   = data.size;
     }
 
-    yield media.save();
+    await media.save();
     return media;
-  });
+  }
 
 
   // Create file, add it to album and add it to post if necessary
   //
-  const add_file = Promise.coroutine(function* _add_file(row, user, album_ids) {
+  async function add_file(row, user, album_ids) {
     let albumid = album_ids[row.contenttypeid === ALBUM ? row.contentid : 0].id;
     let filepath = path.join(N.config.vbconvert.files,
           String(row.filedataowner).split('').join('/'),
@@ -87,14 +91,14 @@ module.exports = Promise.coroutine(function* (N) {
     let media;
 
     try {
-      media = yield create_file(row, filepath, user, albumid);
+      media = await create_file(row, filepath, user, albumid);
     } catch (err) {
       // some files are considered corrupted by gm, we should log those
       N.logger.warn('File import: ' + err.message + ' (processing ' + filepath + ')');
       return null;
     }
 
-    yield N.models.users.UserExtra.update(
+    await N.models.users.UserExtra.update(
       { user: media.user },
       { $inc: { media_size: media.file_size } }
     );
@@ -110,38 +114,49 @@ module.exports = Promise.coroutine(function* (N) {
       updateData.$set = { cover_id: media.media_id };
     }
 
-    yield N.models.users.Album.update({ _id: album.id }, updateData);
+    await N.models.users.Album.update({ _id: album.id }, updateData);
 
     if (row.contenttypeid === POST) {
-      let postmapping = yield N.models.vbconvert.PostMapping.findOne()
+      let postmapping = await N.models.vbconvert.PostMapping.findOne()
                                   .where('mysql', row.contentid)
                                   .lean(true);
 
       if (postmapping) {
-        yield N.models.forum.Post.update(
+        await N.models.forum.Post.update(
           { _id: postmapping.post_id },
+          { $push: { attach: media.media_id } }
+        );
+      }
+    } else if (row.contenttypeid === BLOG_ENTRY) {
+      let blogmapping = await N.models.vbconvert.BlogEntryMapping.findOne()
+                                  .where('mysql', row.contentid)
+                                  .lean(true);
+
+      if (blogmapping) {
+        await N.models.blogs.BlogEntry.update(
+          { hid: blogmapping.mysql },
           { $push: { attach: media.media_id } }
         );
       }
     }
 
     return media;
-  });
+  }
 
 
-  const conn = yield N.vbconvert.getConnection();
+  const conn = await N.vbconvert.getConnection();
 
-  let rows = (yield conn.query('SELECT count(*) AS count FROM attachment'))[0];
+  let rows = (await conn.query('SELECT count(*) AS count FROM attachment'))[0];
 
   let bar = progress(' files :current/:total :percent', rows[0].count);
 
-  let userids = (yield conn.query('SELECT userid FROM attachment GROUP BY userid ORDER BY userid ASC'))[0];
+  let userids = (await conn.query('SELECT userid FROM attachment GROUP BY userid ORDER BY userid ASC'))[0];
 
-  yield Promise.map(userids, Promise.coroutine(function* (row) {
+  await Promise.map(userids, async row => {
     let rows;
     let userid = row.userid;
 
-    let already_imported = yield N.redis.zscoreAsync('vbconvert:files', userid);
+    let already_imported = await N.redis.zscoreAsync('vbconvert:files', userid);
 
     // if all files for this user were already imported,
     // amount of those files is stored in redis, so we can skip faster
@@ -150,17 +165,17 @@ module.exports = Promise.coroutine(function* (N) {
       return;
     }
 
-    let user = yield N.models.users.User.findOne({ hid: userid }).lean(true);
+    let user = await N.models.users.User.findOne({ hid: userid }).lean(true);
 
     // ignore content owned by deleted users
     if (!user) return;
 
     // mark user as active
     if (!user.active) {
-      yield N.models.users.User.update({ _id: user._id }, { $set: { active: true } });
+      await N.models.users.User.update({ _id: user._id }, { $set: { active: true } });
     }
 
-    rows = (yield conn.query(`
+    rows = (await conn.query(`
       SELECT albumid,coverattachmentid
       FROM album WHERE userid = ? ORDER BY albumid ASC
     `, [ userid ]))[0];
@@ -170,7 +185,7 @@ module.exports = Promise.coroutine(function* (N) {
     for (let i = 0; i < rows.length; i++) {
       let row = rows[i];
 
-      let album_mapping = yield N.models.vbconvert.AlbumMapping.findOne()
+      let album_mapping = await N.models.vbconvert.AlbumMapping.findOne()
                                     .where('mysql', row.albumid)
                                     .lean(true);
 
@@ -180,14 +195,14 @@ module.exports = Promise.coroutine(function* (N) {
       };
     }
 
-    let def_album = yield N.models.users.Album.findOne()
+    let def_album = await N.models.users.Album.findOne()
                               .where('user', user._id)
                               .where('default', true)
                               .lean(true);
 
     album_ids[0] = { id: def_album._id };
 
-    rows = (yield conn.query(`
+    rows = (await conn.query(`
       SELECT filedata.userid AS filedataowner,
              filedataid,attachment.attachmentid,extension,filename,
              caption,contentid,contenttypeid,attachment.dateline,
@@ -207,14 +222,14 @@ module.exports = Promise.coroutine(function* (N) {
 
       let row = rows[i];
 
-      let file_mapping = yield N.models.vbconvert.FileMapping.findOne()
+      let file_mapping = await N.models.vbconvert.FileMapping.findOne()
                                    .where('attachmentid', row.attachmentid)
                                    .lean(true);
 
       // already imported
       if (file_mapping) continue;
 
-      let media = yield add_file(row, user, album_ids);
+      let media = await add_file(row, user, album_ids);
 
       if (!media) continue;
 
@@ -232,14 +247,14 @@ module.exports = Promise.coroutine(function* (N) {
         file_mapping.pictureaid_legacy = row.pictureaid_legacy;
       }
 
-      yield file_mapping.save();
+      await file_mapping.save();
     }
 
-    yield N.redis.zaddAsync('vbconvert:files', rows.length, userid);
-  }), { concurrency: 100 });
+    await N.redis.zaddAsync('vbconvert:files', rows.length, userid);
+  }, { concurrency: 100 });
 
   bar.terminate();
   conn.release();
-  yield N.redis.delAsync('vbconvert:files');
+  await N.redis.delAsync('vbconvert:files');
   N.logger.info('File import finished');
-});
+};

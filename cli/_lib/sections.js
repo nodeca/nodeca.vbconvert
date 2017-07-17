@@ -80,13 +80,13 @@ module.exports = Promise.coroutine(function* (N) {
       { hid: row.forumid },
       { $set: { parent: parent._id } }
     );
-
-    yield N.models.core.Increment.update(
-      { key: 'section' },
-      { $set: { value: rows[rows.length - 1].forumid } },
-      { upsert: true }
-    );
   }));
+
+  yield N.models.core.Increment.update(
+    { key: 'section' },
+    { $set: { value: rows[rows.length - 1].forumid } },
+    { upsert: true }
+  );
 
   //
   // Set usergroup permissions

@@ -5,8 +5,8 @@
 
 
 module.exports = function (N) {
-  N.wire.after('server:admin.vbconvert.import_bbcode', { priority: 20 }, function* forum_posts_task_widget(env) {
-    let task = yield N.queue.getTask('vbconvert_forum_posts_import');
+  N.wire.after('server:admin.vbconvert.import_bbcode', { priority: 20 }, async function forum_posts_task_widget(env) {
+    let task = await N.queue.getTask('vbconvert_forum_posts_import');
     let task_info = {};
 
     if (task && task.state !== 'finished') {

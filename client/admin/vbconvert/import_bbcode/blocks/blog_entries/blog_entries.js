@@ -1,4 +1,4 @@
-// Display post import progress in admin interface
+// Display blog entry import progress in admin interface
 //
 'use strict';
 
@@ -8,7 +8,7 @@ const ko = require('knockout');
 
 // Knockout bindings root object.
 let view = null;
-let SELECTOR = '#vbconvert-task-forum-posts';
+let SELECTOR = '#vbconvert-task-blog-entries';
 let finished_tasks = {};
 
 
@@ -36,11 +36,11 @@ function update_task_status(task_info) {
 }
 
 
-N.wire.on('navigate.done:admin.vbconvert.import_bbcode', function forum_post_task_widget_setup() {
+N.wire.on('navigate.done:admin.vbconvert.import_bbcode', function blog_entries_task_widget_setup() {
   if (!$(SELECTOR).length) return;
 
-  let current = N.runtime.page_data.forum_posts_task.current || 0;
-  let total   = N.runtime.page_data.forum_posts_task.total || 1;
+  let current = N.runtime.page_data.blog_entries_task.current || 0;
+  let total   = N.runtime.page_data.blog_entries_task.total || 1;
 
   view = {
     started:  ko.observable(current > 0 && current < total),
@@ -50,21 +50,21 @@ N.wire.on('navigate.done:admin.vbconvert.import_bbcode', function forum_post_tas
 
   ko.applyBindings(view, $(SELECTOR)[0]);
 
-  N.live.on('admin.vbconvert.forum_posts', update_task_status);
+  N.live.on('admin.vbconvert.blog_entries', update_task_status);
 });
 
 
-N.wire.on('navigate.exit:admin.vbconvert.import_bbcode', function forum_post_task_widget_teardown() {
+N.wire.on('navigate.exit:admin.vbconvert.import_bbcode', function blog_entries_task_widget_teardown() {
   if (!$(SELECTOR).length) return;
 
   view = null;
   ko.cleanNode($(SELECTOR)[0]);
 
-  N.live.off('admin.vbconvert.forum_posts', update_task_status);
+  N.live.off('admin.vbconvert.blog_entries', update_task_status);
 });
 
 
-N.wire.once('navigate.done:admin.vbconvert.import_bbcode', function forum_post_task_widget_setup_handlers() {
+N.wire.once('navigate.done:admin.vbconvert.import_bbcode', function blog_entries_task_widget_setup_handlers() {
 
   // Click on "start" button
   //
