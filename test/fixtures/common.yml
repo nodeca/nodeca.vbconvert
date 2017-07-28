@@ -90,6 +90,39 @@
  - - http://forum.rcdesign.ru/blogs/349/blog11594.html
    - https://dev.rcopen.com/blogs/349/11594
 
+ - - http://forum.rcdesign.ru/blogs/349/blog10532.html#comment42967
+   - https://dev.rcopen.com/blogs/349/10532#comment4
+
+ - - http://forum.rcdesign.ru/blogs/349/category112/
+   - https://dev.rcopen.com/blogs/349?tag=XX
+
+ - - http://forum.rcdesign.ru/blog/boroda_de/index.php
+   - https://dev.rcopen.com/blogs/4504
+
+ - - http://forum.rcdesign.ru/blog/boroda_de/index.php?&cat=31
+   - https://dev.rcopen.com/blogs/4504?tag=XX
+
+ - - http://forum.rcdesign.ru/blog/boroda_de/index.php?cmd=showentry&eid=125
+   - https://dev.rcopen.com/blogs/4504/125
+
+ - - http://forum.rcdesign.ru/blog/boroda_de/index.php?showentry=125
+   - https://dev.rcopen.com/blogs/4504/125
+
+ - - http://forum.rcdesign.ru/blogs/18493/blog6284-page2.html#comment48782
+   - https://dev.rcopen.com/blogs/18493/6284#comment73
+
+ - - http://forum.rcdesign.ru/blogs/18493/blog6284-page2.html#comments
+   - https://dev.rcopen.com/blogs/18493/6284
+
+ - - http://forum.rcdesign.ru/blogs/comments/comment131541.html
+   - https://dev.rcopen.com/blogs/116276/19185#comment12
+
+ - - http://forum.rcdesign.ru/entry.php?bt=57525
+   - https://dev.rcopen.com/blogs/39391/12024#comment65
+
+ - - http://forum.rcdesign.ru/entry.php?b=12024
+   - https://dev.rcopen.com/blogs/39391/12024
+
 #
 # Avatars
 #
@@ -266,9 +299,23 @@
  - - http://forum.rcdesign.ru/blogs/99999/blog11594.html
    - https://dev.rcopen.com/blogs/349/11594
 
+ - - http://forum.rcdesign.ru/blogs/99999/blog999999999.html#comment42967
+   - https://dev.rcopen.com/blogs/349/10532#comment4
+
+ - - http://forum.rcdesign.ru/blogs/99999/category112/
+   - https://dev.rcopen.com/blogs/349?tag=XX
+
 # non-existent blog entry
  - - http://forum.rcdesign.ru/blogs/99999/blog999999999.html
    - https://dev.rcopen.com/blogs/99999/999999999
+
+# non-existent blog comment
+ - - http://forum.rcdesign.ru/blogs/99999/blog999999999.html#comment999999999
+   - https://dev.rcopen.com/blogs/99999/999999999
+
+# non-existent blog category
+ - - http://forum.rcdesign.ru/blogs/99999/category999999999/
+   - https://dev.rcopen.com/blogs/99999
 
 # make sure trailing slash doesn't make a difference
 # (all other tests should be with trailing slash if applicable)

@@ -55,7 +55,6 @@ describe('link_rewrite', function () {
 
               u.protocol = 'https:';
               u.host = 'dev.rcopen.com';
-              u.hash = link.hash;
 
               // replace X with hex characters, needed for objectids
               if (entry[1].indexOf('X') !== -1) {
