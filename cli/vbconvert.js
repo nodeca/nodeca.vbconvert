@@ -43,6 +43,7 @@ const module_list = [
   'section_cache',
   'blog_entries',
   'blog_comments',
+  'blog_subscriptions',
   'subscriptions',
   'votes',
   'albums',
