@@ -128,7 +128,7 @@ module.exports = async function (N) {
         );
       }
     } else if (row.contenttypeid === BLOG_ENTRY) {
-      let blogmapping = await N.models.vbconvert.BlogEntryMapping.findOne()
+      let blogmapping = await N.models.vbconvert.BlogTextMapping.findOne()
                                   .where('mysql', row.contentid)
                                   .lean(true);
 
