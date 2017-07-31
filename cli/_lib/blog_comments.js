@@ -102,6 +102,7 @@ module.exports = async function (N) {
       comment.ts         = new Date(row.dateline * 1000);
       comment.params_ref = params_id;
       comment.attach     = []; // an array in DB is required by parser
+      comment.path       = []; // make all comments root (no reply-to data available in mysql)
 
       let ip = row.ipaddress;
 
