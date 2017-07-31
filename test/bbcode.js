@@ -333,6 +333,17 @@ describe('BBcode', function () {
                  '<http://example.com/_foo%25%20%25bar_>');
   });
 
+  it('replace url tag with autolink if content is shortened from url param', function () {
+    assert.equal(to_md(tokenize('[url=http://example.com/foobarbaz] http://example.com/f...az [/url]')),
+                 '<http://example.com/foobarbaz>');
+
+    // corner cases
+    assert.equal(to_md(tokenize('[url=http://example.com/foobarbaz] http://example.com/foobar...baz [/url]')),
+                 '[ http://example.com/foobar...baz ](http://example.com/foobarbaz)');
+    assert.equal(to_md(tokenize('[url=http://example.com/foobarbaz] http://example.com/foobarbaz...barbaz [/url]')),
+                 '[ http://example.com/foobarbaz...barbaz ](http://example.com/foobarbaz)');
+  });
+
   it("don't render banned links", function () {
     assert.equal(to_md(tokenize('[url]www.*****.bar[/url]')), 'www.\\*\\*\\*\\*\\*.bar');
   });
