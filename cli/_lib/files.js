@@ -129,12 +129,13 @@ module.exports = async function (N) {
       }
     } else if (row.contenttypeid === BLOG_ENTRY) {
       let blogmapping = await N.models.vbconvert.BlogTextMapping.findOne()
-                                  .where('mysql', row.contentid)
+                                  .where('blogid').equals(row.contentid)
+                                  .where('is_comment').equals(false)
                                   .lean(true);
 
       if (blogmapping) {
         await N.models.blogs.BlogEntry.update(
-          { hid: blogmapping.mysql },
+          { _id: blogmapping.mongo },
           { $push: { attach: media.media_id } }
         );
       }
