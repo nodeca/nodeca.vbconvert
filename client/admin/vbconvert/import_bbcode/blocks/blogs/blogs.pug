@@ -1,6 +1,6 @@
-- self.add_raw_data('blog_entries_task', self.task_info);
+- self.add_raw_data('blogs_task', self.task_info);
 
-#vbconvert-task-blog-entries.rebuild-widget
+#vbconvert-task-blogs.rebuild-widget
   .rebuild-widget__title
     = self.t('caption')
     = ' '
@@ -15,12 +15,12 @@
 
   div
     button.btn.btn-secondary(
-      data-on-click='admin.vbconvert.import_bbcode.blocks.blog_entries.start'
+      data-on-click='admin.vbconvert.import_bbcode.blocks.blogs.start'
       data-bind='visible: !started()'
     )= self.t('start')
 
     button.btn.btn-danger(
-      data-on-click='admin.vbconvert.import_bbcode.blocks.blog_entries.stop'
+      data-on-click='admin.vbconvert.import_bbcode.blocks.blogs.stop'
       data-bind='visible: started'
       style='display: none'
     )= self.t('stop')
