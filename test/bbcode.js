@@ -286,6 +286,11 @@ describe('BBcode', function () {
                  'foo  \n-+-+-');
   });
 
+  it('escape standalone empty list items', function () {
+    assert.equal(to_md(tokenize(' - ')), '\\-');
+    assert.equal(to_md(tokenize(' - foo ')), '- foo'); // leave as is
+  });
+
   it('avoid unintended code blocks', function () {
     assert.equal(to_md(tokenize('    foo\n')),
                  'foo');
