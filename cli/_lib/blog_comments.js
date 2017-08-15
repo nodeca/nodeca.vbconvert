@@ -4,11 +4,12 @@
 'use strict';
 
 
-const _         = require('lodash');
-const Promise   = require('bluebird');
-const mongoose  = require('mongoose');
-const memoize   = require('promise-memoize');
-const progress  = require('./utils').progress;
+const _             = require('lodash');
+const Promise       = require('bluebird');
+const mongoose      = require('mongoose');
+const memoize       = require('promise-memoize');
+const html_unescape = require('./utils').html_unescape;
+const progress      = require('./utils').progress;
 
 
 module.exports = async function (N) {
@@ -91,14 +92,18 @@ module.exports = async function (N) {
 
       count++;
 
+      // old blog posts (before 2009) have html characters escaped
+      // in text and title
+      let text = html_unescape(row.pagetext);
+
       let comment = {};
 
       comment._id        = new mongoose.Types.ObjectId(row.dateline);
       comment.entry      = entry._id;
       comment.hid        = entry.last_comment_counter + count;
       comment.user       = user ? user._id : new mongoose.Types.ObjectId('000000000000000000000000');
-      comment.md         = row.pagetext;
-      comment.html       = '<p>' + _.escape(row.pagetext) + '</p>';
+      comment.md         = text;
+      comment.html       = '<p>' + _.escape(text) + '</p>';
       comment.ts         = new Date(row.dateline * 1000);
       comment.params_ref = params_id;
       comment.attach     = []; // an array in DB is required by parser
@@ -129,7 +134,7 @@ module.exports = async function (N) {
         blogtextid: row.blogtextid,
         is_comment: true,
         mongo:      comment._id,
-        text:       row.pagetext
+        text
       });
     }
 
