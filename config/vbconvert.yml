@@ -1,4 +1,6 @@
 vbconvert:
+  project_name: RC open
+
   # Base url of the new forum;
   # used for quotes and snippet (topic, post) urls
   destination: 'https://rcopen.com/'

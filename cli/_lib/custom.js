@@ -3,44 +3,50 @@
 
 'use strict';
 
-const _       = require('lodash');
-const Promise = require('bluebird');
+const _  = require('lodash');
 
 
-module.exports = Promise.coroutine(function* (N) {
+module.exports = async function (N) {
   let store = N.settings.getStore('global');
 
   if (!store) throw 'Settings store `global` is not registered.';
 
   //
+  // Disable headings in forum posts
+  //
+  if (N.config.vbconvert.project_name) {
+    await store.set({ general_project_name: { value: N.config.vbconvert.project_name } });
+  }
+
+  //
   // Set abuse report section
   //
   if (N.config.vbconvert.abuse_report_section) {
-    let section = yield N.models.forum.Section.findOne()
+    let section = await N.models.forum.Section.findOne()
                             .where('hid', N.config.vbconvert.abuse_report_section)
                             .lean(true);
 
-    yield store.set({ general_abuse_report_section: { value: section._id.toString() } });
+    await store.set({ general_abuse_report_section: { value: section._id.toString() } });
   }
 
   //
   // Disable headings in forum posts
   //
-  yield store.set({ forum_markup_heading: { value: false } });
+  await store.set({ forum_markup_heading: { value: false } });
 
   //
   // Disable is_searchable flag for market sections
   //
   if (N.config.vbconvert.market_section) {
-    let section = yield N.models.forum.Section.findOne()
+    let section = await N.models.forum.Section.findOne()
                             .where('hid', N.config.vbconvert.market_section)
                             .lean(true);
 
-    let subsections = yield N.models.forum.Section.getChildren(section._id, -1);
+    let subsections = await N.models.forum.Section.getChildren(section._id, -1);
 
     let ids = [ section._id ].concat(_.map(subsections, '_id'));
 
-    yield N.models.forum.Section.update(
+    await N.models.forum.Section.update(
       { _id: { $in: ids } },
       { $set: { is_searchable: false } },
       { multi: true }
@@ -50,17 +56,17 @@ module.exports = Promise.coroutine(function* (N) {
   //
   // Import ban lists
   //
-  let conn = yield N.vbconvert.getConnection();
+  let conn = await N.vbconvert.getConnection();
 
-  let censorwords = (yield conn.query("SELECT value FROM setting WHERE varname='censorwords'"))[0][0].value;
+  let censorwords = (await conn.query("SELECT value FROM setting WHERE varname='censorwords'"))[0][0].value;
 
-  yield store.set({ content_filter_urls: { value: censorwords.replace(/\s+/g, '\n') } });
+  await store.set({ content_filter_urls: { value: censorwords.replace(/\s+/g, '\n') } });
 
-  let banip = (yield conn.query("SELECT value FROM setting WHERE varname='banip'"))[0][0].value;
+  let banip = (await conn.query("SELECT value FROM setting WHERE varname='banip'"))[0][0].value;
 
-  yield store.set({ ban_ip: { value: banip } });
+  await store.set({ ban_ip: { value: banip } });
 
-  let banemail = (yield conn.query("SELECT data FROM datastore WHERE title='banemail'"))[0][0].data;
+  let banemail = (await conn.query("SELECT data FROM datastore WHERE title='banemail'"))[0][0].data;
 
-  yield store.set({ ban_email: { value: banemail } });
-});
+  await store.set({ ban_email: { value: banemail } });
+};
