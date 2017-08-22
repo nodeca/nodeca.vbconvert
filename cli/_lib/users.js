@@ -5,8 +5,8 @@
 
 const Promise       = require('bluebird');
 const mongoose      = require('mongoose');
+const html_unescape = require('nodeca.vbconvert/lib/html_unescape_entities');
 const progress      = require('./utils').progress;
-const html_unescape = require('./utils').html_unescape;
 
 const UNCONFIRMED = 3;
 const MEMBERS     = 11;

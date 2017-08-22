@@ -5,7 +5,7 @@
 
 const Promise       = require('bluebird');
 const mongoose      = require('mongoose');
-const html_unescape = require('./utils').html_unescape;
+const html_unescape = require('nodeca.vbconvert/lib/html_unescape_entities');
 const progress      = require('./utils').progress;
 const options       = require('nodeca.users/server/users/mod_notes/_parse_options');
 

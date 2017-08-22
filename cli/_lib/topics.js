@@ -8,8 +8,8 @@ const _             = require('lodash');
 const Promise       = require('bluebird');
 const mongoose      = require('mongoose');
 const memoize       = require('promise-memoize');
+const html_unescape = require('nodeca.vbconvert/lib/html_unescape_entities');
 const progress      = require('./utils').progress;
-const html_unescape = require('./utils').html_unescape;
 const POST          = 1; // content type for posts
 
 const prefixes = {
@@ -19,7 +19,7 @@ const prefixes = {
 };
 
 
-module.exports = Promise.coroutine(function* (N) {
+module.exports = async function (N) {
   let conn, users, sections;
 
   let empty_sections = _.zipObject(N.config.vbconvert.empty_sections || []);
@@ -47,13 +47,13 @@ module.exports = Promise.coroutine(function* (N) {
 
   // Import a single topic by its id
   //
-  const import_topic = Promise.coroutine(function* (threadid) {
-    var thread, posts, topic;
+  async function import_topic(threadid) {
+    let thread, posts, topic;
 
     //
     // Fetch this thread from SQL
     //
-    thread = (yield conn.query(`
+    thread = (await conn.query(`
       SELECT threadid,forumid,title,prefixid,views,dateline,visible,open,sticky
       FROM thread WHERE threadid = ?
       ORDER BY threadid ASC
@@ -84,7 +84,7 @@ module.exports = Promise.coroutine(function* (N) {
       version:     0
     };
 
-    let old_topic = yield N.models.forum.Topic.findOneAndUpdate(
+    let old_topic = await N.models.forum.Topic.findOneAndUpdate(
                       { hid: thread.threadid },
                       { $setOnInsert: topic },
                       { 'new': false, upsert: true }
@@ -98,15 +98,22 @@ module.exports = Promise.coroutine(function* (N) {
       topic._id = old_topic._id;
 
       // topic hadn't been imported last time, remove all posts and try again
-      yield N.models.forum.Post.find({ topic: old_topic._id }).remove();
-      yield N.models.vbconvert.PostMapping.find({ topic_id: old_topic._id }).remove();
+      await N.models.forum.Post.find({ topic: old_topic._id }).remove();
+      await N.models.vbconvert.PostMapping.find({ topic_id: old_topic._id }).remove();
     }
+
+    /* eslint-disable no-undefined */
+    await new N.models.vbconvert.TopicTitle({
+      mysql:  thread.threadid,
+      title:  thread.title,
+      prefix: thread.prefixid || undefined
+    }).save();
 
 
     //
     // Fetch posts from this thread from SQL
     //
-    posts = (yield conn.query(`
+    posts = (await conn.query(`
       SELECT threadid,postid,parentid,pagetext,dateline,ipaddress,userid,username,visible,allowsmilie,
              GROUP_CONCAT(vote) AS votes,GROUP_CONCAT(fromuserid) AS casters
       FROM post
@@ -118,7 +125,7 @@ module.exports = Promise.coroutine(function* (N) {
 
     // empty topic, e.g. http://forum.rcdesign.ru/f90/thread121809.html
     if (posts.length === 0) {
-      yield N.models.forum.Topic.find({ _id: topic._id }).remove();
+      await N.models.forum.Topic.find({ _id: topic._id }).remove();
       return;
     }
 
@@ -154,7 +161,7 @@ module.exports = Promise.coroutine(function* (N) {
         if (!user.active) {
           user.active = true;
 
-          yield N.models.users.User.update({ _id: user._id }, { $set: { active: true } });
+          await N.models.users.User.update({ _id: user._id }, { $set: { active: true } });
         }
 
         hid++;
@@ -164,8 +171,8 @@ module.exports = Promise.coroutine(function* (N) {
         // cache parser params locally, this prevents stack overflow
         // when yielding synchronous functions into bluebird-co
         if (!usergroup_params[key]) {
-          usergroup_params[key] = yield get_parser_param_id(
-            user.usergroups || (yield get_default_usergroup()),
+          usergroup_params[key] = await get_parser_param_id(
+            user.usergroups || (await get_default_usergroup()),
             post.allowsmilie
           );
         }
@@ -273,8 +280,8 @@ module.exports = Promise.coroutine(function* (N) {
         });
       }
 
-      yield post_bulk.execute();
-      yield map_bulk.execute();
+      await post_bulk.execute();
+      await map_bulk.execute();
     }
 
 
@@ -315,23 +322,23 @@ module.exports = Promise.coroutine(function* (N) {
       delete topic.ste;
     }
 
-    yield N.models.forum.Topic.update(
+    await N.models.forum.Topic.update(
       { hid: thread.threadid },
       topic
     );
-  });
+  }
 
   //
   // Establish MySQL connection
   //
-  conn = yield N.vbconvert.getConnection();
+  conn = await N.vbconvert.getConnection();
 
   //
   // Fetch all users
   //
   users = {};
 
-  (yield N.models.users.User.find().lean(true)).forEach(user => {
+  (await N.models.users.User.find().lean(true)).forEach(user => {
     users[user.hid] = user;
   });
 
@@ -340,7 +347,7 @@ module.exports = Promise.coroutine(function* (N) {
   //
   sections = {};
 
-  (yield N.models.forum.Section.find().lean(true)).forEach(section => {
+  (await N.models.forum.Section.find().lean(true)).forEach(section => {
     sections[section.hid] = section;
   });
 
@@ -348,11 +355,11 @@ module.exports = Promise.coroutine(function* (N) {
   // Import topics and posts
   //
   {
-    let rows = (yield conn.query('SELECT threadid FROM thread ORDER BY threadid ASC'))[0];
+    let rows = (await conn.query('SELECT threadid FROM thread ORDER BY threadid ASC'))[0];
 
     let bar = progress(' topics :current/:total :percent', rows.length);
 
-    yield Promise.map(rows, function (row) {
+    await Promise.map(rows, function (row) {
       return import_topic(row.threadid).then(() => {
         bar.tick();
       });
@@ -360,7 +367,7 @@ module.exports = Promise.coroutine(function* (N) {
 
     bar.terminate();
 
-    yield N.models.core.Increment.update(
+    await N.models.core.Increment.update(
       { key: 'topic' },
       { $set: { value: rows[rows.length - 1].threadid } },
       { upsert: true }
@@ -371,32 +378,32 @@ module.exports = Promise.coroutine(function* (N) {
   // Link posts that reply to a different topic
   //
   {
-    let rows = (yield conn.query(`
+    let rows = (await conn.query(`
       SELECT post.postid,post.parentid
       FROM post
       JOIN post AS parent
            ON (post.parentid = parent.postid AND post.threadid != parent.threadid)
     `))[0];
 
-    yield Promise.map(rows, Promise.coroutine(function* (row) {
-      let post_mapping = yield N.models.vbconvert.PostMapping.findOne()
+    await Promise.map(rows, Promise.coroutine(async function (row) {
+      let post_mapping = await N.models.vbconvert.PostMapping.findOne()
                                    .where('mysql', row.postid)
                                    .lean(true);
 
-      let parent_post_mapping = yield N.models.vbconvert.PostMapping.findOne()
+      let parent_post_mapping = await N.models.vbconvert.PostMapping.findOne()
                                           .where('mysql', row.parentid)
                                           .lean(true);
 
-      let post = yield N.models.forum.Post.findOne()
+      let post = await N.models.forum.Post.findOne()
                            .where('topic', parent_post_mapping.topic_id)
                            .where('hid', parent_post_mapping.post_hid)
                            .lean(true);
 
-      let topic = yield N.models.forum.Topic.findById(post.topic).lean(true);
+      let topic = await N.models.forum.Topic.findById(post.topic).lean(true);
 
-      let section = yield N.models.forum.Section.findById(topic.section).lean(true);
+      let section = await N.models.forum.Section.findById(topic.section).lean(true);
 
-      yield N.models.forum.Post.update({
+      await N.models.forum.Post.update({
         topic: post_mapping.topic_id,
         hid: post_mapping.post_hid
       }, {
@@ -419,4 +426,4 @@ module.exports = Promise.coroutine(function* (N) {
   get_parser_param_id.clear();
   conn.release();
   N.logger.info('Topic import finished');
-});
+};

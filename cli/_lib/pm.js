@@ -8,7 +8,7 @@ const Promise       = require('bluebird');
 const mongoose      = require('mongoose');
 const unserialize   = require('phpunserialize');
 const memoize       = require('promise-memoize');
-const html_unescape = require('./utils').html_unescape;
+const html_unescape = require('nodeca.vbconvert/lib/html_unescape_entities');
 const progress      = require('./utils').progress;
 
 

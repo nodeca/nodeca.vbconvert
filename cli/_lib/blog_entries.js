@@ -7,7 +7,7 @@
 const _             = require('lodash');
 const mongoose      = require('mongoose');
 const memoize       = require('promise-memoize');
-const html_unescape = require('./utils').html_unescape;
+const html_unescape = require('nodeca.vbconvert/lib/html_unescape_entities');
 const progress      = require('./utils').progress;
 
 // blog options
@@ -118,18 +118,14 @@ module.exports = async function (N) {
       row.allowsmilie
     );
 
-    // old blog posts (before 2009) have html characters escaped
-    // in text and title
-    let text = html_unescape(row.pagetext);
-
     let entry = new N.models.blogs.BlogEntry();
 
     entry._id        = new mongoose.Types.ObjectId(row.dateline);
     entry.hid        = row.blogid;
     entry.title      = html_unescape(row.title);
     entry.user       = user_id;
-    entry.md         = text;
-    entry.html       = '<p>' + _.escape(text) + '</p>';
+    entry.md         = row.pagetext;
+    entry.html       = '<p>' + _.escape(row.pagetext) + '</p>';
     entry.ts         = new Date(row.dateline * 1000);
     entry.views      = row.views;
     entry.params_ref = params_id;
@@ -184,13 +180,18 @@ module.exports = async function (N) {
       entry.st  = N.models.blogs.BlogEntry.statuses.HB;
     }
 
+    await new N.models.vbconvert.BlogTitle({
+      mysql: row.blogid,
+      title: row.title
+    }).save();
+
     // "mapping" here is only needed to store original bbcode text content
     await new N.models.vbconvert.BlogTextMapping({
       blogid:     row.blogid,
       blogtextid: row.blogtextid,
       is_comment: false,
       mongo:      entry._id,
-      text
+      text:       row.pagetext
     }).save();
 
     await entry.save();
