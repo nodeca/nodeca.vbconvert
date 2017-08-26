@@ -385,7 +385,7 @@ module.exports = async function (N) {
            ON (post.parentid = parent.postid AND post.threadid != parent.threadid)
     `))[0];
 
-    await Promise.map(rows, Promise.coroutine(async function (row) {
+    await Promise.map(rows, async function (row) {
       let post_mapping = await N.models.vbconvert.PostMapping.findOne()
                                    .where('mysql', row.postid)
                                    .lean(true);
@@ -415,7 +415,7 @@ module.exports = async function (N) {
           to_fhid: section.hid
         }
       });
-    }), { concurrency: 100 });
+    }, { concurrency: 100 });
   }
 
 
