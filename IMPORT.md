@@ -44,6 +44,8 @@ Reset mysql permissions:
 service mysql stop
 mysqld_safe --skip-grant-tables &
 echo "UPDATE mysql.user SET plugin = '' WHERE plugin = 'mysql_old_password'; FLUSH PRIVILEGES;" | mysql
+kill `cat /var/run/mysqld/mysqld.pid`
+mysqld_safe --skip-grant-tables &
 echo "FLUSH PRIVILEGES; SET PASSWORD FOR 'root'@'localhost' = '';" | mysql
 kill `cat /var/run/mysqld/mysqld.pid`
 service mysql start
@@ -85,11 +87,13 @@ service nginx start
 Import, part 2 (admin panel)
 ----------------------------
 
+1. Vbconvert -> Import BBcode -> Blogs
 1. Vbconvert -> Import BBcode -> Forum Posts
 2. Vbconvert -> Import BBcode -> Messages
 3. Core -> Rebuild -> Posts
 4. Core -> Rebuild -> Topics
 5. Core -> Rebuild -> Messages
+5. Core -> Rebuild -> Blogs
 6. Core -> Rebuild -> External links
 7. Core -> Rebuild -> Images info
 8. Core -> Rebuild -> Posts
@@ -97,3 +101,9 @@ Import, part 2 (admin panel)
 10. Core -> Dashboard -> Online
 11. Core -> Rebuild -> Messages
 12. Core -> Search -> Reindex
+
+Dump caches (dev only):
+
+```sh
+./bin/db-dump-cache nodeca ../dump_cache
+```
