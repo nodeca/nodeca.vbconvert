@@ -37,7 +37,7 @@ module.exports = async function (N) {
 
   const get_parser_param_id = memoize(function (usergroup_ids, allowsmilie) {
     return N.settings.getByCategory(
-      'blog_entries',
+      'blog_entries_markup',
       { usergroup_ids },
       { alias: true }
     ).then(params => {
