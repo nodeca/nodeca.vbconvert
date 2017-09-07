@@ -136,7 +136,11 @@ module.exports = async function (N) {
     if (count > 0) {
       await N.models.blogs.BlogEntry.update(
         { _id: entry._id },
-        { $set: { comments: count, last_comment_counter: count } }
+        { $set: {
+          comments: count,
+          comments_hb: count,
+          last_comment_counter: count
+        } }
       );
       await comment_bulk.execute();
       await map_bulk.execute();
