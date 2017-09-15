@@ -97,6 +97,8 @@ module.exports = async function (N) {
         AND blogid = ?
     `, [ blogid ]))[0][0];
 
+    if (row.pending) continue;
+
     let existing_mapping = await N.models.vbconvert.BlogTextMapping.findOne()
                                      .where('blogtextid').equals(row.blogtextid)
                                      .lean(true);
@@ -165,11 +167,10 @@ module.exports = async function (N) {
     }
 
     /* eslint-disable no-bitwise */
-    if (row.state !== 'visible' || (row.options & blog_private) || row.pending) {
+    if (row.state !== 'visible' || (row.options & blog_private)) {
       //  - drafts (state=draft)
       //  - deleted blogs (state=deleted)
       //  - private blogs (options & 8)
-      //  - blogs with pending=true
       entry.st = N.models.blogs.BlogEntry.statuses.DELETED;
     } else {
       entry.st = N.models.blogs.BlogEntry.statuses.VISIBLE;
