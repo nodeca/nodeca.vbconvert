@@ -69,6 +69,9 @@ module.exports = async function (N) {
     for (let row of rows) {
       bar.tick();
 
+      // don't import deleted comments, state=deleted or state=moderation
+      if (row.state !== 'visible') continue;
+
       let existing_mapping = await N.models.vbconvert.BlogTextMapping.findOne()
                                        .where('blogtextid').equals(row.blogtextid)
                                        .lean(true);
@@ -111,12 +114,7 @@ module.exports = async function (N) {
         comment.ip = `${ip >> 24 & 0xFF}.${ip >> 16 & 0xFF}.${ip >> 8 & 0xFF}.${ip & 0xFF}`;
       }
 
-      if (row.state !== 'visible') {
-        // state=deleted or state=moderation
-        comment.st = N.models.blogs.BlogComment.statuses.DELETED;
-      } else {
-        comment.st = N.models.blogs.BlogComment.statuses.VISIBLE;
-      }
+      comment.st = N.models.blogs.BlogComment.statuses.VISIBLE;
 
       if (user && user.hb) {
         comment.ste = comment.st;

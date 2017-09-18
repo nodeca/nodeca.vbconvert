@@ -97,7 +97,15 @@ module.exports = async function (N) {
         AND blogid = ?
     `, [ blogid ]))[0][0];
 
-    if (row.pending) continue;
+    // only import visible entries
+    /* eslint-disable no-bitwise */
+    if (row.state !== 'visible' || (row.options & blog_private) || row.pending) {
+      //  - drafts (state=draft)
+      //  - deleted blogs (state=deleted)
+      //  - private blogs (options & 8)
+      //  - pending entries
+      continue;
+    }
 
     let existing_mapping = await N.models.vbconvert.BlogTextMapping.findOne()
                                      .where('blogtextid').equals(row.blogtextid)
@@ -166,15 +174,7 @@ module.exports = async function (N) {
       entry.ip = `${ip >> 24 & 0xFF}.${ip >> 16 & 0xFF}.${ip >> 8 & 0xFF}.${ip & 0xFF}`;
     }
 
-    /* eslint-disable no-bitwise */
-    if (row.state !== 'visible' || (row.options & blog_private)) {
-      //  - drafts (state=draft)
-      //  - deleted blogs (state=deleted)
-      //  - private blogs (options & 8)
-      entry.st = N.models.blogs.BlogEntry.statuses.DELETED;
-    } else {
-      entry.st = N.models.blogs.BlogEntry.statuses.VISIBLE;
-    }
+    entry.st = N.models.blogs.BlogEntry.statuses.VISIBLE;
 
     if (user && user.hb) {
       entry.ste = entry.st;
