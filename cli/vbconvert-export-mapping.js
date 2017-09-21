@@ -4,11 +4,10 @@
 'use strict';
 
 const _        = require('lodash');
-const Promise  = require('bluebird');
 const level    = require('level');
 const mkdirp   = require('mkdirp');
 const path     = require('path');
-const pump     = require('pump');
+const pump     = require('util').promisify(require('pump'));
 const through2 = require('through2');
 const progress = require('./_lib/utils').progress;
 
@@ -35,10 +34,10 @@ module.exports.commandLineArguments = [
 ];
 
 
-module.exports.run = Promise.coroutine(function* (N, args) {
+module.exports.run = async function (N, args) {
   let total, bar, ldb = {};
 
-  yield N.wire.emit('init:models', N);
+  await N.wire.emit('init:models', N);
 
   mkdirp.sync(args.dest);
 
@@ -53,12 +52,12 @@ module.exports.run = Promise.coroutine(function* (N, args) {
     });
   });
 
-  let all_topics    = yield N.models.forum.Topic.find().select('section hid').lean(true);
+  let all_topics    = await N.models.forum.Topic.find().select('section hid').lean(true);
   let topics_by_hid = _.keyBy(all_topics, 'hid');
   let topics_by_id  = _.keyBy(all_topics, '_id');
 
   let sections_by_id = _.keyBy(
-    yield N.models.forum.Section.find().select('_id hid').lean(true),
+    await N.models.forum.Section.find().select('_id hid').lean(true),
     '_id'
   );
 
@@ -79,31 +78,27 @@ module.exports.run = Promise.coroutine(function* (N, args) {
   //
   N.logger.info('Exporting post mappings');
 
-  total = yield N.models.vbconvert.PostMapping.count();
+  total = await N.models.vbconvert.PostMapping.count();
   bar = progress(' posts :current/:total [:bar] :percent', total);
 
-  yield Promise.fromCallback(callback => {
-    pump(
-      N.models.vbconvert.PostMapping.collection.find({}, {
-        mysql:    1,
-        topic_id: 1,
-        post_hid: 1
-      }).stream(),
+  await pump(
+    N.models.vbconvert.PostMapping.collection.find({}, {
+      mysql:    1,
+      topic_id: 1,
+      post_hid: 1
+    }).stream(),
 
-      through2.obj((post, enc, callback) => {
-        bar.tick();
+    through2.obj((post, enc, callback) => {
+      bar.tick();
 
-        ldb.posts.put(post.mysql, {
-          topic: topics_by_id[post.topic_id].hid,
-          post:  post.post_hid
-        });
+      ldb.posts.put(post.mysql, {
+        topic: topics_by_id[post.topic_id].hid,
+        post:  post.post_hid
+      });
 
-        callback();
-      }),
-
-      callback
-    );
-  });
+      callback();
+    })
+  );
 
   bar.terminate();
 
@@ -113,7 +108,7 @@ module.exports.run = Promise.coroutine(function* (N, args) {
   N.logger.info('Exporting user avatar ids');
 
   let users_by_id = _.keyBy(
-    yield N.models.users.User.find().select('_id hid avatar_id').lean(true),
+    await N.models.users.User.find().select('_id hid avatar_id').lean(true),
     '_id'
   );
 
@@ -132,36 +127,32 @@ module.exports.run = Promise.coroutine(function* (N, args) {
   //
   N.logger.info('Exporting album mappings');
 
-  total = yield N.models.vbconvert.AlbumMapping.count();
+  total = await N.models.vbconvert.AlbumMapping.count();
   bar = progress(' albums :current/:total [:bar] :percent', total);
 
-  yield Promise.fromCallback(callback => {
-    pump(
-      N.models.vbconvert.AlbumMapping.collection.find({}).stream(),
+  await pump(
+    N.models.vbconvert.AlbumMapping.collection.find({}).stream(),
 
-      through2.obj((albummap, enc, callback) => {
-        N.models.users.Album
-          .findById(albummap.mongo)
-          .select('user')
-          .lean(true)
-          .exec((err, album) => {
-            if (err) {
-              callback(err);
-              return;
-            }
+    through2.obj((albummap, enc, callback) => {
+      N.models.users.Album
+        .findById(albummap.mongo)
+        .select('user')
+        .lean(true)
+        .exec((err, album) => {
+          if (err) {
+            callback(err);
+            return;
+          }
 
-            bar.tick();
+          bar.tick();
 
-            let user_hid = users_by_id[album.user].hid;
+          let user_hid = users_by_id[album.user].hid;
 
-            ldb.albums.put(albummap.mysql, { user: user_hid, album: albummap.mongo });
-            callback();
-          });
-      }),
-
-      callback
-    );
-  });
+          ldb.albums.put(albummap.mysql, { user: user_hid, album: albummap.mongo });
+          callback();
+        });
+    })
+  );
 
   bar.terminate();
 
@@ -170,50 +161,44 @@ module.exports.run = Promise.coroutine(function* (N, args) {
   //
   N.logger.info('Exporting file mappings');
 
-  total = yield N.models.vbconvert.FileMapping.count();
+  total = await N.models.vbconvert.FileMapping.count();
   bar = progress(' files :current/:total [:bar] :percent', total);
 
-  yield Promise.fromCallback(callback => {
-    pump(
-      N.models.vbconvert.FileMapping.collection.aggregate([ {
-        $lookup: {
-          from: 'users.mediainfos',
-          localField: 'media_id',
-          foreignField: '_id',
-          as: 'media'
-        }
-      } ]).stream(),
+  await pump(
+    N.models.vbconvert.FileMapping.collection.aggregate([ {
+      $lookup: {
+        from: 'users.mediainfos',
+        localField: 'media_id',
+        foreignField: '_id',
+        as: 'media'
+      }
+    } ]).stream(),
 
-      through2.obj((file, enc, callback) => {
-        bar.tick();
+    through2.obj((file, enc, callback) => {
+      bar.tick();
 
-        ldb.filedataids.put(file.filedataid, { attachment: file.attachmentid });
+      ldb.filedataids.put(file.filedataid, { attachment: file.attachmentid });
 
-        if (file.pictureaid_legacy) {
-          ldb.pictureaids.put(file.pictureaid_legacy, { attachment: file.attachmentid });
-        }
+      if (file.pictureaid_legacy) {
+        ldb.pictureaids.put(file.pictureaid_legacy, { attachment: file.attachmentid });
+      }
 
-        if (file.blogaid_legacy) {
-          ldb.blogaids.put(file.blogaid_legacy, { attachment: file.attachmentid });
-        }
+      if (file.blogaid_legacy) {
+        ldb.blogaids.put(file.blogaid_legacy, { attachment: file.attachmentid });
+      }
 
-        let user_hid = users_by_id[file.media[0].user].hid;
+      let user_hid = users_by_id[file.media[0].user].hid;
 
-        ldb.attachments.put(file.attachmentid, { user: user_hid, media: file.media_id });
-        callback();
-      }),
-
-      callback
-    );
-  });
+      ldb.attachments.put(file.attachmentid, { user: user_hid, media: file.media_id });
+      callback();
+    })
+  );
 
   bar.terminate();
 
-  yield Promise.map(Object.keys(ldb), name => Promise.fromCallback(callback => {
-    ldb[name].close(callback);
-  }));
+  await Promise.all(Object.keys(ldb).map(name => ldb[name].close()));
 
   N.logger.info('Export finished');
 
-  yield N.wire.emit('exit.shutdown');
-});
+  await N.wire.emit('exit.shutdown');
+};
