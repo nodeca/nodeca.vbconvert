@@ -5,7 +5,7 @@
 
 const _           = require('lodash');
 const Promise     = require('bluebird');
-const fs          = require('mz/fs');
+const unlink      = require('util').promisify(require('fs').unlink);
 const sharp       = require('sharp');
 const path        = require('path');
 const progress    = require('./utils').progress;
@@ -84,7 +84,7 @@ module.exports = Promise.coroutine(function* (N) {
               { avatar_id: data.id }
             );
     } finally {
-      yield fs.unlink(tmpfile);
+      yield unlink(tmpfile);
     }
   }), { concurrency: 100 });
 

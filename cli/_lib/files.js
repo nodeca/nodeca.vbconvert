@@ -5,7 +5,7 @@
 
 const _           = require('lodash');
 const Promise     = require('bluebird');
-const fs          = require('mz/fs');
+const stat        = require('util').promisify(require('fs').stat);
 const mime        = require('mime-types').lookup;
 const mongoose    = require('mongoose');
 const path        = require('path');
@@ -39,7 +39,7 @@ module.exports = async function (N) {
 
     // Just save if file is not an image
     if (supportedImageFormats.indexOf(filedata.extension) === -1) {
-      let stats = await fs.stat(filepath);
+      let stats = await stat(filepath);
 
       let storeOptions = {
         _id: new mongoose.Types.ObjectId(filedata.dateline),
