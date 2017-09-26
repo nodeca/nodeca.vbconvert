@@ -118,8 +118,7 @@ module.exports = async function (N) {
     batch.messages.insert(message);
     batch.mappings.insert({
       mysql:   pm.pmid,
-      user:    user1.hid,
-      to:      user2.hid,
+      to_user: user1.hid === pm.userid ? user2.hid : user1.hid,
       message: message._id,
       title:   pm.title,
       text:    message_text
@@ -199,13 +198,7 @@ module.exports = async function (N) {
       }
 
       for (let recipient of recipients) {
-        // dialogs are read from mongodb and inserted there one-by-one,
-        // so inserting messages to two different users in parallel is safe,
-        // but inserting them to all recipients in parallel isn't
-        await Promise.all([
-          import_message(pm, userid, recipient, dialogs, batches),
-          userid !== recipient ? import_message(pm, recipient, userid, dialogs, batches) : Promise.resolve()
-        ]);
+        await import_message(pm, userid, recipient, dialogs, batches);
       }
     }
 
