@@ -11,9 +11,11 @@ const memoize       = require('promise-memoize');
 const html_unescape = require('nodeca.vbconvert/lib/html_unescape_entities');
 const progress      = require('./utils').progress;
 
+const BULK_SIZE = 200;
 
-module.exports = Promise.coroutine(function* (N) {
-  const conn = yield N.vbconvert.getConnection();
+
+module.exports = async function (N) {
+  const conn = await N.vbconvert.getConnection();
 
 
   const get_user_by_hid = memoize(function (hid) {
@@ -44,235 +46,128 @@ module.exports = Promise.coroutine(function* (N) {
   });
 
 
-  // Fetch all dialogs and return dialog chains (array of arrays). Note that
-  // each dialog chain can include multiple users (CC's, BCC's), so each
-  // chain will need to be split later.
+  // Import a single message from user A to user B into user A's dialog
   //
-  // Return value (each subarray contains ids of dialogs related to each other):
-  // [ [ pmid, pmid, pmid, ... ], [ pmid, pmid, pmid, ... ], ... ]
-  //
-  const link_dialog_messages = Promise.coroutine(function* () {
-    // TODO: this function consumes a lot of memory, check a way to improve this
-    let all_pms = (yield conn.query('SELECT pmid,pmtextid,parentpmid FROM pm ORDER BY pmid ASC'))[0];
-    let linked_pms = {};
-    let pm_by_parent = {};
-    let pm_by_text = {};
-    let pm_by_id = _.keyBy(all_pms, 'pmid');
-    let result = [];
+  async function import_message(pm, fromuserid, touserid, dialogs, batch) {
+    let user1 = await get_user_by_hid(fromuserid);
 
-    all_pms.forEach(pm => {
-      let parentid = pm.parentpmid;
+    // don't import anything for non-existent user
+    // (it still gets imported for the other side later)
+    if (!user1) return;
 
-      if (parentid !== 0) {
-        pm_by_parent[parentid] = pm_by_parent[parentid] || [];
-        pm_by_parent[parentid].push(pm);
-      }
-    });
-
-    all_pms.forEach(pm => {
-      let textid = pm.pmtextid;
-
-      pm_by_text[textid] = pm_by_text[textid] || [];
-      pm_by_text[textid].push(pm);
-    });
-
-    // Find all posts in the same thread as the current one
-    //
-    function get_relative(root_pm, acc) {
-      acc = acc || [ root_pm ];
-
-      // Assume another post is related to current one if either:
-      //
-      //  1. pmtextid is the same (two copies of the same text)
-      //  2. parentpmid matches pmid (child)
-      //  3. pmid matches parentpmid (parent)
-      //  4. parentpmid matches parentpmid (siblings)
-      //
-      let found = [].concat(pm_by_text[root_pm.pmtextid] || [])
-                    .concat(pm_by_parent[root_pm.pmid] || []);
-
-      if (root_pm.parentpmid) {
-        found = found.concat(pm_by_parent[root_pm.parentpmid] || []);
-
-        if (pm_by_id[root_pm.parentpmid]) {
-          found.push(pm_by_id[root_pm.parentpmid]);
-        }
-      }
-
-      for (let i = 0; i < found.length; i++) {
-        let pm = found[i];
-
-        if (_.findIndex(acc, p => p.pmid === pm.pmid) !== -1) continue;
-
-        acc.push(pm);
-
-        acc = get_relative(pm, acc);
-      }
-
-      return acc;
-    }
-
-    all_pms.forEach(root_pm => {
-      if (linked_pms[root_pm.pmid]) return;
-
-      let chain = [];
-
-      get_relative(root_pm).forEach(pm => {
-        linked_pms[pm.pmid] = true;
-        chain.push(pm.pmid);
-      });
-
-      result.push(chain.sort());
-    });
-
-    return result;
-  });
-
-
-  // Process dialog owned by user `fromuserid` with `touserid`,
-  // starting with a message `root_pm`.
-  //
-  /* eslint-disable max-depth */
-  const import_dialog = Promise.coroutine(function* (pms, root_pm, fromuserid, touserid, data) {
-    // check if it's imported previously in this run
-    for (let mapping of data.mappings) {
-      if (mapping.mysql === root_pm.pmid && mapping.to_user === touserid) {
-        return;
-      }
-    }
-
-    let user1 = (yield get_user_by_hid(fromuserid)) ||
-                { hid: fromuserid, _id: new mongoose.Types.ObjectId('000000000000000000000000') };
-    let user2 = (yield get_user_by_hid(touserid)) ||
+    let user2 = (await get_user_by_hid(touserid)) ||
                 { hid: touserid,   _id: new mongoose.Types.ObjectId('000000000000000000000000') };
 
-    let dialog = {
-      _id:       new mongoose.Types.ObjectId(root_pm.dateline),
-      common_id: new mongoose.Types.ObjectId(root_pm.dateline),
-      title:     html_unescape(root_pm.title),
-      user:      user1._id,
-      to:        user2._id,
-      exists:    true,
-      unread:    0
+    let key = `${user1.hid}_${user2.hid}`;
+
+    let dialog = dialogs[key];
+
+    if (!dialog) {
+      dialog = await N.models.users.Dialog.findOne({ user: user1._id, to: user2._id }).lean(true);
+
+      if (!dialog) {
+        dialog = {
+          _id:    new mongoose.Types.ObjectId(pm.dateline),
+          user:   user1._id,
+          to:     user2._id,
+          unread: 0
+        };
+      }
+
+      dialogs[key] = dialog;
+    }
+
+    let poster = user1.hid === pm.fromuserid ? user1 : user2;
+
+    // mark sender of this message as an active user
+    if (!poster.active && String(poster._id) !== '000000000000000000000000') {
+      poster.active = true;
+
+      await N.models.users.User.update({ _id: poster._id }, { $set: { active: true } });
+    }
+
+    let params_id = await get_parser_param_id(
+      poster.usergroups ? poster.usergroups : [ (await get_default_usergroup())._id ],
+      pm.allowsmilie
+    );
+
+    let message_text = html_unescape(pm.message);
+
+    let message = {
+      _id:        new mongoose.Types.ObjectId(pm.dateline),
+      ts:         new Date(pm.dateline * 1000),
+      exists:     true,
+      parent:     dialog._id,
+      user:       poster._id,
+      html:       '<p>' + _.escape(message_text) + '</p>',
+      md:         message_text,
+      params_ref: params_id,
+      attach:     [] // an array in DB is required by parser
     };
 
-    data.dialogs.push(dialog);
+    dialog.exists = true;
+    dialog.cache = {
+      last_message: message._id,
+      last_user: message.user,
+      last_ts: message.ts,
+      preview: message_text
+    };
 
-    for (let pm of pms) {
-      // check if they have the same title (break the chain otherwise)
-      if (pm.title.replace(/^Re:/, '').trim() !==
-          root_pm.title.replace(/^Re:/, '').trim()) {
-        continue;
-      }
+    if (pm.messageread === 0) dialog.unread = (dialog.unread || 0) + 1;
 
-      // if dialog was already imported before for another user,
-      // get common_id from there
-      if (pm.userid === touserid) {
-        for (let mapping of data.mappings) {
-          if (mapping.mysql === pm.pmid && mapping.to_user === fromuserid) {
-            dialog.common_id = mapping.dialog;
-          }
-        }
-      }
+    batch.messages.insert(message);
+    batch.mappings.insert({
+      mysql:   pm.pmid,
+      user:    user1.hid,
+      to:      user2.hid,
+      message: message._id,
+      title:   pm.title,
+      text:    message_text
+    });
+  }
 
-      if (pm.userid !== fromuserid) {
-        continue;
-      }
-
-      let to_users = unserialize(pm.touserarray);
-
-      // check that other party is either sender or recipient of this message
-      if (!(touserid === pm.fromuserid ||
-            to_users[touserid] ||
-            (to_users.cc && to_users.cc[touserid]) ||
-            (to_users.bcc && to_users.bcc[touserid]) ||
-            !touserid)) {
-        continue;
-      }
-
-      let poster = user1.hid === pm.fromuserid ? user1 : user2;
-
-      // mark sender of this message as an active user
-      if (!poster.active && String(poster._id) !== '000000000000000000000000') {
-        poster.active = true;
-
-        yield N.models.users.User.update({ _id: poster._id }, { $set: { active: true } });
-      }
-
-      let params_id = yield get_parser_param_id(
-        poster.usergroups ? poster.usergroups : [ (yield get_default_usergroup())._id ],
-        pm.allowsmilie
-      );
-
-      let message_text = html_unescape(pm.message);
-
-      let message = {
-        _id:        new mongoose.Types.ObjectId(pm.dateline),
-        ts:         new Date(pm.dateline * 1000),
-        exists:     true,
-        parent:     dialog._id,
-        user:       poster._id,
-        html:       '<p>' + _.escape(message_text) + '</p>',
-        md:         message_text,
-        params_ref: params_id,
-        attach:     [] // an array in DB is required by parser
-      };
-
-      dialog.cache = {
-        last_message: message._id,
-        last_user: message.user,
-        last_ts: message.ts,
-        preview: message_text
-      };
-
-      if (pm.messageread === 0) dialog.unread++;
-
-      data.messages.push(message);
-      data.mappings.push({
-        mysql:   pm.pmid,
-        to_user: user1.hid === pm.userid ? user2.hid : user1.hid,
-        dialog:  dialog.common_id,
-        message: message._id,
-        text:    message_text
-      });
-    }
-  });
-
-  let dialog_chains = yield link_dialog_messages();
-  let pm_count = (yield conn.query('SELECT count(*) AS total FROM pm'))[0][0].total;
+  let pm_count = (await conn.query('SELECT count(*) AS total FROM pm'))[0][0].total;
   let bar = progress(' pm :current/:total :percent', pm_count);
+  let last_pm_id = -1;
 
-  // dialogs in different chains are guaranteed to be in different dialogs,
-  // so we can import chains in parallel
-  yield Promise.map(dialog_chains, Promise.coroutine(function* (chain) {
-    // if first message is imported, we can assume the rest is imported also
-    if (yield N.models.vbconvert.PMMapping.findOne({ mysql: chain[0] }).lean(true)) {
-      return;
-    }
-
-    let data = {
-      dialogs: [],
-      messages: [],
-      mappings: []
-    };
-
-    let pms = (yield conn.query(`
+  for (;;) {
+    let pms = (await conn.query(`
       SELECT pm.*, pmtext.*
       FROM pm JOIN pmtext USING(pmtextid)
-      WHERE pmid IN (${chain.join(',')})
+      WHERE pmid > ?
       ORDER BY pmid ASC
-    `))[0];
+      LIMIT ?
+    `, [ last_pm_id, BULK_SIZE ]))[0];
 
-    for (let root_pm of pms) {
-      bar.tick();
+    if (pms.length === 0) break;
 
-      let userid = root_pm.userid;
+    // note: multiple documents exist with the same mysql id, but it's enough
+    //       to check if one of them is present because of bulk inserts
+    let already_imported = _.keyBy(
+      await N.models.vbconvert.PMMapping.find()
+                .where('mysql').in(_.map(pms, 'pmid'))
+                .select('mysql')
+                .lean(true),
+      'mysql'
+    );
+
+    let dialogs = {}; // `${user}_${to}` => Dialog
+
+    let batches = {
+      messages: N.models.users.DlgMessage.collection.initializeUnorderedBulkOp(),
+      mappings: N.models.vbconvert.PMMapping.collection.initializeUnorderedBulkOp()
+    };
+
+    for (let pm of pms) {
+      if (already_imported[pm.pmid]) continue;
+
+      let userid = pm.userid;
 
       // Copy this message for each user;
       // if no users are listed, copy for each CC;
       // if no users are listed or CC'd, copy for each BCC
       //
-      let to_users    = unserialize(root_pm.touserarray);
+      let to_users    = unserialize(pm.touserarray);
       let to_users_k  = _.without(Object.keys(to_users), 'cc', 'bcc');
 
       if (to_users_k.length === 0) {
@@ -285,8 +180,9 @@ module.exports = Promise.coroutine(function* (N) {
 
       let recipients;
 
+      /* eslint-disable max-depth */
       // determine who user is communicating with (could be sender or recipient)
-      if (+root_pm.fromuserid === userid) {
+      if (+pm.fromuserid === userid) {
         recipients = to_users_k.map(Number);
 
         // a user sent pm to multiple people including herself, remove her from CC
@@ -294,40 +190,46 @@ module.exports = Promise.coroutine(function* (N) {
           recipients = _.without(recipients, userid);
         }
       } else {
-        recipients = [ +root_pm.fromuserid ];
+        recipients = [ +pm.fromuserid ];
       }
 
       // safeguard to ensure all messages are imported, shouldn't happen normally
       if (recipients.length === 0) {
-        N.logger.warn('No recipients found for message=' + root_pm.pmid + ', ' + root_pm.touserarray);
+        N.logger.warn('No recipients found for message=' + pm.pmid + ', ' + pm.touserarray);
       }
 
       for (let recipient of recipients) {
-        yield import_dialog(pms, root_pm, userid, recipient, data);
+        // dialogs are read from mongodb and inserted there one-by-one,
+        // so inserting messages to two different users in parallel is safe,
+        // but inserting them to all recipients in parallel isn't
+        await Promise.all([
+          import_message(pm, userid, recipient, dialogs, batches),
+          userid !== recipient ? import_message(pm, recipient, userid, dialogs, batches) : Promise.resolve()
+        ]);
       }
     }
 
-    // Bulk-insert items from a single dialog chain.
-    //
-    // Note that in case convertor fails there will be no data loss,
-    // but some dialogs may be imported twice.
-    //
-    if (data.dialogs.length > 0) {
-      let bulk;
+    let bulk = N.models.users.Dialog.collection.initializeUnorderedBulkOp();
 
-      bulk = N.models.users.Dialog.collection.initializeOrderedBulkOp();
-      data.dialogs.forEach(d => { bulk.insert(d); });
-      yield bulk.execute();
+    for (let k of Object.keys(dialogs)) {
+      let dialog = dialogs[k];
 
-      bulk = N.models.users.DlgMessage.collection.initializeOrderedBulkOp();
-      data.messages.forEach(d => { bulk.insert(d); });
-      yield bulk.execute();
-
-      bulk = N.models.vbconvert.PMMapping.collection.initializeOrderedBulkOp();
-      data.mappings.forEach(d => { bulk.insert(d); });
-      yield bulk.execute();
+      bulk.find({
+        _id:  dialog._id
+      }).upsert().update({
+        $set: dialog
+      });
     }
-  }), { concurrency: 100 });
+
+    if (bulk.length > 0) await bulk.execute();
+
+    await Promise.all(Object.keys(batches).map(name =>
+      (batches[name].length > 0 ? batches[name].execute() : Promise.resolve())
+    ));
+
+    last_pm_id = pms[pms.length - 1].pmid;
+    bar.tick(pms.length);
+  }
 
   bar.terminate();
 
@@ -336,4 +238,4 @@ module.exports = Promise.coroutine(function* (N) {
   get_parser_param_id.clear();
   conn.release();
   N.logger.info('PM import finished');
-});
+};

@@ -63,7 +63,10 @@ module.exports.run = async function (N, args) {
     let modules = args.module;
 
     for (let m of modules) {
-      if (module_list.indexOf(m) === -1) throw `Unknown vbconvert module: ${m}`;
+      if (module_list.indexOf(m) === -1) {
+        throw 'Unknown vbconvert module: ' + m + '\n' +
+              'Available modules are: ' + module_list.join(', ');
+      }
     }
 
     for (let m of modules) {
