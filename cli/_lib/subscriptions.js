@@ -6,7 +6,7 @@
 const _        = require('lodash');
 const progress = require('./utils').progress;
 
-const BULK_SIZE = 200;
+const BULK_SIZE = 10000;
 
 
 module.exports = async function (N) {
@@ -33,14 +33,14 @@ module.exports = async function (N) {
 
       let users = await N.models.users.User.find()
                             .where('hid').in(_.uniq(_.map(rows, 'userid')))
-                            .select('_id')
+                            .select('hid _id')
                             .lean(true);
 
       let users_by_hid = _.keyBy(users, 'hid');
 
       let sections = await N.models.forum.Section.find()
                              .where('hid').in(_.uniq(_.map(rows, 'forumid')))
-                             .select('_id')
+                             .select('hid _id')
                              .lean(true);
 
       let sections_by_hid = _.keyBy(sections, 'hid');
@@ -49,7 +49,7 @@ module.exports = async function (N) {
         let user = users_by_hid[row.userid];
         if (!user) continue;
 
-        let section = sections_by_hid[row.threadid];
+        let section = sections_by_hid[row.forumid];
         if (!section) continue;
 
         // in the old forum, 0 means no emails are sent, 1 means emails are sent
@@ -99,14 +99,14 @@ module.exports = async function (N) {
 
       let users = await N.models.users.User.find()
                             .where('hid').in(_.uniq(_.map(rows, 'userid')))
-                            .select('_id')
+                            .select('hid _id')
                             .lean(true);
 
       let users_by_hid = _.keyBy(users, 'hid');
 
       let topics = await N.models.forum.Topic.find()
                              .where('hid').in(_.uniq(_.map(rows, 'threadid')))
-                             .select('_id')
+                             .select('hid _id')
                              .lean(true);
 
       let topics_by_hid = _.keyBy(topics, 'hid');
