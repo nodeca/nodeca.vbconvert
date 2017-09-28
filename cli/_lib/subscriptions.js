@@ -3,137 +3,150 @@
 
 'use strict';
 
-const Promise  = require('bluebird');
-const memoize  = require('promise-memoize');
+const _        = require('lodash');
 const progress = require('./utils').progress;
 
+const BULK_SIZE = 200;
 
-module.exports = Promise.coroutine(function* (N) {
-  let conn = yield N.vbconvert.getConnection();
-  let rows, bar;
 
-  const get_user_by_hid = memoize(function (hid) {
-    return N.models.users.User.findOne({ hid }).lean(true);
-  });
+module.exports = async function (N) {
+  const conn = await N.vbconvert.getConnection();
 
-  //
-  // Section subscriptions
-  //
 
-  rows = (yield conn.query(`
-    SELECT userid,forumid,emailupdate
-    FROM subscribeforum
-    ORDER BY subscribeforumid ASC
-  `))[0];
+  async function import_section_subscriptions() {
+    let count = (await conn.query('SELECT count(*) AS total FROM subscribeforum'))[0][0].total;
+    let bar = progress(' section subscriptions :current/:total :percent', count);
+    let last_id = -1;
 
-  bar = progress(' section subscriptions :current/:total :percent', rows.length);
+    for (;;) {
+      let rows = (await conn.query(`
+        SELECT *
+        FROM subscribeforum
+        WHERE subscribeforumid > ?
+        ORDER BY subscribeforumid ASC
+        LIMIT ?
+      `, [ last_id, BULK_SIZE ]))[0];
 
-  let bulk = N.models.users.Subscription.collection.initializeUnorderedBulkOp();
-  let count = 0;
+      if (rows.length === 0) break;
 
-  yield Promise.map(rows, Promise.coroutine(function* (row) {
-    bar.tick();
+      let bulk = N.models.users.Subscription.collection.initializeUnorderedBulkOp();
 
-    let user = yield get_user_by_hid(row.userid);
+      let users = await N.models.users.User.find()
+                            .where('hid').in(_.uniq(_.map(rows, 'userid')))
+                            .select('_id')
+                            .lean(true);
 
-    if (!user) return;
+      let users_by_hid = _.keyBy(users, 'hid');
 
-    let section = yield N.models.forum.Section.findOne()
-                                              .where('hid', row.forumid)
-                                              .select('_id')
-                                              .lean(true);
+      let sections = await N.models.forum.Section.find()
+                             .where('hid').in(_.uniq(_.map(rows, 'forumid')))
+                             .select('_id')
+                             .lean(true);
 
-    if (!section) return;
+      let sections_by_hid = _.keyBy(sections, 'hid');
 
-    // in the old forum, 0 means no emails are sent, 1 means emails are sent
-    // for every message, 2 and 3 are daily/weekly digests
-    let type = row.emailupdate === 1 ? 'WATCHING' : 'TRACKING';
+      for (let row of rows) {
+        let user = users_by_hid[row.userid];
+        if (!user) continue;
 
-    count++;
-    bulk.find({
-      user:  user._id,
-      to:    section._id
-    }).upsert().update({
-      $setOnInsert: {
-        user:    user._id,
-        to:      section._id,
-        to_type: N.shared.content_type.FORUM_SECTION,
-        type:    N.models.users.Subscription.types[type]
+        let section = sections_by_hid[row.threadid];
+        if (!section) continue;
+
+        // in the old forum, 0 means no emails are sent, 1 means emails are sent
+        // for every message, 2 and 3 are daily/weekly digests
+        let type = row.emailupdate === 1 ? 'WATCHING' : 'TRACKING';
+
+        bulk.find({
+          user:  user._id,
+          to:    section._id
+        }).upsert().update({
+          $setOnInsert: {
+            user:    user._id,
+            to:      section._id,
+            to_type: N.shared.content_type.FORUM_SECTION,
+            type:    N.models.users.Subscription.types[type]
+          }
+        });
       }
-    });
-  }), { concurrency: 100 });
 
-  if (count) yield bulk.execute();
+      if (bulk.length > 0) await bulk.execute();
 
-  bar.terminate();
-
-  //
-  // Topic subscriptions
-  //
-  // For each user we bulk-insert all her subscriptions
-  //
-
-  rows = (yield conn.query('SELECT count(*) AS count FROM subscribethread'))[0];
-
-  bar = progress(' topic subscriptions :current/:total :percent', rows[0].count);
-
-  let userids = (yield conn.query(`
-    SELECT userid FROM subscribethread
-    GROUP BY userid
-    ORDER BY userid ASC
-  `))[0];
-
-  yield Promise.map(userids, Promise.coroutine(function* (userid_row) {
-    let userid = userid_row.userid;
-    let user = yield get_user_by_hid(userid);
-
-    let rows = (yield conn.query(`
-      SELECT userid,threadid,emailupdate
-      FROM subscribethread
-      WHERE userid = ?
-    `, [ userid ]))[0];
-
-    let bulk = N.models.users.Subscription.collection.initializeUnorderedBulkOp();
-    let count = 0;
-
-    for (let i = 0; i < rows.length; i++) {
-      let row = rows[i];
-
-      bar.tick();
-
-      if (!user) continue;
-
-      let topic = yield N.models.forum.Topic.findOne()
-                                            .where('hid', row.threadid)
-                                            .select('_id')
-                                            .lean(true);
-
-      if (!topic) continue;
-
-      // in the old forum, 0 means no emails are sent, 1 means emails are sent
-      // for every message, 2 and 3 are daily/weekly digests
-      let type = row.emailupdate === 1 ? 'WATCHING' : 'TRACKING';
-
-      count++;
-      bulk.find({
-        user:  user._id,
-        to:    topic._id
-      }).upsert().update({
-        $setOnInsert: {
-          user:    user._id,
-          to:      topic._id,
-          to_type: N.shared.content_type.FORUM_TOPIC,
-          type:    N.models.users.Subscription.types[type]
-        }
-      });
+      last_id = rows[rows.length - 1].subscribeforumid;
+      bar.tick(rows.length);
     }
 
-    if (count) yield bulk.execute();
-  }), { concurrency: 100 });
+    bar.terminate();
+  }
 
-  bar.terminate();
 
-  get_user_by_hid.clear();
+  async function import_topic_subscriptions() {
+    let count = (await conn.query('SELECT count(*) AS total FROM subscribethread'))[0][0].total;
+    let bar = progress(' topic subscriptions :current/:total :percent', count);
+    let last_id = -1;
+
+    for (;;) {
+      let rows = (await conn.query(`
+        SELECT *
+        FROM subscribethread
+        WHERE subscribethreadid > ?
+        ORDER BY subscribethreadid ASC
+        LIMIT ?
+      `, [ last_id, BULK_SIZE ]))[0];
+
+      if (rows.length === 0) break;
+
+      let bulk = N.models.users.Subscription.collection.initializeUnorderedBulkOp();
+
+      let users = await N.models.users.User.find()
+                            .where('hid').in(_.uniq(_.map(rows, 'userid')))
+                            .select('_id')
+                            .lean(true);
+
+      let users_by_hid = _.keyBy(users, 'hid');
+
+      let topics = await N.models.forum.Topic.find()
+                             .where('hid').in(_.uniq(_.map(rows, 'threadid')))
+                             .select('_id')
+                             .lean(true);
+
+      let topics_by_hid = _.keyBy(topics, 'hid');
+
+      for (let row of rows) {
+        let user = users_by_hid[row.userid];
+        if (!user) continue;
+
+        let topic = topics_by_hid[row.threadid];
+        if (!topic) continue;
+
+        // in the old forum, 0 means no emails are sent, 1 means emails are sent
+        // for every message, 2 and 3 are daily/weekly digests
+        let type = row.emailupdate === 1 ? 'WATCHING' : 'TRACKING';
+
+        bulk.find({
+          user:  user._id,
+          to:    topic._id
+        }).upsert().update({
+          $setOnInsert: {
+            user:    user._id,
+            to:      topic._id,
+            to_type: N.shared.content_type.FORUM_TOPIC,
+            type:    N.models.users.Subscription.types[type]
+          }
+        });
+      }
+
+      if (bulk.length > 0) await bulk.execute();
+
+      last_id = rows[rows.length - 1].subscribethreadid;
+      bar.tick(rows.length);
+    }
+
+    bar.terminate();
+  }
+
+  await import_section_subscriptions();
+  await import_topic_subscriptions();
+
   conn.release();
   N.logger.info('Subscription import finished');
-});
+};
