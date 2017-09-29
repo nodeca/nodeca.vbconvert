@@ -3,15 +3,14 @@
 
 'use strict';
 
-const _       = require('lodash');
-const Promise = require('bluebird');
+const _  = require('lodash');
 
 
 /* eslint-disable no-bitwise */
-module.exports = Promise.coroutine(function* (N) {
-  let conn = yield N.vbconvert.getConnection();
+module.exports = async function (N) {
+  let conn = await N.vbconvert.getConnection();
 
-  let rows = (yield conn.query(`
+  let rows = (await conn.query(`
     SELECT usergroupid,title
     FROM usergroup
   `))[0];
@@ -33,20 +32,20 @@ module.exports = Promise.coroutine(function* (N) {
     row.settings = (row.config || {}).settings || {};
   }
 
-  yield Promise.map(rows, Promise.coroutine(function* (row) {
+  await Promise.all(rows.map(async row => {
     let usergroup, config = row.config;
 
     // ignore some usergroups
     if (!config) return;
 
-    usergroup = yield N.models.users.UserGroup.findOne({ short_name: config.short_name }).lean(false);
+    usergroup = await N.models.users.UserGroup.findOne({ short_name: config.short_name }).lean(false);
 
     if (!usergroup) {
       usergroup = new N.models.users.UserGroup({ short_name: config.short_name });
     }
 
     try {
-      yield new N.models.vbconvert.UserGroupMapping({
+      await new N.models.vbconvert.UserGroupMapping({
         mysql: row.usergroupid,
         mongo: usergroup._id
       }).save();
@@ -57,37 +56,37 @@ module.exports = Promise.coroutine(function* (N) {
       return;
     }
 
-    yield usergroup.save();
+    await usergroup.save();
   }));
 
 
   // update parent_group
-  yield Promise.map(rows, Promise.coroutine(function* (row) {
+  await Promise.all(rows.map(async row => {
     let config = row.config;
 
     if (!config) return;
     if (!config.parent) return;
 
-    let usergroup = yield N.models.users.UserGroup.findOne({ short_name: config.short_name }).lean(false);
-    let parent    = yield N.models.users.UserGroup.findOne({ short_name: config.parent }).lean(true);
+    let usergroup = await N.models.users.UserGroup.findOne({ short_name: config.short_name }).lean(false);
+    let parent    = await N.models.users.UserGroup.findOne({ short_name: config.parent }).lean(true);
 
     usergroup.parent_group = parent._id;
-    yield usergroup.save();
+    await usergroup.save();
   }));
 
 
   // update permissions
-  yield Promise.map(rows, Promise.coroutine(function* (row) {
+  await Promise.all(rows.map(async row => {
     let config = row.config;
 
     if (!config) return;
 
-    let usergroup = yield N.models.users.UserGroup.findOne({ short_name: config.short_name }).lean(true);
+    let usergroup = await N.models.users.UserGroup.findOne({ short_name: config.short_name }).lean(true);
     let should_be = row.settings;
 
     if (!Object.keys(should_be).length) return;
 
-    let settings = yield store.get(Object.keys(should_be), { usergroup_ids: [ usergroup._id ] });
+    let settings = await store.get(Object.keys(should_be), { usergroup_ids: [ usergroup._id ] });
 
     if (config.parent) {
       let parent = _.find(rows, r => r.config && r.config.short_name === config.parent);
@@ -107,9 +106,9 @@ module.exports = Promise.coroutine(function* (N) {
       }
     });
 
-    yield store.set(update, { usergroup_id: usergroup._id });
+    await store.set(update, { usergroup_id: usergroup._id });
   }));
 
   conn.release();
   N.logger.info('UserGroup import finished');
-});
+};

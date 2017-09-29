@@ -3,8 +3,6 @@
 
 'use strict';
 
-const Promise = require('bluebird');
-
 // forum permissions
 const can_view_forum             = 1;
 const can_post_threads           = 16;
@@ -20,12 +18,12 @@ const forum_prefix_required     = 131072;
 
 
 /* eslint-disable no-bitwise */
-module.exports = Promise.coroutine(function* (N) {
-  let conn = yield N.vbconvert.getConnection();
+module.exports = async function (N) {
+  let conn = await N.vbconvert.getConnection();
   let store;
 
   // select all sections except link-only
-  let rows = (yield conn.query(`
+  let rows = (await conn.query(`
     SELECT forumid,title,description,options,excludable,parentid,displayorder
     FROM forum
     WHERE link = ''
@@ -35,11 +33,11 @@ module.exports = Promise.coroutine(function* (N) {
   //
   // Create sections
   //
-  yield Promise.map(rows, Promise.coroutine(function* (row) {
+  await Promise.all(rows.map(async row => {
     // ignoring one inactive forum: vBCms Comments
     if (!(row.options & forum_active)) return;
 
-    let existing_section = yield N.models.forum.Section.findOne()
+    let existing_section = await N.models.forum.Section.findOne()
                                      .where('hid', row.forumid)
                                      .lean(true);
 
@@ -61,28 +59,28 @@ module.exports = Promise.coroutine(function* (N) {
     section.is_excludable      = !!row.excludable;
     section.is_prefix_required = !!(row.options & forum_prefix_required);
 
-    yield section.save();
+    await section.save();
   }));
 
 
   //
   // Link each section with its parent
   //
-  yield Promise.map(rows, Promise.coroutine(function* (row) {
+  await Promise.all(rows.map(async row => {
     // top-level forum
     if (row.parentid < 0) return;
 
-    let parent = yield N.models.forum.Section.findOne()
+    let parent = await N.models.forum.Section.findOne()
                            .where('hid', row.parentid)
                            .lean(true);
 
-    yield N.models.forum.Section.update(
+    await N.models.forum.Section.update(
       { hid: row.forumid },
       { $set: { parent: parent._id } }
     );
   }));
 
-  yield N.models.core.Increment.update(
+  await N.models.core.Increment.update(
     { key: 'section' },
     { $set: { value: rows[rows.length - 1].forumid } },
     { upsert: true }
@@ -94,7 +92,7 @@ module.exports = Promise.coroutine(function* (N) {
 
   let permissions_by_hid = {};
 
-  (yield conn.query(`
+  (await conn.query(`
     SELECT forumid,usergroupid,forumpermissions
     FROM forumpermission
   `))[0].forEach(row => {
@@ -108,19 +106,19 @@ module.exports = Promise.coroutine(function* (N) {
 
   N.models.forum.Section.getChildren.clear();
 
-  for (let section_summary of yield N.models.forum.Section.getChildren()) {
-    let section = yield N.models.forum.Section.findOne()
+  for (let section_summary of await N.models.forum.Section.getChildren()) {
+    let section = await N.models.forum.Section.findOne()
                             .where('_id', section_summary._id)
                             .lean(true);
 
     for (let row of permissions_by_hid[section.hid] || []) {
-      let groupmap = yield N.models.vbconvert.UserGroupMapping.findOne()
+      let groupmap = await N.models.vbconvert.UserGroupMapping.findOne()
                                .where('mysql', row.usergroupid)
                                .lean(true);
 
       if (!groupmap) continue;
 
-      let settings = yield N.settings.get([
+      let settings = await N.settings.get([
         'forum_can_view',
         'forum_can_reply',
         'forum_can_start_topics',
@@ -146,7 +144,7 @@ module.exports = Promise.coroutine(function* (N) {
       });
 
       if (Object.keys(update).length) {
-        yield store.set(update, {
+        await store.set(update, {
           section_id: section._id,
           usergroup_id: groupmap.mongo
         });
@@ -158,7 +156,7 @@ module.exports = Promise.coroutine(function* (N) {
   // Set moderator permissions
   //
 
-  let moderator_permissions = (yield conn.query(`
+  let moderator_permissions = (await conn.query(`
     SELECT userid,forumid
     FROM moderator
   `))[0];
@@ -168,11 +166,11 @@ module.exports = Promise.coroutine(function* (N) {
   if (!store) throw 'Settings store `section_moderator` is not registered.';
 
   for (let row of moderator_permissions) {
-    let section = yield N.models.forum.Section.findOne()
+    let section = await N.models.forum.Section.findOne()
                             .where('hid', row.forumid)
                             .lean(true);
 
-    let user = yield N.models.users.User.findOne()
+    let user = await N.models.users.User.findOne()
                          .where('hid', row.userid)
                          .lean(true);
 
@@ -180,7 +178,7 @@ module.exports = Promise.coroutine(function* (N) {
 
     let update = N.config.vbconvert.moderator_permissions;
 
-    yield store.set(update, {
+    await store.set(update, {
       section_id: section._id,
       user_id: user._id
     });
@@ -188,4 +186,4 @@ module.exports = Promise.coroutine(function* (N) {
 
   conn.release();
   N.logger.info('Section import finished');
-});
+};
