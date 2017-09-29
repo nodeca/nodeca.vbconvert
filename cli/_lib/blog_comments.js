@@ -52,6 +52,9 @@ module.exports = async function (N) {
   await Promise.map(blogids, async function (blog) {
     let entry = await N.models.blogs.BlogEntry.findOne({ hid: blog.blogid }).lean(true);
 
+    // We skipped import of deleted blog entries. Comments should be skipped too.
+    if (!entry) return;
+
     let rows = (await conn.query(`
       SELECT blog_text.blogid,blog_text.blogtextid,blog_text.userid,
              blog_text.dateline,blog_text.pagetext,blog_text.state,
