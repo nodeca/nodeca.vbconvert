@@ -10,7 +10,7 @@ const stream   = require('stream');
 const progress = require('./utils').progress;
 const Schema   = Mongoose.Schema;
 
-const BATCH_SIZE = 1000;
+const BATCH_SIZE = 10000;
 
 
 module.exports = async function (N) {

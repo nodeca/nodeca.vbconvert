@@ -10,7 +10,6 @@ const mongoose      = require('mongoose');
 const memoize       = require('promise-memoize');
 const html_unescape = require('nodeca.vbconvert/lib/html_unescape_entities');
 const progress      = require('./utils').progress;
-const POST          = 1; // content type for posts
 
 const prefixes = {
   forsale: 'Продам: ',
@@ -114,14 +113,12 @@ module.exports = async function (N) {
     // Fetch posts from this thread from SQL
     //
     posts = (await conn.query(`
-      SELECT threadid,postid,parentid,pagetext,dateline,ipaddress,userid,username,visible,allowsmilie,
-             GROUP_CONCAT(vote) AS votes,GROUP_CONCAT(fromuserid) AS casters
+      SELECT threadid,postid,parentid,pagetext,dateline,ipaddress,userid,username,visible,allowsmilie
       FROM post
-      LEFT JOIN votes ON post.postid = votes.targetid AND votes.contenttypeid = ?
       WHERE threadid = ?
       GROUP BY postid
       ORDER BY postid ASC
-    `, [ POST, thread.threadid ]))[0];
+    `, [ thread.threadid ]))[0];
 
     // empty topic, e.g. http://forum.rcdesign.ru/f90/thread121809.html
     if (posts.length === 0) {
@@ -226,19 +223,6 @@ module.exports = async function (N) {
 
         new_post.votes = 0;
         new_post.votes_hb = 0;
-
-        /* eslint-disable no-loop-func */
-        _.zip((post.casters || '').split(','), (post.votes || '').split(',')).forEach(function (arr) {
-          if (arr[0] && arr[1]) {
-            if (users[arr[0]]) {
-              new_post.votes_hb += Number(arr[1]);
-
-              if (!users[arr[0]].hb) {
-                new_post.votes += Number(arr[1]);
-              }
-            }
-          }
-        });
 
         if (user.hb) {
           new_post.st  = N.models.forum.Post.statuses.HB;
@@ -377,7 +361,12 @@ module.exports = async function (N) {
   //
   // Link posts that reply to a different topic
   //
-  {
+  // Could happen if a single topic is split into two different topics,
+  // so post from one topic would reply to another.
+  //
+  // Commented out because it never happens currently.
+  //
+  /*{
     let rows = (await conn.query(`
       SELECT post.postid,post.parentid
       FROM post
@@ -416,7 +405,7 @@ module.exports = async function (N) {
         }
       });
     }, { concurrency: 100 });
-  }
+  }*/
 
 
   //
