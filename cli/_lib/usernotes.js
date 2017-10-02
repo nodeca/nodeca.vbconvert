@@ -30,11 +30,11 @@ function text_to_md(text) {
 }
 
 
-module.exports = Promise.coroutine(function* (N) {
-  let conn = yield N.vbconvert.getConnection();
+module.exports = async function (N) {
+  let conn = await N.vbconvert.getConnection();
   let rows, bar;
 
-  rows = (yield conn.query(`
+  rows = (await conn.query(`
     SELECT userid,rcd_notepad
     FROM usertextfield
     WHERE NOT ISNULL(rcd_notepad)
@@ -44,18 +44,18 @@ module.exports = Promise.coroutine(function* (N) {
 
   bar = progress(' usernotes :current/:total :percent', rows.length);
 
-  yield Promise.map(rows, Promise.coroutine(function* (row) {
+  await Promise.map(rows, async row => {
     bar.tick();
 
-    let user = yield N.models.users.User.findOne({ hid: row.userid }).lean(true);
+    let user = await N.models.users.User.findOne({ hid: row.userid }).lean(true);
     let text = text_to_md(row.rcd_notepad);
 
     // all plugins are disabled, so we're only running parser to get default
     // layout; note that attachments, user_info, etc. are not submitted
     // because they are currently only used in plugins
-    let parse_result = yield N.parser.md2html({ text, options: {} });
+    let parse_result = await N.parser.md2html({ text, options: {} });
 
-    yield N.models.users.UserNote.update({
+    await N.models.users.UserNote.update({
       from: user._id,
       to:   user._id
     }, {
@@ -65,10 +65,10 @@ module.exports = Promise.coroutine(function* (N) {
         version: 0
       }
     }, { upsert: true });
-  }), { concurrency: 100 });
+  }, { concurrency: 100 });
 
   bar.terminate();
 
   conn.release();
   N.logger.info('User note import finished');
-});
+};

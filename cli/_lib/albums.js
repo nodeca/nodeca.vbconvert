@@ -9,46 +9,45 @@ const progress  = require('./utils').progress;
 const ALBUM     = 8; // content type for albums
 
 
-module.exports = Promise.coroutine(function* (N) {
-  let conn = yield N.vbconvert.getConnection();
+module.exports = async function (N) {
+  let conn = await N.vbconvert.getConnection();
 
-  let rows = (yield conn.query('SELECT count(*) AS count FROM album'))[0];
+  let rows = (await conn.query('SELECT count(*) AS count FROM album'))[0];
 
   let bar = progress(' albums :current/:total :percent', rows[0].count);
 
-  let userids = (yield conn.query('SELECT userid FROM album GROUP BY userid ORDER BY userid ASC'))[0];
+  let userids = (await conn.query('SELECT userid FROM album GROUP BY userid ORDER BY userid ASC'))[0];
 
-  yield Promise.map(userids, Promise.coroutine(function* (row) {
+  await Promise.map(userids, async row => {
     let userid = row.userid;
-    let user = yield N.models.users.User.findOne({ hid: userid }).lean(true);
+    let user = await N.models.users.User.findOne({ hid: userid }).lean(true);
 
     // ignore albums belonging to deleted users
     if (!user) return;
 
     // mark user as active
     if (!user.active) {
-      yield N.models.users.User.update({ _id: user._id }, { $set: { active: true } });
+      await N.models.users.User.update({ _id: user._id }, { $set: { active: true } });
     }
 
-    let rows = (yield conn.query(`
+    let rows = (await conn.query(`
       SELECT albumid,title,description,createdate,lastpicturedate
       FROM album
       WHERE userid = ?
       ORDER BY albumid ASC
     `, [ userid ]))[0];
 
-    for (let i = 0; i < rows.length; i++) {
+    for (let row of rows) {
       bar.tick();
 
-      let row = rows[i];
-      let album_mapping = yield N.models.vbconvert.AlbumMapping.findOne()
+      let album_mapping = await N.models.vbconvert.AlbumMapping.findOne()
                                     .where('mysql', row.albumid)
                                     .lean(true);
 
       // already imported
       if (album_mapping) continue;
 
-      let datelines = (yield conn.query(`
+      let datelines = (await conn.query(`
         SELECT dateline
         FROM attachment
         WHERE contenttypeid = ? AND contentid = ?
@@ -75,16 +74,16 @@ module.exports = Promise.coroutine(function* (N) {
         album.last_ts = new Date(row.lastpicturedate * 1000);
       }
 
-      yield new N.models.vbconvert.AlbumMapping({
+      await new N.models.vbconvert.AlbumMapping({
         mysql: row.albumid,
         mongo: album._id
       }).save();
 
-      yield album.save();
+      await album.save();
     }
-  }), { concurrency: 100 });
+  }, { concurrency: 100 });
 
   bar.terminate();
   conn.release();
   N.logger.info('Album import finished');
-});
+};

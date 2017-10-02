@@ -1,7 +1,6 @@
 'use strict';
 
 
-const Promise     = require('bluebird');
 const crypto      = require('crypto');
 const randomBytes = require('crypto').randomBytes;
 
@@ -20,12 +19,12 @@ describe('Login', function () {
 
   // Create new user with vb authprovider
   //
-  before(Promise.coroutine(function* () {
+  before(async () => {
     user = new TEST.N.models.users.User({
       nick: login
     });
 
-    yield user.save();
+    await user.save();
 
     let authProvider = new TEST.N.models.users.AuthProvider({
       type: 'vb',
@@ -39,8 +38,8 @@ describe('Login', function () {
       last_ip: '127.0.0.1'
     });
 
-    yield authProvider.save();
-  }));
+    await authProvider.save();
+  });
 
 
   it('should authorize with vb authprovider', function (done) {

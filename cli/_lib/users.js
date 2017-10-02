@@ -13,8 +13,8 @@ const MEMBERS     = 11;
 const VIOLATORS   = 12;
 
 
-module.exports = Promise.coroutine(function* (N) {
-  let usergroups = yield N.models.vbconvert.UserGroupMapping.find().lean(true);
+module.exports = async function (N) {
+  let usergroups = await N.models.vbconvert.UserGroupMapping.find().lean(true);
 
   let mongoid = {};
 
@@ -22,9 +22,9 @@ module.exports = Promise.coroutine(function* (N) {
     mongoid[usergroup.mysql] = usergroup.mongo;
   });
 
-  let conn = yield N.vbconvert.getConnection();
+  let conn = await N.vbconvert.getConnection();
 
-  let gi_rows = (yield conn.query('SELECT value FROM setting WHERE varname = "globalignore" LIMIT 1'))[0];
+  let gi_rows = (await conn.query('SELECT value FROM setting WHERE varname = "globalignore" LIMIT 1'))[0];
 
   let hellbanned_ids = [];
 
@@ -32,7 +32,7 @@ module.exports = Promise.coroutine(function* (N) {
     hellbanned_ids = gi_rows[0].value.split(' ').map(Number);
   }
 
-  let rows = (yield conn.query(`
+  let rows = (await conn.query(`
     SELECT userid,usergroupid,membergroupids,username,email,password,salt,
            passworddate,ipaddress,joindate,lastactivity,posts,icq,skype,
            CAST(birthday_search as char) as birthday,
@@ -43,13 +43,13 @@ module.exports = Promise.coroutine(function* (N) {
 
   let bar = progress(' users :current/:total :percent', rows.length);
 
-  yield Promise.map(rows, Promise.coroutine(function* (row) {
+  await Promise.map(rows, async row => {
     bar.tick();
 
     // don't import admin (hid=1, it's now a bot)
     if (row.userid === N.config.bots.default_bot_hid) return;
 
-    let user = yield N.models.users.User.findOne({ hid: row.userid }).lean(false);
+    let user = await N.models.users.User.findOne({ hid: row.userid }).lean(false);
 
     if (!user) {
       user = new N.models.users.User({
@@ -94,7 +94,7 @@ module.exports = Promise.coroutine(function* (N) {
       // for violators: fetch old usergroup before ban, and add it as well
       user.usergroups.push(mongoid[row.usergroupid]);
 
-      let result = (yield conn.query(`
+      let result = (await conn.query(`
         SELECT usergroupid FROM userban WHERE userid = ?
       `, [ row.userid ]))[0];
       let ban = (result || [])[0];
@@ -123,7 +123,7 @@ module.exports = Promise.coroutine(function* (N) {
       user.hb = true;
     }
 
-    yield user.save();
+    await user.save();
 
     let authProvider = new N.models.users.AuthProvider();
 
@@ -140,12 +140,12 @@ module.exports = Promise.coroutine(function* (N) {
       salt: row.salt
     };
 
-    yield authProvider.save();
-  }), { concurrency: 100 });
+    await authProvider.save();
+  }, { concurrency: 100 });
 
   bar.terminate();
 
-  yield N.models.core.Increment.update(
+  await N.models.core.Increment.update(
           { key: 'user' },
           { $set: { value: rows[rows.length - 1].userid } },
           { upsert: true }
@@ -153,4 +153,4 @@ module.exports = Promise.coroutine(function* (N) {
 
   conn.release();
   N.logger.info('User import finished');
-});
+};

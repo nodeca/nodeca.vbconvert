@@ -10,8 +10,8 @@ const html_unescape = require('nodeca.vbconvert/lib/html_unescape_entities');
 const progress      = require('./utils').progress;
 
 
-module.exports = Promise.coroutine(function* (N) {
-  let conn = yield N.vbconvert.getConnection();
+module.exports = async function (N) {
+  let conn = await N.vbconvert.getConnection();
   let rows, bar;
 
   const get_user_by_hid = memoize(function (hid) {
@@ -19,13 +19,13 @@ module.exports = Promise.coroutine(function* (N) {
   });
 
   // remove old infractions in case import is restarted
-  yield N.models.users.Infraction.remove({});
-  yield N.models.users.UserPenalty.remove({});
+  await N.models.users.Infraction.remove({});
+  await N.models.users.UserPenalty.remove({});
 
   //
   // Import infractions
   //
-  rows = (yield conn.query(`
+  rows = (await conn.query(`
     SELECT postid,userid,infractionlevelid,whoadded,points,dateline,customreason,expires
     FROM infraction
     ORDER BY infractionid ASC
@@ -33,16 +33,16 @@ module.exports = Promise.coroutine(function* (N) {
 
   bar = progress(' infractions :current/:total :percent', rows.length);
 
-  yield Promise.map(rows, Promise.coroutine(function* (row) {
+  await Promise.map(rows, async row => {
     bar.tick();
 
-    let user = yield get_user_by_hid(row.userid);
+    let user = await get_user_by_hid(row.userid);
 
     if (!user) return;
 
     let infraction = {
       _id:    new mongoose.Types.ObjectId(row.dateline),
-      from:   (yield get_user_by_hid(row.whoadded))._id,
+      from:   (await get_user_by_hid(row.whoadded))._id,
       'for':  user._id,
       type:   'custom',
       points: row.points,
@@ -67,7 +67,7 @@ module.exports = Promise.coroutine(function* (N) {
     }
 
     if (row.postid) {
-      let post = yield N.models.vbconvert.PostMapping.findOne({ mysql: row.postid });
+      let post = await N.models.vbconvert.PostMapping.findOne({ mysql: row.postid });
 
       if (post) {
         infraction.src = post.post_id;
@@ -75,15 +75,15 @@ module.exports = Promise.coroutine(function* (N) {
       }
     }
 
-    yield N.models.users.Infraction.collection.insert(infraction);
-  }), { concurrency: 100 });
+    await N.models.users.Infraction.collection.insert(infraction);
+  }, { concurrency: 100 });
 
   bar.terminate();
 
   //
   // Import consequences for infractions
   //
-  rows = (yield conn.query(`
+  rows = (await conn.query(`
     SELECT userid,bandate,liftdate
     FROM userban
     ORDER BY bandate ASC
@@ -96,10 +96,10 @@ module.exports = Promise.coroutine(function* (N) {
 
   bar = progress(' infractions (bans) :current/:total :percent', rows.length);
 
-  yield Promise.map(rows, Promise.coroutine(function* (row) {
+  await Promise.map(rows, async row => {
     bar.tick();
 
-    let user = yield get_user_by_hid(row.userid);
+    let user = await get_user_by_hid(row.userid);
 
     if (!user) return;
 
@@ -112,13 +112,13 @@ module.exports = Promise.coroutine(function* (N) {
 
     count++;
     bulk.insert(entry);
-  }), { concurrency: 100 });
+  }, { concurrency: 100 });
 
-  if (count) yield bulk.execute();
+  if (count) await bulk.execute();
 
   bar.terminate();
 
   get_user_by_hid.clear();
   conn.release();
   N.logger.info('Infraction import finished');
-});
+};

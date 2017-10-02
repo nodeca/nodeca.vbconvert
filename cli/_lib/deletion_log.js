@@ -8,8 +8,8 @@ const memoize  = require('promise-memoize');
 const progress = require('./utils').progress;
 
 
-module.exports = Promise.coroutine(function* (N) {
-  let conn = yield N.vbconvert.getConnection();
+module.exports = async function (N) {
+  let conn = await N.vbconvert.getConnection();
   let rows, bar;
 
   const get_user_by_hid = memoize(function (hid) {
@@ -20,7 +20,7 @@ module.exports = Promise.coroutine(function* (N) {
   // Fetch deleted topics
   //
 
-  rows = (yield conn.query(`
+  rows = (await conn.query(`
     SELECT primaryid,userid,reason
     FROM deletionlog
     WHERE type='thread'
@@ -28,20 +28,20 @@ module.exports = Promise.coroutine(function* (N) {
 
   bar = progress(' deleted topics :current/:total :percent', rows.length);
 
-  yield Promise.map(rows, Promise.coroutine(function* (row) {
+  await Promise.map(rows, async row => {
     bar.tick();
 
-    let user = yield get_user_by_hid(row.userid);
+    let user = await get_user_by_hid(row.userid);
 
     if (!user) return;
 
-    yield N.models.forum.Topic.update({ hid: row.primaryid }, {
+    await N.models.forum.Topic.update({ hid: row.primaryid }, {
       $set: {
         del_by:     user._id,
         del_reason: row.reason
       }
     });
-  }), { concurrency: 100 });
+  }, { concurrency: 100 });
 
   bar.terminate();
 
@@ -49,7 +49,7 @@ module.exports = Promise.coroutine(function* (N) {
   // Fetch deleted posts
   //
 
-  rows = (yield conn.query(`
+  rows = (await conn.query(`
     SELECT primaryid,userid,reason
     FROM deletionlog
     WHERE type='post'
@@ -57,27 +57,27 @@ module.exports = Promise.coroutine(function* (N) {
 
   bar = progress(' deleted posts :current/:total :percent', rows.length);
 
-  yield Promise.map(rows, Promise.coroutine(function* (row) {
+  await Promise.map(rows, async row => {
     bar.tick();
 
-    let user = yield get_user_by_hid(row.userid);
-    let post = yield N.models.vbconvert.PostMapping.findOne()
+    let user = await get_user_by_hid(row.userid);
+    let post = await N.models.vbconvert.PostMapping.findOne()
                          .where('mysql', row.primaryid)
                          .lean(true);
 
     if (!user) return;
 
-    yield N.models.forum.Post.update({ _id: post.post_id }, {
+    await N.models.forum.Post.update({ _id: post.post_id }, {
       $set: {
         del_by:     user._id,
         del_reason: row.reason
       }
     });
-  }), { concurrency: 100 });
+  }, { concurrency: 100 });
 
   bar.terminate();
 
   get_user_by_hid.clear();
   conn.release();
   N.logger.info('Deletion log import finished');
-});
+};

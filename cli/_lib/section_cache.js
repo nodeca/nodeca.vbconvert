@@ -3,24 +3,20 @@
 
 'use strict';
 
-const Promise = require('bluebird');
 
+module.exports = async function (N) {
+  let conn = await N.vbconvert.getConnection();
 
-module.exports = Promise.coroutine(function* (N) {
-  let conn = yield N.vbconvert.getConnection();
+  let forums = (await conn.query('SELECT forumid FROM forum ORDER BY forumid ASC'))[0];
 
-  let forums = (yield conn.query('SELECT forumid FROM forum ORDER BY forumid ASC'))[0];
-
-  for (let i = 0; i < forums.length; i++) {
-    let forum = forums[i];
-
-    let section = yield N.models.forum.Section.findOne()
+  for (let forum of forums) {
+    let section = await N.models.forum.Section.findOne()
                             .where('hid', forum.forumid)
                             .lean(true);
 
     if (!section) continue;
 
-    let results = yield N.models.forum.Topic.aggregate({
+    let results = await N.models.forum.Topic.aggregate({
       $match: {
         section: section._id,
         st: { $in: N.models.forum.Topic.statuses.LIST_VISIBLE }
@@ -33,7 +29,7 @@ module.exports = Promise.coroutine(function* (N) {
       }
     }).exec();
 
-    let results_hb = yield N.models.forum.Topic.aggregate({
+    let results_hb = await N.models.forum.Topic.aggregate({
       $match: {
         section: section._id,
         st: { $in: [ N.models.forum.Topic.statuses.HB ].concat(N.models.forum.Topic.statuses.LIST_VISIBLE) }
@@ -46,7 +42,7 @@ module.exports = Promise.coroutine(function* (N) {
       }
     }).exec();
 
-    yield N.models.forum.Section.update({ _id: section._id }, {
+    await N.models.forum.Section.update({ _id: section._id }, {
       $set: {
         'cache.topic_count': results.length ? results[0].topics : 0,
         'cache.post_count':  results.length ? results[0].posts  : 0,
@@ -55,9 +51,9 @@ module.exports = Promise.coroutine(function* (N) {
       }
     });
 
-    yield N.models.forum.Section.updateCache(section._id, true);
+    await N.models.forum.Section.updateCache(section._id, true);
   }
 
   conn.release();
   N.logger.info('Section cache built');
-});
+};

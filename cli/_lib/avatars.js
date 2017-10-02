@@ -13,7 +13,7 @@ const resizeParse = require('nodeca.users/server/_lib/resize_parse');
 const resize      = require('nodeca.users/models/users/_lib/resize');
 
 
-module.exports = Promise.coroutine(function* (N) {
+module.exports = async function (N) {
   let config     = resizeParse(N.config.users.avatars);
   let min_width  = _.reduce(config.resize, function (acc, obj) {
     return Math.max(acc, obj.width);
@@ -22,9 +22,9 @@ module.exports = Promise.coroutine(function* (N) {
     return Math.max(acc, obj.height);
   }, 0);
 
-  let conn = yield N.vbconvert.getConnection();
+  let conn = await N.vbconvert.getConnection();
 
-  let rows = (yield conn.query(`
+  let rows = (await conn.query(`
     SELECT userid,width,height,bigpicrevision,dateline,
            sel_top,sel_left,sel_width,sel_height
     FROM custombigpic JOIN user USING(userid)
@@ -35,12 +35,12 @@ module.exports = Promise.coroutine(function* (N) {
   let bar = progress(' avatars :current/:total :percent', rows.length);
   let counter = 0;
 
-  yield Promise.map(rows, Promise.coroutine(function* (row) {
+  await Promise.map(rows, async row => {
     bar.tick();
 
     let tmpfile = '/tmp/vbconvert-' + (++counter) + '.jpg';
 
-    let user = yield N.models.users.User.findOne()
+    let user = await N.models.users.User.findOne()
                          .where('hid', row.userid)
                          .lean(true);
 
@@ -65,10 +65,10 @@ module.exports = Promise.coroutine(function* (N) {
       top:    row.sel_top
     });
 
-    yield sharpInstance.toFile(tmpfile);
+    await sharpInstance.toFile(tmpfile);
 
     try {
-      let data = yield resize(tmpfile, {
+      let data = await resize(tmpfile, {
         store:   N.models.core.File,
         ext:     'jpeg',
 
@@ -79,16 +79,16 @@ module.exports = Promise.coroutine(function* (N) {
         resize:  config.types.jpg.resize
       });
 
-      yield N.models.users.User.update(
+      await N.models.users.User.update(
               { hid: row.userid },
               { avatar_id: data.id }
             );
     } finally {
-      yield unlink(tmpfile);
+      await unlink(tmpfile);
     }
-  }), { concurrency: 100 });
+  }, { concurrency: 100 });
 
   bar.terminate();
   conn.release();
   N.logger.info('Avatar import finished');
-});
+};

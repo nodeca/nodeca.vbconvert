@@ -9,26 +9,26 @@ const memoize   = require('promise-memoize');
 const progress  = require('./utils').progress;
 
 
-module.exports = Promise.coroutine(function* (N) {
-  let conn = yield N.vbconvert.getConnection();
+module.exports = async function (N) {
+  let conn = await N.vbconvert.getConnection();
 
   const get_user_by_hid = memoize(function (hid) {
     return N.models.users.User.findOne({ hid }).lean(true);
   });
 
 
-  let rows = (yield conn.query('SELECT * FROM userlist WHERE type="ignore"'))[0];
+  let rows = (await conn.query('SELECT * FROM userlist WHERE type="ignore"'))[0];
 
   let bar = progress(' ignores :current/:total :percent', rows.length);
 
   let bulk = N.models.users.Ignore.collection.initializeUnorderedBulkOp();
   let count = 0;
 
-  yield Promise.map(rows, Promise.coroutine(function* (row) {
+  await Promise.map(rows, async row => {
     bar.tick();
 
-    let fromuser = yield get_user_by_hid(row.userid);
-    let touser   = yield get_user_by_hid(row.relationid);
+    let fromuser = await get_user_by_hid(row.userid);
+    let touser   = await get_user_by_hid(row.relationid);
 
     if (!fromuser || !touser) return;
 
@@ -52,13 +52,13 @@ module.exports = Promise.coroutine(function* (N) {
     }).upsert().update({
       $setOnInsert: ignore
     });
-  }), { concurrency: 100 });
+  }, { concurrency: 100 });
 
-  if (count) yield bulk.execute();
+  if (count) await bulk.execute();
 
   bar.terminate();
 
   get_user_by_hid.clear();
   conn.release();
   N.logger.info('Ignore list import finished');
-});
+};

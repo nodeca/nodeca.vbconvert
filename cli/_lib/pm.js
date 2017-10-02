@@ -4,7 +4,6 @@
 'use strict';
 
 const _             = require('lodash');
-const Promise       = require('bluebird');
 const mongoose      = require('mongoose');
 const unserialize   = require('phpunserialize');
 const memoize       = require('promise-memoize');

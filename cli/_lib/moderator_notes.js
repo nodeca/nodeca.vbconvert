@@ -10,26 +10,26 @@ const progress      = require('./utils').progress;
 const options       = require('nodeca.users/server/users/mod_notes/_parse_options');
 
 
-module.exports = Promise.coroutine(function* (N) {
+module.exports = async function (N) {
   const parse_bbcode = require('../../lib/parse_bbcode')(N);
 
-  let conn = yield N.vbconvert.getConnection();
+  let conn = await N.vbconvert.getConnection();
 
-  let rows = (yield conn.query('SELECT * FROM usernote'))[0];
+  let rows = (await conn.query('SELECT * FROM usernote'))[0];
 
   let bar = progress(' mod notes :current/:total :percent', rows.length);
 
   // re-import all moderator notes from scratch every time
-  yield N.models.users.ModeratorNote.remove({});
+  await N.models.users.ModeratorNote.remove({});
 
   let bulk = N.models.users.ModeratorNote.collection.initializeOrderedBulkOp();
   let count = 0;
 
-  yield Promise.map(rows, Promise.coroutine(function* (row) {
+  await Promise.map(rows, async row => {
     bar.tick();
 
-    let user   = yield N.models.users.User.findOne({ hid: row.userid }).lean(true);
-    let poster = yield N.models.users.User.findOne({ hid: row.posterid }).lean(true);
+    let user   = await N.models.users.User.findOne({ hid: row.userid }).lean(true);
+    let poster = await N.models.users.User.findOne({ hid: row.posterid }).lean(true);
 
     if (!user || !poster) return;
 
@@ -48,7 +48,7 @@ module.exports = Promise.coroutine(function* (N) {
       attachments: []
     } ];
 
-    let parsed = yield parse_bbcode(bbcode_data);
+    let parsed = await parse_bbcode(bbcode_data);
 
     count++;
 
@@ -60,12 +60,12 @@ module.exports = Promise.coroutine(function* (N) {
       html: parsed[0].html,
       ts:   new Date(row.dateline * 1000)
     });
-  }), { concurrency: 100 });
+  }, { concurrency: 100 });
 
-  if (count) yield bulk.execute();
+  if (count) await bulk.execute();
 
   bar.terminate();
 
   conn.release();
   N.logger.info('Moderator note import finished');
-});
+};
