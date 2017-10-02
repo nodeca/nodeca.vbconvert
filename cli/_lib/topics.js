@@ -7,7 +7,6 @@
 const _             = require('lodash');
 const Promise       = require('bluebird');
 const mongoose      = require('mongoose');
-const memoize       = require('promise-memoize');
 const html_unescape = require('nodeca.vbconvert/lib/html_unescape_entities');
 const progress      = require('./utils').progress;
 
@@ -23,25 +22,14 @@ module.exports = async function (N) {
 
   let empty_sections = _.zipObject(N.config.vbconvert.empty_sections || []);
 
+  let default_usergroup_id = (
+    await N.models.users.UserGroup.findOne()
+              .where('short_name').equals('members')
+              .select('_id')
+              .lean(true)
+  )._id;
 
-  const get_default_usergroup = memoize(function () {
-    return N.models.users.UserGroup.findOne({ short_name: 'members' }).lean(true);
-  });
-
-
-  const get_parser_param_id = memoize(function (usergroup_ids, allowsmilie) {
-    return N.settings.getByCategory(
-      'forum_posts_markup',
-      { usergroup_ids },
-      { alias: true }
-    ).then(params => {
-      if (!allowsmilie) {
-        params.emoji = false;
-      }
-
-      return N.models.core.MessageParams.setParams(params);
-    });
-  });
+  let parser_param_id_cache = {};
 
 
   // Import a single topic by its id
@@ -142,8 +130,6 @@ module.exports = async function (N) {
       };
       let hid = 0;
 
-      let usergroup_params = {};
-
       for (let post of posts) {
         let id   = new mongoose.Types.ObjectId(post.dateline);
         let ts   = new Date(post.dateline * 1000);
@@ -163,18 +149,23 @@ module.exports = async function (N) {
 
         hid++;
 
-        let key = (user.usergroups || []).join(',') + ';' + String(!!post.allowsmilie);
+        let allowsmilie = !!post.allowsmilie;
+        let key = (user.usergroups || []).join(',') + ';' + String(post.allowsmilie);
 
-        // cache parser params locally, this prevents stack overflow
-        // when yielding synchronous functions into bluebird-co
-        if (!usergroup_params[key]) {
-          usergroup_params[key] = await get_parser_param_id(
-            user.usergroups || (await get_default_usergroup()),
-            post.allowsmilie
+        if (!parser_param_id_cache[key]) {
+          let usergroup_ids = user.usergroups || [ default_usergroup_id ];
+          let params = await N.settings.getByCategory(
+            'forum_posts_markup',
+            { usergroup_ids },
+            { alias: true }
           );
+
+          if (!allowsmilie) params.emoji = false;
+
+          parser_param_id_cache[key] = await N.models.core.MessageParams.setParams(params);
         }
 
-        let params_id = usergroup_params[key];
+        let params_id = parser_param_id_cache[key];
 
         if (hid === 1) {
           cache_hb.first_post = id;
@@ -411,8 +402,6 @@ module.exports = async function (N) {
   //
   // Finalize
   //
-  get_default_usergroup.clear();
-  get_parser_param_id.clear();
   conn.release();
   N.logger.info('Topic import finished');
 };
