@@ -7,15 +7,15 @@ const _  = require('lodash');
 
 
 module.exports = async function (N) {
-  let store = N.settings.getStore('global');
+  let global_store = N.settings.getStore('global');
 
-  if (!store) throw 'Settings store `global` is not registered.';
+  if (!global_store) throw 'Settings store `global` is not registered.';
 
   //
   // Disable headings in forum posts
   //
   if (N.config.vbconvert.project_name) {
-    await store.set({ general_project_name: { value: N.config.vbconvert.project_name } });
+    await global_store.set({ general_project_name: { value: N.config.vbconvert.project_name } });
   }
 
   //
@@ -26,13 +26,13 @@ module.exports = async function (N) {
                             .where('hid', N.config.vbconvert.abuse_report_section)
                             .lean(true);
 
-    await store.set({ general_abuse_report_section: { value: section._id.toString() } });
+    await global_store.set({ general_abuse_report_section: { value: section._id.toString() } });
   }
 
   //
   // Disable headings in forum posts
   //
-  await store.set({ forum_markup_heading: { value: false } });
+  await global_store.set({ forum_markup_heading: { value: false } });
 
   //
   // Disable is_searchable flag for market sections
@@ -60,13 +60,137 @@ module.exports = async function (N) {
 
   let censorwords = (await conn.query("SELECT value FROM setting WHERE varname='censorwords'"))[0][0].value;
 
-  await store.set({ content_filter_urls: { value: censorwords.replace(/\s+/g, '\n') } });
+  await global_store.set({ content_filter_urls: { value: censorwords.replace(/\s+/g, '\n') } });
 
   let banip = (await conn.query("SELECT value FROM setting WHERE varname='banip'"))[0][0].value;
 
-  await store.set({ ban_ip: { value: banip } });
+  await global_store.set({ ban_ip: { value: banip } });
 
   let banemail = (await conn.query("SELECT data FROM datastore WHERE title='banemail'"))[0][0].data;
 
-  await store.set({ ban_email: { value: banemail } });
+  await global_store.set({ ban_email: { value: banemail } });
+
+  //
+  // Set section permissions for usergroups
+  //
+  let section_store = N.settings.getStore('section_usergroup');
+
+  if (!section_store) throw 'Settings store `section_usergroup` is not registered.';
+
+  let all_usergroups = await N.models.users.UserGroup.find().lean(true);
+
+  async function set_permissions(section_hid, fn) {
+    let section = await N.models.forum.Section.findOne()
+                            .where('hid').equals(section_hid)
+                            .lean(true);
+
+    if (!section) throw `Can't set permissions for section ${section_hid}: section not found`;
+
+    for (let usergroup of all_usergroups) {
+      let usergroup_permissions = fn(usergroup);
+
+      if (!usergroup_permissions) continue;
+
+      let settings = await N.settings.get(
+        Object.keys(usergroup_permissions),
+        {
+          usergroup_ids: [ usergroup._id ],
+          section_id:    section._id
+        }
+      );
+
+      let update = {};
+
+      for (let key of Object.keys(usergroup_permissions)) {
+        if (settings[key] !== usergroup_permissions[key]) {
+          update[key] = { value: usergroup_permissions[key] };
+        }
+      }
+
+      if (Object.keys(update).length) {
+        await section_store.set(update, {
+          section_id: section._id,
+          usergroup_id: usergroup._id
+        });
+      }
+    }
+  }
+
+  // market
+  await set_permissions(31, function (usergroup) {
+    if (usergroup.short_name === 'novices') {
+      return {
+        forum_can_view: true,
+        forum_can_reply: false,
+        forum_can_start_topics: false,
+        forum_can_close_topic: false
+      };
+    }
+
+    if ([ 'administrators', 'moderators', 'members' ].indexOf(usergroup.short_name) !== -1) {
+      return {
+        forum_can_view: true,
+        forum_can_reply: true,
+        forum_can_start_topics: true,
+        forum_can_close_topic: true
+      };
+    }
+
+    return {};
+  });
+
+  await set_permissions(54, function (usergroup) {
+    if (usergroup.short_name === 'novices') {
+      return {
+        forum_can_view: true,
+        forum_can_reply: false,
+        forum_can_start_topics: false,
+        forum_can_close_topic: false
+      };
+    }
+
+    return {};
+  });
+
+  // announces
+  await set_permissions(106, function (usergroup) {
+    if (usergroup.short_name !== 'administrators') {
+      return {
+        forum_can_view: true,
+        forum_can_reply: false,
+        forum_can_start_topics: false,
+        forum_can_close_topic: false
+      };
+    }
+
+    return {};
+  });
+
+  // internal section
+  await set_permissions(102, function (usergroup) {
+    if (usergroup.short_name !== 'administrators' && usergroup.short_name !== 'moderators') {
+      return {
+        forum_can_view: false,
+        forum_can_reply: false,
+        forum_can_start_topics: false,
+        forum_can_close_topic: false
+      };
+    }
+
+    return {};
+  });
+
+  // internal section
+  await set_permissions(114, function (usergroup) {
+    if (usergroup.short_name !== 'administrators') {
+      return {
+        forum_can_view: false,
+        forum_can_reply: false,
+        forum_can_start_topics: false,
+        forum_can_close_topic: false
+      };
+    }
+
+    return {};
+  });
 };

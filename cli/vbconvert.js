@@ -36,6 +36,7 @@ const module_list = [
   'moderator_notes',
   'ignore',
   'sections',
+  'custom',
   'nntp',
   'topics',
   'deletion_log',
@@ -49,8 +50,7 @@ const module_list = [
   'post_vote_recount',
   'albums',
   'avatars',
-  'files',
-  'custom'
+  'files'
 ];
 
 

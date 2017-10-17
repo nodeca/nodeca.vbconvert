@@ -3,11 +3,6 @@
 
 'use strict';
 
-// forum permissions
-const can_view_forum             = 1;
-const can_post_threads           = 16;
-const can_open_close_own_threads = 1024;
-
 // forum options
 const forum_active              = 1;
 const forum_allow_posting       = 2;
@@ -85,72 +80,6 @@ module.exports = async function (N) {
     { $set: { value: rows[rows.length - 1].forumid } },
     { upsert: true }
   );
-
-  //
-  // Set usergroup permissions
-  //
-
-  let permissions_by_hid = {};
-
-  (await conn.query(`
-    SELECT forumid,usergroupid,forumpermissions
-    FROM forumpermission
-  `))[0].forEach(row => {
-    permissions_by_hid[row.forumid] = permissions_by_hid[row.forumid] || [];
-    permissions_by_hid[row.forumid].push(row);
-  });
-
-  store = N.settings.getStore('section_usergroup');
-
-  if (!store) throw 'Settings store `section_usergroup` is not registered.';
-
-  N.models.forum.Section.getChildren.clear();
-
-  for (let section_summary of await N.models.forum.Section.getChildren()) {
-    let section = await N.models.forum.Section.findOne()
-                            .where('_id', section_summary._id)
-                            .lean(true);
-
-    for (let row of permissions_by_hid[section.hid] || []) {
-      let groupmap = await N.models.vbconvert.UserGroupMapping.findOne()
-                               .where('mysql', row.usergroupid)
-                               .lean(true);
-
-      if (!groupmap) continue;
-
-      let settings = await N.settings.get([
-        'forum_can_view',
-        'forum_can_reply',
-        'forum_can_start_topics',
-        'forum_can_close_topic'
-      ], {
-        usergroup_ids: [ groupmap.mongo ],
-        section_id:    section._id
-      });
-
-      let should_be = {
-        forum_can_view:         !!(row.forumpermissions & can_view_forum),
-        forum_can_reply:        !!(row.forumpermissions & can_post_threads),
-        forum_can_start_topics: !!(row.forumpermissions & can_post_threads),
-        forum_can_close_topic:  !!(row.forumpermissions & can_open_close_own_threads)
-      };
-
-      let update = {};
-
-      Object.keys(should_be).forEach(key => {
-        if (settings[key] !== should_be[key]) {
-          update[key] = { value: should_be[key] };
-        }
-      });
-
-      if (Object.keys(update).length) {
-        await store.set(update, {
-          section_id: section._id,
-          usergroup_id: groupmap.mongo
-        });
-      }
-    }
-  }
 
   //
   // Set moderator permissions
