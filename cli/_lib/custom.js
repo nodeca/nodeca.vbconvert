@@ -193,4 +193,34 @@ module.exports = async function (N) {
 
     return {};
   });
+
+
+  //
+  // Set admins as invisible moderators for each section
+  // (used to mail abuse reports).
+  //
+  let SectionModeratorStore = N.settings.getStore('section_moderator');
+
+  if (!SectionModeratorStore) {
+    throw new Error('Settings store `section_moderator` is not registered.');
+  }
+
+  let moderators = await N.models.users.User.find()
+                             .where('hid').in([ 349, 83631 ])
+                             .select('_id')
+                             .lean(true);
+
+  let top_sections = await N.models.forum.Section.find()
+                               .where('parent').equals(null)
+                               .select('_id')
+                               .lean(true);
+
+  for (let section of top_sections) {
+    for (let user of moderators) {
+      await SectionModeratorStore.set(
+        { forum_mod_visible: { value: false } },
+        { section_id: section._id, user_id: user._id }
+      );
+    }
+  }
 };
