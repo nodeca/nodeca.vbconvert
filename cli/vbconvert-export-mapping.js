@@ -3,13 +3,16 @@
 
 'use strict';
 
-const _        = require('lodash');
-const level    = require('level');
-const mkdirp   = require('mkdirp');
-const path     = require('path');
-const pump     = require('util').promisify(require('pump'));
-const through2 = require('through2');
-const progress = require('./_lib/utils').progress;
+const _           = require('lodash');
+const batchStream = require('batch-stream');
+const level       = require('level');
+const mkdirp      = require('mkdirp');
+const path        = require('path');
+const stream      = require('stream');
+const pump        = require('util').promisify(require('pump'));
+const progress    = require('./_lib/utils').progress;
+
+const BATCH_SIZE = 10000;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,43 +38,46 @@ module.exports.commandLineArguments = [
 
 
 module.exports.run = async function (N, args) {
-  let total, bar, ldb = {};
+  let total, bar, batch, db_path = args.dest, ldb = {};
 
   await N.wire.emit('init:models', N);
 
   mkdirp.sync(args.dest);
 
+  [ 'topics', 'posts', 'avatars', 'albums', 'attachments', 'filedataids',
+    'pictureaids', 'blogaids', 'users_by_nick', 'blog_tags', 'blog_entries',
+    'blog_comments' ].forEach(name => {
+      ldb[name] = level(path.join(db_path, name), {
+        valueEncoding: 'json'
+      });
+    });
+
+
   //
   // Export topic mappings
   //
-  N.logger.info('Loading topics into memory');
+  N.logger.info('Exporting topic mappings');
 
-  [ 'topics', 'posts', 'avatars', 'albums', 'attachments', 'filedataids', 'pictureaids', 'blogaids' ].forEach(name => {
-    ldb[name] = level(path.join(args.dest, name), {
-      valueEncoding: 'json'
-    });
-  });
-
-  let all_topics    = await N.models.forum.Topic.find().select('section hid').lean(true);
-  let topics_by_hid = _.keyBy(all_topics, 'hid');
-  let topics_by_id  = _.keyBy(all_topics, '_id');
+  let topics_by_id = _.keyBy(
+    await N.models.forum.Topic.find().select('section hid').lean(true),
+    '_id'
+  );
 
   let sections_by_id = _.keyBy(
     await N.models.forum.Section.find().select('_id hid').lean(true),
     '_id'
   );
 
-  let batch = ldb.topics.batch();
+  batch = ldb.topics.batch();
 
-  Object.keys(topics_by_hid).forEach(topic_hid => {
-    let section_id = topics_by_hid[topic_hid].section;
+  Object.keys(topics_by_id).forEach(id => {
+    let section_id = topics_by_id[id].section;
 
-    batch.put(topic_hid, { section: sections_by_id[section_id].hid });
+    batch.put(topics_by_id[id].hid, { section: sections_by_id[section_id].hid });
   });
 
-  N.logger.info('Exporting topic mappings');
+  await batch.write();
 
-  batch.write();
 
   //
   // Export post mappings
@@ -79,28 +85,37 @@ module.exports.run = async function (N, args) {
   N.logger.info('Exporting post mappings');
 
   total = await N.models.vbconvert.PostMapping.count();
-  bar = progress(' posts :current/:total [:bar] :percent', total);
+  bar = progress(' posts :current/:total :percent', total);
 
   await pump(
-    N.models.vbconvert.PostMapping.collection.find({}, {
-      mysql:    1,
-      topic_id: 1,
-      post_hid: 1
-    }).stream(),
+    N.models.vbconvert.PostMapping.find()
+        .select('mysql topic_id post_hid')
+        .lean(true)
+        .cursor(),
 
-    through2.obj((post, enc, callback) => {
-      bar.tick();
+    batchStream({ size: BATCH_SIZE }),
 
-      ldb.posts.put(post.mysql, {
-        topic: topics_by_id[post.topic_id].hid,
-        post:  post.post_hid
-      });
+    new stream.Writable({
+      objectMode: true,
+      highWaterMark: 2, // buffer 2 chunks at most
+      write(chunk, __, callback) {
+        let batch = ldb.posts.batch();
 
-      callback();
+        for (let post of chunk) {
+          batch.put(post.mysql, {
+            topic: topics_by_id[post.topic_id].hid,
+            post:  post.post_hid
+          });
+        }
+
+        bar.tick(chunk.length);
+        batch.write(callback);
+      }
     })
   );
 
   bar.terminate();
+
 
   //
   // Export user avatar ids
@@ -120,7 +135,8 @@ module.exports.run = async function (N, args) {
       batch.put(users_by_id[user_id].hid, { avatar: users_by_id[user_id].avatar_id });
     });
 
-  batch.write();
+  await batch.write();
+
 
   //
   // Export album mappings
@@ -128,33 +144,40 @@ module.exports.run = async function (N, args) {
   N.logger.info('Exporting album mappings');
 
   total = await N.models.vbconvert.AlbumMapping.count();
-  bar = progress(' albums :current/:total [:bar] :percent', total);
+  bar = progress(' albums :current/:total :percent', total);
 
   await pump(
-    N.models.vbconvert.AlbumMapping.collection.find({}).stream(),
+    N.models.vbconvert.AlbumMapping.aggregate([ {
+      $lookup: {
+        from: 'users.albums',
+        localField: 'mongo',
+        foreignField: '_id',
+        as: 'album'
+      }
+    } ]).cursor({ useMongooseAggCursor: true }).exec(),
 
-    through2.obj((albummap, enc, callback) => {
-      N.models.users.Album
-        .findById(albummap.mongo)
-        .select('user')
-        .lean(true)
-        .exec((err, album) => {
-          if (err) {
-            callback(err);
-            return;
-          }
+    batchStream({ size: BATCH_SIZE }),
 
-          bar.tick();
+    new stream.Writable({
+      objectMode: true,
+      highWaterMark: 2, // buffer 2 chunks at most
+      write(chunk, __, callback) {
+        let batch = ldb.albums.batch();
 
-          let user_hid = users_by_id[album.user].hid;
+        for (let mapping of chunk) {
+          let user_hid = users_by_id[mapping.album[0].user].hid;
 
-          ldb.albums.put(albummap.mysql, { user: user_hid, album: albummap.mongo });
-          callback();
-        });
+          batch.put(mapping.mysql, { user: user_hid, album: mapping.mongo });
+        }
+
+        bar.tick(chunk.length);
+        batch.write(callback);
+      }
     })
   );
 
   bar.terminate();
+
 
   //
   // Export file mappings
@@ -162,39 +185,216 @@ module.exports.run = async function (N, args) {
   N.logger.info('Exporting file mappings');
 
   total = await N.models.vbconvert.FileMapping.count();
-  bar = progress(' files :current/:total [:bar] :percent', total);
+  bar = progress(' files :current/:total :percent', total);
 
   await pump(
-    N.models.vbconvert.FileMapping.collection.aggregate([ {
+    N.models.vbconvert.FileMapping.aggregate([ {
       $lookup: {
         from: 'users.mediainfos',
         localField: 'media_id',
         foreignField: '_id',
         as: 'media'
       }
-    } ]).stream(),
-
-    through2.obj((file, enc, callback) => {
-      bar.tick();
-
-      ldb.filedataids.put(file.filedataid, { attachment: file.attachmentid });
-
-      if (file.pictureaid_legacy) {
-        ldb.pictureaids.put(file.pictureaid_legacy, { attachment: file.attachmentid });
+    }, {
+      $project: {
+        attachmentid:      1,
+        filedataid:        1,
+        pictureaid_legacy: 1,
+        blogaid_legacy:    1,
+        media_id:          1,
+        user:              { $arrayElemAt: [ '$media.user', 0 ] }
       }
+    } ]).cursor({ useMongooseAggCursor: true }).exec(),
 
-      if (file.blogaid_legacy) {
-        ldb.blogaids.put(file.blogaid_legacy, { attachment: file.attachmentid });
+    batchStream({ size: BATCH_SIZE }),
+
+    new stream.Writable({
+      objectMode: true,
+      highWaterMark: 2, // buffer 2 chunks at most
+      write(chunk, __, callback) {
+        let b_filedataids = ldb.filedataids.batch();
+        let b_pictureaids = ldb.pictureaids.batch();
+        let b_blogaids    = ldb.blogaids.batch();
+        let b_attachments = ldb.attachments.batch();
+
+        for (let file of chunk) {
+          b_filedataids.put(file.filedataid, { attachment: file.attachmentid });
+
+          if (file.pictureaid_legacy) {
+            b_pictureaids.put(file.pictureaid_legacy, { attachment: file.attachmentid });
+          }
+
+          if (file.blogaid_legacy) {
+            b_blogaids.put(file.blogaid_legacy, { attachment: file.attachmentid });
+          }
+
+          let user_hid = users_by_id[file.user].hid;
+
+          b_attachments.put(file.attachmentid, { user: user_hid, media: file.media_id });
+        }
+
+        bar.tick(chunk.length);
+        Promise.all([
+          b_filedataids.write(),
+          b_pictureaids.write(),
+          b_blogaids.write(),
+          b_attachments.write()
+        ]).then(() => callback(), err => callback(err));
       }
-
-      let user_hid = users_by_id[file.media[0].user].hid;
-
-      ldb.attachments.put(file.attachmentid, { user: user_hid, media: file.media_id });
-      callback();
     })
   );
 
   bar.terminate();
+
+
+  //
+  // Export user nick -> hid mapping
+  //
+  N.logger.info('Exporting user mappings');
+
+  total = await N.models.users.User.count();
+  bar = progress(' users :current/:total :percent', total);
+
+  await pump(
+    N.models.users.User.find()
+        .select('hid nick')
+        .lean(true)
+        .cursor(),
+
+    batchStream({ size: BATCH_SIZE }),
+
+    new stream.Writable({
+      objectMode: true,
+      highWaterMark: 2, // buffer 2 chunks at most
+      write(chunk, __, callback) {
+        let batch = ldb.users_by_nick.batch();
+
+        for (let user of chunk) {
+          batch.put(user.nick.toLowerCase(), { hid: user.hid });
+        }
+
+        bar.tick(chunk.length);
+        batch.write(callback);
+      }
+    })
+  );
+
+  bar.terminate();
+
+
+  //
+  // Export blog entry mappings
+  //
+  N.logger.info('Exporting blog entry mappings');
+
+  let blog_entries_by_id = _.keyBy(
+    await N.models.blogs.BlogEntry.find().select('user hid').lean(true),
+    '_id'
+  );
+
+  batch = ldb.topics.batch();
+
+  Object.keys(blog_entries_by_id).forEach(id => {
+    let entry = blog_entries_by_id[id];
+
+    if (!users_by_id[entry.user]) return;
+
+    let user_hid = users_by_id[entry.user].hid;
+
+    batch.put(entry.hid, { user: user_hid });
+  });
+
+  await batch.write();
+
+
+  //
+  // Export blog comment mappings
+  //
+  N.logger.info('Exporting blog comment mappings');
+
+  total = await N.models.vbconvert.BlogTextMapping.count();
+  bar = progress(' blog comments :current/:total :percent', total);
+
+  await pump(
+    N.models.vbconvert.BlogTextMapping.aggregate([ {
+      $lookup: {
+        from: 'blogs.blogcomments',
+        localField: 'mongo',
+        foreignField: '_id',
+        as: 'blogcomment'
+      }
+    } ]).cursor({ useMongooseAggCursor: true }).exec(),
+
+    batchStream({ size: BATCH_SIZE }),
+
+    new stream.Writable({
+      objectMode: true,
+      highWaterMark: 2, // buffer 2 chunks at most
+      write(chunk, __, callback) {
+        let batch = ldb.blog_comments.batch();
+
+        for (let mapping of chunk) {
+          if (!mapping.blogcomment.length) continue;
+
+          batch.put(mapping.blogtextid, {
+            entry: blog_entries_by_id[mapping.blogcomment[0].entry].hid,
+            comment: mapping.blogcomment[0].hid
+          });
+        }
+
+        bar.tick(chunk.length);
+        batch.write(callback);
+      }
+    })
+  );
+
+  bar.terminate();
+
+
+  //
+  // Export blog category mappings
+  //
+  N.logger.info('Exporting blog category mappings');
+
+  total = await N.models.vbconvert.BlogCategoryMapping.count();
+  bar = progress(' blog categories :current/:total :percent', total);
+
+  await pump(
+    N.models.vbconvert.BlogCategoryMapping.aggregate([ {
+      $lookup: {
+        from: 'blogs.blogtags',
+        localField: 'mongo',
+        foreignField: '_id',
+        as: 'blogtag'
+      }
+    } ]).cursor({ useMongooseAggCursor: true }).exec(),
+
+    batchStream({ size: BATCH_SIZE }),
+
+    new stream.Writable({
+      objectMode: true,
+      highWaterMark: 2, // buffer 2 chunks at most
+      write(chunk, __, callback) {
+        let batch = ldb.blog_tags.batch();
+
+        for (let mapping of chunk) {
+          if (!mapping.blogtag.length) continue;
+          if (!users_by_id[mapping.blogtag[0].user]) return;
+
+          batch.put(mapping.mysql, {
+            tag:  mapping.blogtag[0].hid,
+            user: users_by_id[mapping.blogtag[0].user].hid
+          });
+        }
+
+        bar.tick(chunk.length);
+        batch.write(callback);
+      }
+    })
+  );
+
+  bar.terminate();
+
 
   await Promise.all(Object.keys(ldb).map(name => ldb[name].close()));
 
