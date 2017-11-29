@@ -292,7 +292,7 @@ module.exports.run = async function (N, args) {
     '_id'
   );
 
-  batch = ldb.topics.batch();
+  batch = ldb.blog_entries.batch();
 
   Object.keys(blog_entries_by_id).forEach(id => {
     let entry = blog_entries_by_id[id];
