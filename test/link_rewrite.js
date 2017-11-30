@@ -54,7 +54,7 @@ describe('link_rewrite', function () {
               let u = url.parse(N.router.linkTo(link.apiPath, link.params));
 
               u.protocol = 'https:';
-              u.host = 'dev.rcopen.com';
+              u.host = 'rcopen.com';
 
               // replace X with hex characters, needed for objectids
               if (entry[1].indexOf('X') !== -1) {

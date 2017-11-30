@@ -5,46 +5,64 @@
 # Forum posts
 #
  - - http://forum.rcdesign.ru/f91/thread61971.html#post5282211
-   - https://dev.rcopen.com/forum/f91/topic61971/16
+   - https://rcopen.com/forum/f91/topic61971/16
 
  - - http://forum.rcdesign.ru/f91/thread331689-11.html#post5237667
-   - https://dev.rcopen.com/forum/f91/topic331689/416
+   - https://rcopen.com/forum/f91/topic331689/416
 
  - - http://forum.rcdesign.ru/thread61971.html#post5282211
-   - https://dev.rcopen.com/forum/f91/topic61971/16
+   - https://rcopen.com/forum/f91/topic61971/16
 
  - - http://forum.rcdesign.ru/thread331689-11.html#post5237667
-   - https://dev.rcopen.com/forum/f91/topic331689/416
+   - https://rcopen.com/forum/f91/topic331689/416
 
  - - http://forum.rcdesign.ru/showthread.php?t=61971#post5282211
-   - https://dev.rcopen.com/forum/f91/topic61971/16
+   - https://rcopen.com/forum/f91/topic61971/16
 
 #
 # Section by slug
 #
  - - http://forum.rcdesign.ru/#camolyoty-elektrolety
-   - https://dev.rcopen.com/#cat93
+   - https://rcopen.com/#cat93
 
  - - http://forum.rcdesign.ru/#kvadrokoptery-i-multirotory
-   - https://dev.rcopen.com/#cat133
+   - https://rcopen.com/#cat133
 
  - - http://forum.rcdesign.ru/#unknown-slug
-   - https://dev.rcopen.com/#unknown-slug
+   - https://rcopen.com/#unknown-slug
 
 #
 # New links with old style anchors (posts only)
 #
  - - http://forum.rcdesign.ru/f91/thread61971.html#entry5282211
-   - https://dev.rcopen.com/forum/f91/topic61971/16
+   - https://rcopen.com/forum/f91/topic61971/16
 
  - - http://forum.rcdesign.ru/f91/thread331689-11.html#entry5237667
-   - https://dev.rcopen.com/forum/f91/topic331689/416
+   - https://rcopen.com/forum/f91/topic331689/416
 
  - - http://forum.rcdesign.ru/showthread.php?t=61971#entry5282211
-   - https://dev.rcopen.com/forum/f91/topic61971/16
+   - https://rcopen.com/forum/f91/topic61971/16
+
+#
+# Blog comments
+#
+ - - http://forum.rcdesign.ru/blogs/349/blog10532.html#comment42967
+   - https://rcopen.com/blogs/349/10532#comment4
+
+ - - http://forum.rcdesign.ru/blogs/18493/blog6284-page2.html#comment48782
+   - https://rcopen.com/blogs/18493/6284#comment73
+
+ - - http://forum.rcdesign.ru/blogs/18493/blog6284-page2.html#comments
+   - https://rcopen.com/blogs/18493/6284
+
+ - - http://forum.rcdesign.ru/blogs/99999/blog999999999.html#comment42967
+   - https://rcopen.com/blogs/349/10532#comment4
+
+ - - http://forum.rcdesign.ru/blogs/99999/blog999999999.html#comment999999999
+   - https://rcopen.com/blogs/99999/999999999
 
 #
 # Rules from previous versions (ipb_rewrite.php)
 #
  - - http://forum.rcdesign.ru/index.php?act=ST&f=91&t=331689#entry5237667
-   - https://dev.rcopen.com/forum/f91/topic331689/416
+   - https://rcopen.com/forum/f91/topic331689/416
