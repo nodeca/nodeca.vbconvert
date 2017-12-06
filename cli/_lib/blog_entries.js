@@ -17,16 +17,6 @@ const blog_private = 8;
 module.exports = async function (N) {
   let conn = await N.vbconvert.getConnection();
 
-  let blogids = _.map((await conn.query('SELECT blogid FROM blog ORDER BY blogid ASC'))[0], 'blogid');
-
-  let category_titles = {};
-
-  for (let c of (await conn.query('SELECT blogcategoryid,title FROM blog_category'))[0]) {
-    category_titles[c.blogcategoryid] = html_unescape(c.title).replace(/,/g, ' ');
-  }
-
-  let bar = progress(' blog entries :current/:total :percent', blogids.length);
-
   const get_user_by_hid = memoize(function (hid) {
     return N.models.users.User.findOne({ hid }).lean(true);
   });
@@ -55,34 +45,80 @@ module.exports = async function (N) {
   // title       - tag/category title
   // user_id     - user id
   // dateline    - post dateline (tags are created with the first post they're in)
-  // category_id - blogcategoryid in mysql, null for tags
-  const create_tag = memoize(async function (title, user_id, dateline, category_id) {
+  const create_tag = memoize(async function (title, user_id, dateline) {
     title = title.trim().toLowerCase().replace(/\s+/, ' ').replace(/^\s+|\s+$/g, '');
 
     let existing_tag = await N.models.blogs.BlogTag.findOne()
                                  .where('user').equals(user_id)
                                  .where('name').equals(title)
-                                 .where('is_category').equals(category_id ? true : false)
                                  .lean(true);
 
     if (existing_tag) return existing_tag.hid;
 
-    let new_tag = await new N.models.blogs.BlogTag({
+    let new_tag = await N.models.blogs.BlogTag.create({
       _id: new mongoose.Types.ObjectId(dateline),
       name: title,
       user: user_id,
-      is_category: category_id ? true : false
-    }).save();
-
-    if (category_id) {
-      await new N.models.vbconvert.BlogCategoryMapping({
-        mysql: category_id,
-        mongo: new_tag._id
-      }).save();
-    }
+      is_category: false
+    });
 
     return new_tag.hid;
+  }, {
+    resolve: [ String, String ] // don't include dateline in key
   });
+
+
+  function normalize_tag(name) {
+    return N.models.blogs.BlogTag.normalize(html_unescape(name).replace(/,/g, ' '));
+  }
+
+  //
+  // Import categories
+  //
+  let store = N.settings.getStore('user');
+
+  for (let { userid } of (await conn.query('SELECT DISTINCT userid FROM blog_category'))[0]) {
+    let user = await get_user_by_hid(userid);
+    if (!user) continue;
+
+    let categories = (await conn.query(`
+      SELECT * FROM blog_category WHERE userid = ?
+      ORDER BY displayorder ASC, blogcategoryid ASC
+    `, [ userid ]))[0];
+
+    await store.set({
+      blogs_categories: { value: categories.map(c => normalize_tag(c.title)).join(',') }
+    }, { user_id: user._id });
+
+    for (let category of categories) {
+      let hid = await create_tag(normalize_tag(category.title), user._id);
+
+      let tag = await N.models.blogs.BlogTag.findOneAndUpdate(
+                  { hid },
+                  { $set: { is_category: true } },
+                  { 'new': true }
+                ).lean(true);
+
+      await N.models.vbconvert.BlogCategoryMapping.findOneAndUpdate(
+        { mysql: category.blogcategoryid },
+        { $set: { mongo: tag._id } },
+        { upsert: true }
+      ).lean(true);
+    }
+  }
+
+  //
+  // Import blogs
+  //
+  let category_titles = {};
+
+  for (let c of (await conn.query('SELECT blogcategoryid,title FROM blog_category'))[0]) {
+    category_titles[c.blogcategoryid] = normalize_tag(c.title);
+  }
+
+  let blogids = _.map((await conn.query('SELECT blogid FROM blog ORDER BY blogid ASC'))[0], 'blogid');
+
+  let bar = progress(' blog entries :current/:total :percent', blogids.length);
 
   for (let blogid of blogids) {
     bar.tick();
@@ -153,13 +189,13 @@ module.exports = async function (N) {
 
     if (row.categories) {
       for (let id of row.categories.split(',')) {
-        tag_hids.push(await create_tag(category_titles[id], user, row.dateline, id));
+        tag_hids.push(await create_tag(category_titles[id], user, row.dateline));
       }
     }
 
     if (row.taglist) {
       for (let title of row.taglist.split(',')) {
-        tag_hids.push(await create_tag(title, user, row.dateline, null));
+        tag_hids.push(await create_tag(title, user, row.dateline));
       }
     }
 
