@@ -46,18 +46,20 @@ module.exports = async function (N) {
   // user_id     - user id
   // dateline    - post dateline (tags are created with the first post they're in)
   const create_tag = memoize(async function (title, user_id, dateline) {
-    title = title.trim().toLowerCase().replace(/\s+/, ' ').replace(/^\s+|\s+$/g, '');
+    title = html_unescape(title).replace(/,/g, ' ').trim();
+
+    let title_lc = N.models.blogs.BlogTag.normalize(title);
 
     let existing_tag = await N.models.blogs.BlogTag.findOne()
                                  .where('user').equals(user_id)
-                                 .where('name').equals(title)
+                                 .where('name_lc').equals(title_lc)
                                  .lean(true);
 
     if (existing_tag) return existing_tag.hid;
 
     let new_tag = await N.models.blogs.BlogTag.create({
       _id: new mongoose.Types.ObjectId(dateline),
-      name: title,
+      name_lc: title_lc,
       user: user_id,
       is_category: false
     });
@@ -67,10 +69,6 @@ module.exports = async function (N) {
     resolve: [ String, String ] // don't include dateline in key
   });
 
-
-  function normalize_tag(name) {
-    return N.models.blogs.BlogTag.normalize(html_unescape(name).replace(/,/g, ' '));
-  }
 
   //
   // Import categories
@@ -87,11 +85,13 @@ module.exports = async function (N) {
     `, [ userid ]))[0];
 
     await store.set({
-      blogs_categories: { value: categories.map(c => normalize_tag(c.title)).join(',') }
+      blogs_categories: { value: JSON.stringify(categories.map(c =>
+        html_unescape(c.title).replace(/,/g, ' ').trim()
+      )) }
     }, { user_id: user._id });
 
     for (let category of categories) {
-      let hid = await create_tag(normalize_tag(category.title), user._id);
+      let hid = await create_tag(category.title, user._id);
 
       let tag = await N.models.blogs.BlogTag.findOneAndUpdate(
                   { hid },
@@ -113,7 +113,7 @@ module.exports = async function (N) {
   let category_titles = {};
 
   for (let c of (await conn.query('SELECT blogcategoryid,title FROM blog_category'))[0]) {
-    category_titles[c.blogcategoryid] = normalize_tag(c.title);
+    category_titles[c.blogcategoryid] = c.title;
   }
 
   let blogids = _.map((await conn.query('SELECT blogid FROM blog ORDER BY blogid ASC'))[0], 'blogid');
@@ -176,13 +176,26 @@ module.exports = async function (N) {
     entry.views      = row.views;
     entry.params_ref = params_id;
 
-    let tag_source = '';
+    let tag_list = [];
 
-    if (row.categories) tag_source += row.categories.split(',').map(id => category_titles[id]).join(', ');
-    if (row.taglist) tag_source += (tag_source ? ', ' : '') + html_unescape(row.taglist);
+    if (row.categories) {
+      tag_list = tag_list.concat(
+        row.categories.split(',').map(id =>
+          html_unescape(category_titles[id]).replace(/,/g, ' ').trim()
+        )
+      );
+    }
 
-    if (tag_source.length) {
-      entry.tag_source = tag_source;
+    if (row.taglist) {
+      tag_list = tag_list.concat(
+        row.taglist.split(',').map(tag =>
+          html_unescape(tag).replace(/,/g, ' ').trim()
+        )
+      );
+    }
+
+    if (tag_list.length) {
+      entry.tags = tag_list;
     }
 
     let tag_hids = [];
