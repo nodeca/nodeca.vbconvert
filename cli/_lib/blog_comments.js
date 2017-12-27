@@ -138,13 +138,12 @@ module.exports = async function (N) {
       await N.models.blogs.BlogEntry.update(
         { _id: entry._id },
         { $set: {
-          comments: count,
-          comments_hb: count,
           last_comment_counter: count
         } }
       );
       await comment_bulk.execute();
       await map_bulk.execute();
+      await N.models.blogs.BlogEntry.updateCache(entry._id);
     }
   }, { concurrency: 100 });
 

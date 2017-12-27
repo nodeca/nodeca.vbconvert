@@ -175,6 +175,8 @@ module.exports = async function (N) {
     entry.ts         = new Date(row.dateline * 1000);
     entry.views      = row.views;
     entry.params_ref = params_id;
+    entry.cache      = { comment_count: 0 };
+    entry.cache_hb   = { comment_count: 0 };
 
     let tag_list = [];
 
