@@ -120,7 +120,10 @@ vbconvert:
   force_https:
    - yandex.ru
    - googleusercontent.com
-   - mail.ru
+   # don't replace content.foto.mail.ru
+   # (old domain without certificate, will be ssl error)
+   - foto.my.mail.ru
+   - cloud.mail.ru
    - pp.vk.me
    - hobbyking.com
    - ggpht.com
