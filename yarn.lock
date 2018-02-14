@@ -18,8 +18,8 @@ core-util-is@~1.0.0:
   resolved "https://registry.yarnpkg.com/core-util-is/-/core-util-is-1.0.2.tgz#b5fd54220aa2bc5ab57aab7140c940754503c1a7"
 
 denque@^1.1.1:
-  version "1.2.2"
-  resolved "https://registry.yarnpkg.com/denque/-/denque-1.2.2.tgz#e06cf7cf0da8badc88cbdaabf8fc0a70d659f1d4"
+  version "1.2.3"
+  resolved "https://registry.yarnpkg.com/denque/-/denque-1.2.3.tgz#98c50c8dd8cdfae318cc5859cc8ee3da0f9b0cc2"
 
 esprima@~3.0.0:
   version "3.0.0"
@@ -42,12 +42,12 @@ isarray@~1.0.0:
   resolved "https://registry.yarnpkg.com/isarray/-/isarray-1.0.0.tgz#bb935d48582cba168c06834957a54a3e07124f11"
 
 lodash@^4.17.1:
-  version "4.17.4"
-  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.4.tgz#78203a4d1c328ae1d86dca6460e369b57f4055ae"
+  version "4.17.5"
+  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.5.tgz#99a92d65c0272debe8c96b6057bc8fbfa3bed511"
 
-long@^3.2.0:
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/long/-/long-3.2.0.tgz#d821b7138ca1cb581c172990ef14db200b5c474b"
+long@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/long/-/long-4.0.0.tgz#9a7b71cfb7d361a194ea555241c92f7468d5bf28"
 
 lru-cache@2.5.0:
   version "2.5.0"
@@ -61,14 +61,14 @@ lru-cache@^4.1.1:
     yallist "^2.1.2"
 
 mysql2@^1.4.2:
-  version "1.5.1"
-  resolved "https://registry.yarnpkg.com/mysql2/-/mysql2-1.5.1.tgz#2411d6fb958af86b2304b7a53bc54b26e77e682b"
+  version "1.5.2"
+  resolved "https://registry.yarnpkg.com/mysql2/-/mysql2-1.5.2.tgz#e4e073839bb10972669b240ec77061d7ff55cf59"
   dependencies:
     cardinal "1.0.0"
     denque "^1.1.1"
     generate-function "^2.0.0"
     iconv-lite "^0.4.18"
-    long "^3.2.0"
+    long "^4.0.0"
     lru-cache "^4.1.1"
     named-placeholders "1.1.1"
     object-assign "^4.1.1"
