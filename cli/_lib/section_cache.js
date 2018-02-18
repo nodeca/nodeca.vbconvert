@@ -16,7 +16,7 @@ module.exports = async function (N) {
 
     if (!section) continue;
 
-    let results = await N.models.forum.Topic.aggregate({
+    let results = await N.models.forum.Topic.aggregate([ {
       $match: {
         section: section._id,
         st: { $in: N.models.forum.Topic.statuses.LIST_VISIBLE }
@@ -27,9 +27,9 @@ module.exports = async function (N) {
         topics: { $sum: 1 },
         posts: { $sum: '$cache.post_count' }
       }
-    }).exec();
+    } ]).exec();
 
-    let results_hb = await N.models.forum.Topic.aggregate({
+    let results_hb = await N.models.forum.Topic.aggregate([ {
       $match: {
         section: section._id,
         st: { $in: [ N.models.forum.Topic.statuses.HB ].concat(N.models.forum.Topic.statuses.LIST_VISIBLE) }
@@ -40,7 +40,7 @@ module.exports = async function (N) {
         topics: { $sum: 1 },
         posts: { $sum: '$cache_hb.post_count' }
       }
-    }).exec();
+    } ]).exec();
 
     await N.models.forum.Section.update({ _id: section._id }, {
       $set: {

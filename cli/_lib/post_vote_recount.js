@@ -14,7 +14,7 @@ const BATCH_SIZE = 10000;
 
 
 module.exports = async function (N) {
-  await N.models.users.Vote.aggregate(
+  await N.models.users.Vote.aggregate([
     { $match: { type: N.shared.content_type.FORUM_POST } },
     {
       $project: {
@@ -31,7 +31,7 @@ module.exports = async function (N) {
       }
     },
     { $out: 'vbconvert.post_vote_recount_tmp' }
-  ).allowDiskUse(true);
+  ]).allowDiskUse(true);
 
 
   let schema = new Schema({
