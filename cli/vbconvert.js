@@ -45,6 +45,8 @@ const module_list = [
   'blog_entries',
   'blog_comments',
   'blog_subscriptions',
+  'clubs',
+  'club_topics',
   'subscriptions',
   'votes',
   'post_vote_recount',

@@ -43,7 +43,6 @@ module.exports = async function (N) {
     thread = (await conn.query(`
       SELECT threadid,forumid,title,prefixid,views,dateline,visible,open,sticky
       FROM thread WHERE threadid = ?
-      ORDER BY threadid ASC
     `, [ threadid ]))[0][0];
 
 
@@ -104,7 +103,6 @@ module.exports = async function (N) {
       SELECT threadid,postid,parentid,pagetext,dateline,ipaddress,userid,username,visible,allowsmilie
       FROM post
       WHERE threadid = ?
-      GROUP BY postid
       ORDER BY postid ASC
     `, [ thread.threadid ]))[0];
 
