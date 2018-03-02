@@ -3,14 +3,17 @@
 
 'use strict';
 
+
+const _        = require('lodash');
 const mongoose = require('mongoose');
 
 
 module.exports = async function (N) {
   let conn = await N.vbconvert.getConnection();
+  let rows;
 
   // select all sections except link-only
-  let rows = (await conn.query(`
+  rows = (await conn.query(`
     SELECT groupid,name,description,creatoruserid,dateline,members
     FROM socialgroup
     ORDER BY groupid ASC
@@ -61,6 +64,53 @@ module.exports = async function (N) {
     { $set: { value: rows[rows.length - 1].groupid } },
     { upsert: true }
   );
+
+  //
+  // Import club members
+  //
+  rows = (await conn.query(`
+    SELECT socialgroupmember.userid,socialgroup.creatoruserid,socialgroupmember.dateline,groupid
+    FROM socialgroupmember JOIN socialgroup USING(groupid)
+  `))[0];
+
+  let bulk = N.models.clubs.ClubMember.collection.initializeUnorderedBulkOp();
+
+  let users = await N.models.users.User.find()
+                        .where('hid').in(_.uniq(_.map(rows, 'userid')))
+                        .select('hid _id')
+                        .lean(true);
+
+  let users_by_hid = _.keyBy(users, 'hid');
+
+  let clubs = await N.models.clubs.Club.find()
+                        .where('hid').in(_.uniq(_.map(rows, 'groupid')))
+                        .select('hid _id')
+                        .lean(true);
+
+  let clubs_by_hid = _.keyBy(clubs, 'hid');
+
+  for (let row of rows) {
+    let user = users_by_hid[row.userid];
+    if (!user) continue;
+
+    let club = clubs_by_hid[row.groupid];
+    if (!club) continue;
+
+    bulk.find({
+      user: user._id,
+      club: club._id
+    }).upsert().update({
+      $setOnInsert: {
+        _id:       new mongoose.Types.ObjectId(row.dateline),
+        user:      user._id,
+        club:      club._id,
+        is_owner:  row.userid === row.creatoruserid,
+        joined_ts: new Date(row.dateline * 1000)
+      }
+    });
+  }
+
+  if (bulk.length > 0) await bulk.execute();
 
   conn.release();
   N.logger.info('Club import finished');

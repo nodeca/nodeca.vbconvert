@@ -77,6 +77,39 @@ module.exports = async function (N) {
 
   bar.terminate();
 
+  //
+  // Fetch deleted club posts
+  //
+
+  rows = (await conn.query(`
+    SELECT primaryid,userid,reason
+    FROM deletionlog
+    WHERE type='groupmessage'
+  `))[0];
+
+  bar = progress(' deleted club posts :current/:total :percent', rows.length);
+
+  await Promise.map(rows, async row => {
+    bar.tick();
+
+    let user = await get_user_by_hid(row.userid);
+    let post = await N.models.vbconvert.ClubPostMapping.findOne()
+                         .where('mysql', row.primaryid)
+                         .lean(true);
+
+    if (!user) return;
+    if (!post) return;
+
+    await N.models.clubs.Post.update({ _id: post.post_id }, {
+      $set: {
+        del_by:     user._id,
+        del_reason: row.reason
+      }
+    });
+  }, { concurrency: 100 });
+
+  bar.terminate();
+
   get_user_by_hid.clear();
   conn.release();
   N.logger.info('Deletion log import finished');
