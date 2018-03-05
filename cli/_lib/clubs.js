@@ -14,7 +14,7 @@ module.exports = async function (N) {
 
   // select all sections except link-only
   rows = (await conn.query(`
-    SELECT groupid,name,description,creatoruserid,dateline,members
+    SELECT groupid,name,description,creatoruserid,dateline,members,lastpost
     FROM socialgroup
     ORDER BY groupid ASC
   `))[0];
@@ -48,6 +48,8 @@ module.exports = async function (N) {
     club.members     = row.members;
     club.members_hb  = row.members;
     club.admin_ids   = [];
+    club.cache       = { last_ts: new Date(row.lastpost) };
+    club.cache_hb    = { last_ts: new Date(row.lastpost) };
 
     let creator = await N.models.users.User.findOne()
                             .where('hid', row.creatoruserid)
