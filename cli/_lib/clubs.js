@@ -4,8 +4,9 @@
 'use strict';
 
 
-const _        = require('lodash');
-const mongoose = require('mongoose');
+const _             = require('lodash');
+const mongoose      = require('mongoose');
+const html_unescape = require('nodeca.vbconvert/lib/html_unescape_entities');
 
 
 module.exports = async function (N) {
@@ -43,13 +44,13 @@ module.exports = async function (N) {
 
     club._id         = new mongoose.Types.ObjectId(row.dateline);
     club.hid         = row.groupid;
-    club.title       = row.name;
-    club.description = row.description;
+    club.title       = html_unescape(row.name);
+    club.description = html_unescape(row.description);
     club.members     = row.members;
     club.members_hb  = row.members;
     club.admin_ids   = [];
-    club.cache       = { last_ts: new Date(row.lastpost) };
-    club.cache_hb    = { last_ts: new Date(row.lastpost) };
+    club.cache       = { last_ts: new Date(row.lastpost * 1000) };
+    club.cache_hb    = { last_ts: new Date(row.lastpost * 1000) };
 
     let creator = await N.models.users.User.findOne()
                             .where('hid', row.creatoruserid)
@@ -59,6 +60,12 @@ module.exports = async function (N) {
     if (creator) club.admin_ids.push(creator._id);
 
     await club.save();
+
+    await new N.models.vbconvert.ClubTitle({
+      mysql:       row.groupid,
+      title:       row.name,
+      description: row.description
+    }).save();
   }));
 
   await N.models.core.Increment.update(
