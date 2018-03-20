@@ -43,6 +43,7 @@ module.exports = async function (N) {
     let club = new N.models.clubs.Club();
 
     club._id         = new mongoose.Types.ObjectId(row.dateline);
+    club.created_ts  = new Date(row.dateline * 1000);
     club.hid         = row.groupid;
     club.title       = html_unescape(row.name);
     club.description = html_unescape(row.description);
