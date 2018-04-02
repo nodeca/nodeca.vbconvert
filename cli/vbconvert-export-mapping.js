@@ -46,7 +46,7 @@ module.exports.run = async function (N, args) {
 
   [ 'topics', 'posts', 'avatars', 'albums', 'attachments', 'filedataids',
     'pictureaids', 'blogaids', 'users_by_nick', 'blog_tags', 'blog_entries',
-    'blog_comments' ].forEach(name => {
+    'blog_comments', 'club_topics', 'club_posts' ].forEach(name => {
       ldb[name] = level(path.join(db_path, name), {
         valueEncoding: 'json'
       });
@@ -384,6 +384,70 @@ module.exports.run = async function (N, args) {
           batch.put(mapping.mysql, {
             tag:  mapping.blogtag[0].hid,
             user: users_by_id[mapping.blogtag[0].user].hid
+          });
+        }
+
+        bar.tick(chunk.length);
+        batch.write(callback);
+      }
+    })
+  );
+
+  bar.terminate();
+
+
+  //
+  // Export club topic mappings
+  //
+  N.logger.info('Exporting club topic mappings');
+
+  let club_topics_by_id = _.keyBy(
+    await N.models.clubs.Topic.find().select('club hid').lean(true),
+    '_id'
+  );
+
+  let clubs_by_id = _.keyBy(
+    await N.models.clubs.Club.find().select('_id hid').lean(true),
+    '_id'
+  );
+
+  batch = ldb.club_topics.batch();
+
+  Object.keys(club_topics_by_id).forEach(id => {
+    let club_id = club_topics_by_id[id].club;
+
+    batch.put(club_topics_by_id[id].hid, { club: clubs_by_id[club_id].hid });
+  });
+
+  await batch.write();
+
+
+  //
+  // Export post mappings
+  //
+  N.logger.info('Exporting club post mappings');
+
+  total = await N.models.vbconvert.ClubPostMapping.count();
+  bar = progress(' club posts :current/:total :percent', total);
+
+  await pump(
+    N.models.vbconvert.ClubPostMapping.find()
+        .select('mysql topic_id post_hid')
+        .lean(true)
+        .cursor(),
+
+    batchStream({ size: BATCH_SIZE }),
+
+    new stream.Writable({
+      objectMode: true,
+      highWaterMark: 2, // buffer 2 chunks at most
+      write(chunk, __, callback) {
+        let batch = ldb.club_posts.batch();
+
+        for (let post of chunk) {
+          batch.put(post.mysql, {
+            topic: club_topics_by_id[post.topic_id].hid,
+            post:  post.post_hid
           });
         }
 

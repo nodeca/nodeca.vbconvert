@@ -50,8 +50,12 @@ describe('link_rewrite', function () {
             (have_mappings ? it : it.skip)(entry[0], async function () {
               let link = await link_rewrite(entry[0]);
 
+              let result = N.router.linkTo(link.apiPath, link.params);
+
+              assert(result, 'Router is unable to create link for: ' + JSON.stringify(link));
+
               // change domain to make it independent from config
-              let u = url.parse(N.router.linkTo(link.apiPath, link.params));
+              let u = url.parse(result);
 
               u.protocol = 'https:';
               u.host = 'rcopen.com';

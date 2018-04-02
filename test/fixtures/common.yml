@@ -115,6 +115,29 @@
    - https://rcopen.com/blogs/349/22834
 
 #
+# Clubs
+#
+ - - http://forum.rcdesign.ru/groups/
+   - https://rcopen.com/clubs
+
+ - - http://forum.rcdesign.ru/groups/85/
+   - https://rcopen.com/clubs/c85
+
+ - - http://forum.rcdesign.ru/groups/85/762/
+   - https://rcopen.com/clubs/c85/topic762
+
+ - - http://forum.rcdesign.ru/groups/85/762/index3.html
+   - https://rcopen.com/clubs/c85/topic762/81
+
+ - - http://forum.rcdesign.ru/groups/85/762/index3.html?pp=40
+   - https://rcopen.com/clubs/c85/topic762/81
+
+# picture from club album, we import those into user albums
+ - - http://forum.rcdesign.ru/groups/85/pictures/458482/
+   - https://rcopen.com/member69493/media/4d45c38fXXXXXXXXXXXXXXXX
+
+
+#
 # Avatars
 #
  - - http://forum.rcdesign.ru/customavatars/avatar4752_8.gif
@@ -300,6 +323,10 @@
 # non-existent blog category
  - - http://forum.rcdesign.ru/blogs/99999/category999999999/
    - https://rcopen.com/blogs/99999
+
+# it should substitute club id for the real one
+ - - http://forum.rcdesign.ru/groups/99999/762/
+   - https://rcopen.com/clubs/c85/topic762
 
 # make sure trailing slash doesn't make a difference
 # (all other tests should be with trailing slash if applicable)
