@@ -48,17 +48,8 @@ module.exports = async function (N) {
     club.title       = html_unescape(row.name);
     club.description = html_unescape(row.description);
     club.members     = row.members;
-    club.members_hb  = row.members;
-    club.admin_ids   = [];
     club.cache       = { last_ts: new Date(row.lastpost * 1000) };
     club.cache_hb    = { last_ts: new Date(row.lastpost * 1000) };
-
-    let creator = await N.models.users.User.findOne()
-                            .where('hid', row.creatoruserid)
-                            .select('_id')
-                            .lean(true);
-
-    if (creator) club.admin_ids.push(creator._id);
 
     await club.save();
 
