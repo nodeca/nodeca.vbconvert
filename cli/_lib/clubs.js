@@ -15,7 +15,7 @@ module.exports = async function (N) {
 
   // select all sections except link-only
   rows = (await conn.query(`
-    SELECT groupid,name,description,creatoruserid,dateline,members,lastpost
+    SELECT groupid,name,description,type,creatoruserid,dateline,members,lastpost
     FROM socialgroup
     ORDER BY groupid ASC
   `))[0];
@@ -48,6 +48,7 @@ module.exports = async function (N) {
     club.title       = html_unescape(row.name);
     club.description = html_unescape(row.description);
     club.members     = row.members;
+    club.is_closed   = row.type !== 'public';
     club.cache       = { last_ts: new Date(row.lastpost * 1000) };
     club.cache_hb    = { last_ts: new Date(row.lastpost * 1000) };
 
@@ -74,7 +75,7 @@ module.exports = async function (N) {
     FROM socialgroupmember JOIN socialgroup USING(groupid)
   `))[0];
 
-  let bulk = N.models.clubs.ClubMember.collection.initializeUnorderedBulkOp();
+  let bulk = N.models.clubs.Membership.collection.initializeUnorderedBulkOp();
 
   let users = await N.models.users.User.find()
                         .where('hid').in(_.uniq(_.map(rows, 'userid')))
