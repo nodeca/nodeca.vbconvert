@@ -26,7 +26,8 @@ module.exports = async function (N) {
   // Import infractions
   //
   rows = (await conn.query(`
-    SELECT postid,userid,infractionlevelid,whoadded,points,dateline,customreason,expires
+    SELECT postid,userid,infractionlevelid,whoadded,points,dateline,
+           action,actionuserid,actionreason,customreason,expires
     FROM infraction
     ORDER BY infractionid ASC
   `))[0];
@@ -64,6 +65,15 @@ module.exports = async function (N) {
 
     if (infraction.type !== 'custom') {
       infraction.reason = N.i18n.t(N.config.locales[0], 'users.infractions.types.' + infraction.type);
+    }
+
+    if (row.action === 2) {
+      // action=0 - active,
+      // action=1 - expired,
+      // action=2 - canceled
+      infraction.exists = false;
+      infraction.del_by = (await get_user_by_hid(row.actionuserid))._id;
+      infraction.del_reason = row.actionreason;
     }
 
     if (row.postid) {
