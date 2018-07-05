@@ -88,19 +88,30 @@ Import, part 2 (admin panel)
 ----------------------------
 
 1. Vbconvert -> Import BBcode -> Blogs
-1. Vbconvert -> Import BBcode -> Forum Posts
-2. Vbconvert -> Import BBcode -> Messages
-3. Core -> Rebuild -> Posts
-4. Core -> Rebuild -> Topics
-5. Core -> Rebuild -> Messages
-5. Core -> Rebuild -> Blogs
-6. Core -> Rebuild -> External links
-7. Core -> Rebuild -> Images info
-8. Core -> Rebuild -> Posts
-9. Core -> NNTP -> Rebuild all
-10. Core -> Dashboard -> Online
-11. Core -> Rebuild -> Messages
-12. Core -> Search -> Reindex
+2. Vbconvert -> Import BBcode -> Club posts
+3. Vbconvert -> Import BBcode -> Messages
+4. Vbconvert -> Import BBcode -> Forum Posts
+5. Core -> Rebuild -> Forum: Posts
+6. Core -> Rebuild -> Forum: Topics
+7. Core -> Rebuild -> Clubs: Posts
+8. Core -> Rebuild -> Clubs: Topics
+9. Core -> Rebuild -> Messages
+10. Core -> Rebuild -> Blogs
+11. Core -> Rebuild -> External links
+12. Core -> Rebuild -> Images info
+
+Rebuild, second pass (fix image sizes & video embeds)
+
+1. Core -> Rebuild -> Forum: Posts
+2. Core -> Rebuild -> Clubs: Posts
+3. Core -> Rebuild -> Messages
+4. Core -> Rebuild -> Blogs
+
+Finalize:
+
+1. Core -> NNTP -> Rebuild all
+2. Core -> Dashboard -> Online
+3. Core -> Search -> Reindex
 
 Dump caches (dev only):
 
