@@ -42,13 +42,17 @@ module.exports = async function (N) {
     }
 
     let bbcode_data = [ {
-      id:          row.usernoteid,
-      text,
-      options,
-      attachments: []
+      id:  row.usernoteid,
+      text
     } ];
 
-    let parsed = await parse_bbcode(bbcode_data);
+    let parsed_bbcode = (await parse_bbcode(bbcode_data))[0];
+
+    let parsed_md = await N.parser.md2html({
+      text: parsed_bbcode.md,
+      options,
+      attachments: []
+    });
 
     count++;
 
@@ -56,8 +60,8 @@ module.exports = async function (N) {
       _id:  new mongoose.Types.ObjectId(row.dateline),
       from: poster._id,
       to:   user._id,
-      md:   parsed[0].md,
-      html: parsed[0].html,
+      md:   parsed_bbcode.md,
+      html: parsed_md.html,
       ts:   new Date(row.dateline * 1000)
     });
   }, { concurrency: 100 });
