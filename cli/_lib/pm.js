@@ -47,7 +47,7 @@ module.exports = async function (N) {
 
   // Import a single message from user A to user B into user A's dialog
   //
-  async function import_message(pm, fromuserid, touserid, dialogs, batch) {
+  async function import_message(pm, common_id, fromuserid, touserid, dialogs, batch) {
     let user1 = await get_user_by_hid(fromuserid);
 
     // don't import anything for non-existent user
@@ -94,6 +94,7 @@ module.exports = async function (N) {
 
     let message = {
       _id:        new mongoose.Types.ObjectId(pm.dateline),
+      common_id,
       ts:         new Date(pm.dateline * 1000),
       exists:     true,
       parent:     dialog._id,
@@ -116,11 +117,13 @@ module.exports = async function (N) {
 
     batch.messages.insert(message);
     batch.mappings.insert({
-      mysql:   pm.pmid,
-      to_user: user1.hid === pm.userid ? user2.hid : user1.hid,
-      message: message._id,
-      title:   pm.title,
-      text:    message_text
+      pmid:      pm.pmid,
+      to_user:   user1.hid === pm.userid ? user2.hid : user1.hid,
+      pmtextid:  pm.pmtextid,
+      common_id,
+      message:   message._id,
+      title:     pm.title,
+      text:      message_text
     });
   }
 
@@ -139,15 +142,27 @@ module.exports = async function (N) {
 
     if (pms.length === 0) break;
 
-    // note: multiple documents exist with the same mysql id, but it's enough
+    let existing_mappings = await N.models.vbconvert.PMMapping.find()
+                                      .where('pmid').in(_.map(pms, 'pmid'))
+                                      .select('pmid pmtextid common_id')
+                                      .lean(true);
+
+    // pmtext => common_id,
+    // used to assign common_ids to other copies of the same message
+    let pmtext_common_id = {};
+
+    // pmid => Boolean,
+    // used to check if message is imported
+    //
+    // note: multiple documents may exist with the same mysql id, but it's enough
     //       to check if one of them is present because of bulk inserts
-    let already_imported = _.keyBy(
-      await N.models.vbconvert.PMMapping.find()
-                .where('mysql').in(_.map(pms, 'pmid'))
-                .select('mysql')
-                .lean(true),
-      'mysql'
-    );
+    //       (two documents with the same pmid will be in the same bulk)
+    let pmid_imported = {};
+
+    for (let mapping of existing_mappings) {
+      pmtext_common_id[mapping.pmtextid] = mapping.common_id;
+      pmid_imported[mapping.pmid] = true;
+    }
 
     let dialogs = {}; // `${user}_${to}` => Dialog
 
@@ -157,9 +172,14 @@ module.exports = async function (N) {
     };
 
     for (let pm of pms) {
-      if (already_imported[pm.pmid]) continue;
+      if (pmid_imported[pm.pmid]) continue;
+
+      if (!pmtext_common_id[pm.pmtextid]) {
+        pmtext_common_id[pm.pmtextid] = new mongoose.Types.ObjectId(pm.dateline);
+      }
 
       let userid = pm.userid;
+      let common_id = pmtext_common_id[pm.pmtextid];
 
       // Copy this message for each user;
       // if no users are listed, copy for each CC;
@@ -197,7 +217,7 @@ module.exports = async function (N) {
       }
 
       for (let recipient of recipients) {
-        await import_message(pm, userid, recipient, dialogs, batches);
+        await import_message(pm, common_id, userid, recipient, dialogs, batches);
       }
     }
 

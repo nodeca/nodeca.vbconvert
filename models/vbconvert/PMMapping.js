@@ -8,18 +8,29 @@ var Mongoose = require('mongoose');
 var Schema   = Mongoose.Schema;
 
 
+// Note: one `pm` from mysql may be represented with multiple copies
+// of the same message directed to multiple users (with CC involved)
+//
+// i.e.:
+//  - one `pmtext` = many `pm` (one copy for each user)
+//  - one `pm` = many PMMapping (message copied into multiple dialogs, one for each recipient)
+//  - one PMMapping = one users.DlgMessage
+//
 module.exports = function (N, collectionName) {
 
   var PMMapping = new Schema({
-    mysql:   Number,
-    message: Schema.Types.ObjectId,
-    to_user: Number,
+    pmid:      Number,
+    to_user:   Number,
+
+    pmtextid:  Number,
+    message:   Schema.Types.ObjectId,
+    common_id: Schema.Types.ObjectId,
 
     // unused
-    title:   String,
+    title:     String,
 
     // original post text as it was in vb (with bbcode)
-    text:    String
+    text:      String
   }, {
     versionKey: false
   });
@@ -29,7 +40,10 @@ module.exports = function (N, collectionName) {
   //////////////////////////////////////////////////////////////////////////////
 
   // Ensure the message won't be imported twice
-  PMMapping.index({ mysql: 1, to_user: 1 }, { unique: true });
+  PMMapping.index({ pmid: 1, to_user: 1 }, { unique: true });
+
+  // Find common_id for a message during import
+  PMMapping.index({ pmtextid: 1 });
 
 
   N.wire.on('init:models', function emit_init_PMMapping(__, callback) {
