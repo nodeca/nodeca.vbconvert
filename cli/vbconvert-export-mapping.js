@@ -84,7 +84,7 @@ module.exports.run = async function (N, args) {
   //
   N.logger.info('Exporting post mappings');
 
-  total = await N.models.vbconvert.PostMapping.count();
+  total = await N.models.vbconvert.PostMapping.estimatedDocumentCount();
   bar = progress(' posts :current/:total :percent', total);
 
   await pump(
@@ -143,7 +143,7 @@ module.exports.run = async function (N, args) {
   //
   N.logger.info('Exporting album mappings');
 
-  total = await N.models.vbconvert.AlbumMapping.count();
+  total = await N.models.vbconvert.AlbumMapping.estimatedDocumentCount();
   bar = progress(' albums :current/:total :percent', total);
 
   await pump(
@@ -184,7 +184,7 @@ module.exports.run = async function (N, args) {
   //
   N.logger.info('Exporting file mappings');
 
-  total = await N.models.vbconvert.FileMapping.count();
+  total = await N.models.vbconvert.FileMapping.estimatedDocumentCount();
   bar = progress(' files :current/:total :percent', total);
 
   await pump(
@@ -252,7 +252,7 @@ module.exports.run = async function (N, args) {
   //
   N.logger.info('Exporting user mappings');
 
-  total = await N.models.users.User.count();
+  total = await N.models.users.User.estimatedDocumentCount();
   bar = progress(' users :current/:total :percent', total);
 
   await pump(
@@ -312,7 +312,7 @@ module.exports.run = async function (N, args) {
   //
   N.logger.info('Exporting blog comment mappings');
 
-  total = await N.models.vbconvert.BlogTextMapping.count();
+  total = await N.models.vbconvert.BlogTextMapping.estimatedDocumentCount();
   bar = progress(' blog comments :current/:total :percent', total);
 
   await pump(
@@ -356,7 +356,7 @@ module.exports.run = async function (N, args) {
   //
   N.logger.info('Exporting blog category mappings');
 
-  total = await N.models.vbconvert.BlogCategoryMapping.count();
+  total = await N.models.vbconvert.BlogCategoryMapping.estimatedDocumentCount();
   bar = progress(' blog categories :current/:total :percent', total);
 
   await pump(
@@ -427,7 +427,7 @@ module.exports.run = async function (N, args) {
   //
   N.logger.info('Exporting club post mappings');
 
-  total = await N.models.vbconvert.ClubPostMapping.count();
+  total = await N.models.vbconvert.ClubPostMapping.estimatedDocumentCount();
   bar = progress(' club posts :current/:total :percent', total);
 
   await pump(

@@ -35,7 +35,7 @@ module.exports = async function (N) {
 
     if (!user) return;
 
-    await N.models.forum.Topic.update({ hid: row.primaryid }, {
+    await N.models.forum.Topic.updateOne({ hid: row.primaryid }, {
       $set: {
         del_by:     user._id,
         del_reason: row.reason
@@ -67,7 +67,7 @@ module.exports = async function (N) {
 
     if (!user) return;
 
-    await N.models.forum.Post.update({ _id: post.post_id }, {
+    await N.models.forum.Post.updateOne({ _id: post.post_id }, {
       $set: {
         del_by:     user._id,
         del_reason: row.reason
@@ -100,7 +100,7 @@ module.exports = async function (N) {
     if (!user) return;
     if (!post) return;
 
-    await N.models.clubs.Post.update({ _id: post.post_id }, {
+    await N.models.clubs.Post.updateOne({ _id: post.post_id }, {
       $set: {
         del_by:     user._id,
         del_reason: row.reason

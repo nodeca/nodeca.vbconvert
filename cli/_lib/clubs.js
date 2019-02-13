@@ -61,7 +61,7 @@ module.exports = async function (N) {
     }).save();
   }));
 
-  await N.models.core.Increment.update(
+  await N.models.core.Increment.updateOne(
     { key: 'clubs_sole' },
     { $set: { value: rows[rows.length - 1].groupid } },
     { upsert: true }

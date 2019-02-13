@@ -46,10 +46,9 @@ module.exports = async function (N) {
 
     let ids = [ section._id ].concat(_.map(subsections, '_id'));
 
-    await N.models.forum.Section.update(
+    await N.models.forum.Section.updateMany(
       { _id: { $in: ids } },
-      { $set: { is_searchable: false } },
-      { multi: true }
+      { $set: { is_searchable: false } }
     );
   }
 

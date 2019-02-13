@@ -57,7 +57,7 @@ module.exports = async function (N) {
     if (bulk.length > 0) await bulk.execute();
   }
 
-  let count = await AggregationResult.count();
+  let count = await AggregationResult.estimatedDocumentCount();
   let bar = progress(' post vote recount :current/:total :percent', count);
 
   await new Promise((resolve, reject) => {

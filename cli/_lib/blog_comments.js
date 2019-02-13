@@ -87,7 +87,7 @@ module.exports = async function (N) {
       if (user && !user.active) {
         user.active = true;
 
-        await N.models.users.User.update({ _id: user._id }, { $set: { active: true } });
+        await N.models.users.User.updateOne({ _id: user._id }, { $set: { active: true } });
       }
 
       let params_id = await get_parser_param_id(
@@ -135,7 +135,7 @@ module.exports = async function (N) {
     }
 
     if (count > 0) {
-      await N.models.blogs.BlogEntry.update(
+      await N.models.blogs.BlogEntry.updateOne(
         { _id: entry._id },
         { $set: {
           last_comment_counter: count

@@ -19,8 +19,8 @@ module.exports = async function (N) {
   });
 
   // remove old infractions in case import is restarted
-  await N.models.users.Infraction.remove({});
-  await N.models.users.UserPenalty.remove({});
+  await N.models.users.Infraction.deleteMany({});
+  await N.models.users.UserPenalty.deleteMany({});
 
   //
   // Import infractions
@@ -85,7 +85,7 @@ module.exports = async function (N) {
       }
     }
 
-    await N.models.users.Infraction.collection.insert(infraction);
+    await N.models.users.Infraction.collection.insertOne(infraction);
   }, { concurrency: 100 });
 
   bar.terminate();

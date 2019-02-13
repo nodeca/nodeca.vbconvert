@@ -82,7 +82,7 @@ module.exports = async function (N) {
     if (!poster.active && String(poster._id) !== '000000000000000000000000') {
       poster.active = true;
 
-      await N.models.users.User.update({ _id: poster._id }, { $set: { active: true } });
+      await N.models.users.User.updateOne({ _id: poster._id }, { $set: { active: true } });
     }
 
     let params_id = await get_parser_param_id(

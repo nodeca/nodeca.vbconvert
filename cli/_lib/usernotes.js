@@ -55,7 +55,7 @@ module.exports = async function (N) {
     // because they are currently only used in plugins
     let parse_result = await N.parser.md2html({ text, options: {} });
 
-    await N.models.users.UserNote.update({
+    await N.models.users.UserNote.updateOne({
       from: user._id,
       to:   user._id
     }, {

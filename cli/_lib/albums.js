@@ -27,7 +27,7 @@ module.exports = async function (N) {
 
     // mark user as active
     if (!user.active) {
-      await N.models.users.User.update({ _id: user._id }, { $set: { active: true } });
+      await N.models.users.User.updateOne({ _id: user._id }, { $set: { active: true } });
     }
 
     let rows = (await conn.query(`

@@ -84,8 +84,8 @@ module.exports = async function (N) {
       topic._id = old_topic._id;
 
       // topic hadn't been imported last time, remove all posts and try again
-      await N.models.forum.Post.find({ topic: old_topic._id }).remove();
-      await N.models.vbconvert.PostMapping.find({ topic_id: old_topic._id }).remove();
+      await N.models.forum.Post.deleteMany({ topic: old_topic._id });
+      await N.models.vbconvert.PostMapping.deleteMany({ topic_id: old_topic._id });
     }
 
     /* eslint-disable no-undefined */
@@ -108,7 +108,7 @@ module.exports = async function (N) {
 
     // empty topic, e.g. http://forum.rcdesign.ru/f90/thread121809.html
     if (posts.length === 0) {
-      await N.models.forum.Topic.find({ _id: topic._id }).remove();
+      await N.models.forum.Topic.deleteOne({ _id: topic._id });
       return;
     }
 
@@ -142,7 +142,7 @@ module.exports = async function (N) {
         if (!user.active) {
           user.active = true;
 
-          await N.models.users.User.update({ _id: user._id }, { $set: { active: true } });
+          await N.models.users.User.updateOne({ _id: user._id }, { $set: { active: true } });
         }
 
         hid++;
@@ -295,7 +295,7 @@ module.exports = async function (N) {
       delete topic.ste;
     }
 
-    await N.models.forum.Topic.update(
+    await N.models.forum.Topic.updateOne(
       { hid: thread.threadid },
       topic
     );
@@ -340,7 +340,7 @@ module.exports = async function (N) {
 
     bar.terminate();
 
-    await N.models.core.Increment.update(
+    await N.models.core.Increment.updateOne(
       { key: 'topic' },
       { $set: { value: rows[rows.length - 1].threadid } },
       { upsert: true }
@@ -381,7 +381,7 @@ module.exports = async function (N) {
 
       let section = await N.models.forum.Section.findById(topic.section).lean(true);
 
-      await N.models.forum.Post.update({
+      await N.models.forum.Post.updateOne({
         topic: post_mapping.topic_id,
         hid: post_mapping.post_hid
       }, {

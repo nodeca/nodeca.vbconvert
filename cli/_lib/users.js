@@ -145,7 +145,7 @@ module.exports = async function (N) {
 
   bar.terminate();
 
-  await N.models.core.Increment.update(
+  await N.models.core.Increment.updateOne(
           { key: 'user' },
           { $set: { value: rows[rows.length - 1].userid } },
           { upsert: true }

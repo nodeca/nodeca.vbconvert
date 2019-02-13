@@ -17,13 +17,13 @@ describe('link_rewrite', function () {
   let N = TEST.N;
 
   before(function (callback) {
-    N.models.vbconvert.FileMapping.count(function (err, filecount) {
+    N.models.vbconvert.FileMapping.estimatedDocumentCount(function (err, filecount) {
       if (err) {
         callback(err);
         return;
       }
 
-      N.models.vbconvert.PostMapping.count(function (err, postcount) {
+      N.models.vbconvert.PostMapping.estimatedDocumentCount(function (err, postcount) {
         if (err) {
           callback(err);
           return;

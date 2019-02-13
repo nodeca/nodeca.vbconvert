@@ -79,7 +79,7 @@ module.exports = async function (N) {
         resize:  config.types.jpg.resize
       });
 
-      await N.models.users.User.update(
+      await N.models.users.User.updateOne(
               { hid: row.userid },
               { avatar_id: data.id }
             );

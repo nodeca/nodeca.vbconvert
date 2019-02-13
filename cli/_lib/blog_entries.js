@@ -156,7 +156,7 @@ module.exports = async function (N) {
     if (user && !user.active) {
       user.active = true;
 
-      await N.models.users.User.update({ _id: user._id }, { $set: { active: true } });
+      await N.models.users.User.updateOne({ _id: user._id }, { $set: { active: true } });
     }
 
     let params_id = await get_parser_param_id(
@@ -252,7 +252,7 @@ module.exports = async function (N) {
   // reset counter
   let { maxid } = (await conn.query('SELECT MAX(blogid) AS maxid FROM blog'))[0][0];
 
-  await N.models.core.Increment.update(
+  await N.models.core.Increment.updateOne(
     { key: 'blog_entry' },
     { $set: { value: maxid } },
     { upsert: true }

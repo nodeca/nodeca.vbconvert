@@ -42,7 +42,7 @@ module.exports = async function (N) {
       }
     } ]).exec();
 
-    await N.models.forum.Section.update({ _id: section._id }, {
+    await N.models.forum.Section.updateOne({ _id: section._id }, {
       $set: {
         'cache.topic_count': results.length ? results[0].topics : 0,
         'cache.post_count':  results.length ? results[0].posts  : 0,

@@ -20,7 +20,7 @@ module.exports = async function (N) {
   let bar = progress(' mod notes :current/:total :percent', rows.length);
 
   // re-import all moderator notes from scratch every time
-  await N.models.users.ModeratorNote.remove({});
+  await N.models.users.ModeratorNote.deleteMany({});
 
   let bulk = N.models.users.ModeratorNote.collection.initializeOrderedBulkOp();
   let count = 0;

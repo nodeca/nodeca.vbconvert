@@ -52,7 +52,7 @@ module.exports = async function (N) {
       resize:  config.types.jpg.resize
     });
 
-    await N.models.clubs.Club.update(
+    await N.models.clubs.Club.updateOne(
             { hid: row.groupid },
             { avatar_id: data.id }
           );

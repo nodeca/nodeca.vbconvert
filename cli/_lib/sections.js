@@ -69,13 +69,13 @@ module.exports = async function (N) {
                            .where('hid', row.parentid)
                            .lean(true);
 
-    await N.models.forum.Section.update(
+    await N.models.forum.Section.updateOne(
       { hid: row.forumid },
       { $set: { parent: parent._id } }
     );
   }));
 
-  await N.models.core.Increment.update(
+  await N.models.core.Increment.updateOne(
     { key: 'section' },
     { $set: { value: rows[rows.length - 1].forumid } },
     { upsert: true }

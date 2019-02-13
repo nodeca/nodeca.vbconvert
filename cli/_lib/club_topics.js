@@ -69,8 +69,8 @@ module.exports = async function (N) {
       topic._id = old_topic._id;
 
       // topic hadn't been imported last time, remove all posts and try again
-      await N.models.clubs.Post.find({ topic: old_topic._id }).remove();
-      await N.models.vbconvert.ClubPostMapping.find({ topic_id: old_topic._id }).remove();
+      await N.models.clubs.Post.deleteMany({ topic: old_topic._id });
+      await N.models.vbconvert.ClubPostMapping.deleteMany({ topic_id: old_topic._id });
     }
 
     await new N.models.vbconvert.ClubTopicTitle({
@@ -91,7 +91,7 @@ module.exports = async function (N) {
 
     // empty topic, e.g. http://forum.rcdesign.ru/f90/thread121809.html
     if (posts.length === 0) {
-      await N.models.clubs.Topic.find({ _id: topic._id }).remove();
+      await N.models.clubs.Topic.deleteOne({ _id: topic._id });
       return;
     }
 
@@ -119,7 +119,7 @@ module.exports = async function (N) {
         if (!user.active) {
           user.active = true;
 
-          await N.models.users.User.update({ _id: user._id }, { $set: { active: true } });
+          await N.models.users.User.updateOne({ _id: user._id }, { $set: { active: true } });
         }
 
         hid++;
@@ -254,7 +254,7 @@ module.exports = async function (N) {
       delete topic.ste;
     }
 
-    await N.models.clubs.Topic.update(
+    await N.models.clubs.Topic.updateOne(
       { hid: discussion.discussionid },
       topic
     );
@@ -299,7 +299,7 @@ module.exports = async function (N) {
 
     bar.terminate();
 
-    await N.models.core.Increment.update(
+    await N.models.core.Increment.updateOne(
       { key: 'clubs_topic' },
       { $set: { value: rows[rows.length - 1].discussionid } },
       { upsert: true }

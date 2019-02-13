@@ -98,7 +98,7 @@ module.exports = async function (N) {
       return null;
     }
 
-    await N.models.users.UserExtra.update(
+    await N.models.users.UserExtra.updateOne(
       { user: media.user },
       { $inc: { media_size: media.file_size } }
     );
@@ -114,7 +114,7 @@ module.exports = async function (N) {
       updateData.$set = { cover_id: media.media_id };
     }
 
-    await N.models.users.Album.update({ _id: album.id }, updateData);
+    await N.models.users.Album.updateOne({ _id: album.id }, updateData);
 
     if (row.contenttypeid === POST) {
       let postmapping = await N.models.vbconvert.PostMapping.findOne()
@@ -122,7 +122,7 @@ module.exports = async function (N) {
                                   .lean(true);
 
       if (postmapping) {
-        await N.models.forum.Post.update(
+        await N.models.forum.Post.updateOne(
           { _id: postmapping.post_id },
           { $push: { attach: media.media_id } }
         );
@@ -134,7 +134,7 @@ module.exports = async function (N) {
                                   .lean(true);
 
       if (blogmapping) {
-        await N.models.blogs.BlogEntry.update(
+        await N.models.blogs.BlogEntry.updateOne(
           { _id: blogmapping.mongo },
           { $push: { attach: media.media_id } }
         );
@@ -173,7 +173,7 @@ module.exports = async function (N) {
 
     // mark user as active
     if (!user.active) {
-      await N.models.users.User.update({ _id: user._id }, { $set: { active: true } });
+      await N.models.users.User.updateOne({ _id: user._id }, { $set: { active: true } });
     }
 
     rows = (await conn.query(`
