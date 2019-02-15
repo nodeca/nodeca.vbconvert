@@ -49,10 +49,10 @@ module.exports = async function (N) {
         }
       };
 
-      let info = await N.models.core.File.put(filepath, storeOptions);
+      let id = await N.models.core.File.put(filepath, storeOptions);
 
       media.type      = N.models.users.MediaInfo.types.BINARY;
-      media.media_id  = info._id;
+      media.media_id  = id;
       media.file_size = stats.size;
     } else {
       let resizeConfig = _.cloneDeep(mediaConfig.types[filedata.extension].resize);
