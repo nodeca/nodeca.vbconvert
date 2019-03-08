@@ -12,7 +12,10 @@ module.exports = function (N, collectionName) {
     blogtextid: Number,
     is_comment: Boolean,
     mongo:      Schema.ObjectId,
-    text:       String
+    text:       String,
+
+    // attachments in vb, appended into post text when md is generated
+    attach:     [ Number ]
   }, {
     versionKey: false
   });

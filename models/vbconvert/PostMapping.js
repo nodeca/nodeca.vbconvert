@@ -14,7 +14,10 @@ module.exports = function (N, collectionName) {
     post_hid: Number,
 
     // original post text as it was in vb (with bbcode)
-    text: String
+    text:     String,
+
+    // attachments in vb, appended into post text when md is generated
+    attach:   [ Number ]
   }, {
     versionKey: false
   });

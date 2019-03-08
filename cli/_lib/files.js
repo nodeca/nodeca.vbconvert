@@ -117,28 +117,15 @@ module.exports = async function (N) {
     await N.models.users.Album.updateOne({ _id: album.id }, updateData);
 
     if (row.contenttypeid === POST) {
-      let postmapping = await N.models.vbconvert.PostMapping.findOne()
-                                  .where('mysql', row.contentid)
-                                  .lean(true);
-
-      if (postmapping) {
-        await N.models.forum.Post.updateOne(
-          { _id: postmapping.post_id },
-          { $push: { attach: media.media_id } }
-        );
-      }
+      await N.models.vbconvert.PostMapping.updateOne(
+              { mysql: row.contentid },
+              { $push: { attach: row.attachmentid } }
+            );
     } else if (row.contenttypeid === BLOG_ENTRY) {
-      let blogmapping = await N.models.vbconvert.BlogTextMapping.findOne()
-                                  .where('blogid').equals(row.contentid)
-                                  .where('is_comment').equals(false)
-                                  .lean(true);
-
-      if (blogmapping) {
-        await N.models.blogs.BlogEntry.updateOne(
-          { _id: blogmapping.mongo },
-          { $push: { attach: media.media_id } }
-        );
-      }
+      await N.models.vbconvert.BlogTextMapping.updateOne(
+              { mysql: row.contentid, is_comment: false },
+              { $push: { attach: row.attachmentid } }
+            );
     }
 
     return media;
@@ -183,9 +170,7 @@ module.exports = async function (N) {
 
     let album_ids = {};
 
-    for (let i = 0; i < rows.length; i++) {
-      let row = rows[i];
-
+    for (let row of rows) {
       let album_mapping = await N.models.vbconvert.AlbumMapping.findOne()
                                     .where('mysql', row.albumid)
                                     .lean(true);
