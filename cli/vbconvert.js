@@ -33,7 +33,6 @@ const module_list = [
   'users',
   'pm',
   'usernotes',
-  'moderator_notes',
   'ignore',
   'sections',
   'custom',
@@ -53,7 +52,8 @@ const module_list = [
   'post_vote_recount',
   'albums',
   'avatars',
-  'files'
+  'files',
+  'moderator_notes' // uses bbcode convertor, which needs link mappings
 ];
 
 
