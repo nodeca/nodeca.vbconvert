@@ -192,16 +192,17 @@ module.exports = async function (N) {
         }
 
         let new_post = {
-          _id:        id,
-          topic:      topic._id,
-          section:    topic.section,
+          _id:          id,
+          topic:        topic._id,
+          topic_exists: !!thread.visible,
+          section:      topic.section,
           hid,
           ts,
-          md:         post.pagetext,
-          html:       '<p>' + _.escape(post.pagetext) + '</p>',
-          ip:         post.ipaddress,
-          params_ref: params_id,
-          attach:     [] // an array in DB is required by parser
+          md:           post.pagetext,
+          html:         '<p>' + _.escape(post.pagetext) + '</p>',
+          ip:           post.ipaddress,
+          params_ref:   params_id,
+          attach:       [] // an array in DB is required by parser
         };
 
         if (user._id) {
