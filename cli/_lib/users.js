@@ -34,7 +34,7 @@ module.exports = async function (N) {
 
   let rows = (await conn.query(`
     SELECT userid,usergroupid,membergroupids,username,email,password,salt,
-           passworddate,ipaddress,joindate,lastactivity,posts,icq,skype,
+           passworddate,ipaddress,joindate,lastactivity,icq,skype,
            CAST(birthday_search as char) as birthday,
            field5 as firstname,field6 as lastname
     FROM user JOIN userfield USING(userid)
@@ -63,7 +63,6 @@ module.exports = async function (N) {
     user.joined_ts      = new Date(row.joindate * 1000);
     user.joined_ip      = row.ipaddress;
     user.last_active_ts = new Date(row.lastactivity * 1000);
-    user.post_count     = row.posts;
     user.first_name     = html_unescape(row.firstname);
     user.last_name      = html_unescape(row.lastname);
     user.usergroups     = [];
