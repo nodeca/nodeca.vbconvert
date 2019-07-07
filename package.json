@@ -11,7 +11,8 @@
     "lodash": "^4.17.1",
     "mysql2": "^1.4.2",
     "path-to-regexp": "=2.4.0",
-    "phpunserialize": "~1.0.1"
+    "phpunserialize": "~1.0.1",
+    "snyk": "^1.192.3"
   },
   "browserify": {
     "transform": [
@@ -24,5 +25,10 @@
         }
       ]
     ]
-  }
+  },
+  "scripts": {
+    "snyk-protect": "snyk protect",
+    "prepublish": "npm run snyk-protect"
+  },
+  "snyk": true
 }
