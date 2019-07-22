@@ -99,16 +99,18 @@ module.exports = async function (N) {
 
       let comment = {};
 
-      comment._id        = new mongoose.Types.ObjectId(row.dateline);
-      comment.entry      = entry._id;
-      comment.hid        = entry.last_comment_counter + count;
-      comment.user       = user ? user._id : new mongoose.Types.ObjectId('000000000000000000000000');
-      comment.md         = row.pagetext;
-      comment.html       = '<p>' + _.escape(row.pagetext) + '</p>';
-      comment.ts         = new Date(row.dateline * 1000);
-      comment.params_ref = params_id;
-      comment.attach     = []; // an array in DB is required by parser
-      comment.path       = []; // make all comments root (no reply-to data available in mysql)
+      comment._id          = new mongoose.Types.ObjectId(row.dateline);
+      comment.entry        = entry._id;
+      comment.entry_exists = entry.st === N.models.blogs.BlogEntry.statuses.VISIBLE ||
+                             entry.st === N.models.blogs.BlogEntry.statuses.HB;
+      comment.hid          = entry.last_comment_counter + count;
+      comment.user         = user ? user._id : new mongoose.Types.ObjectId('000000000000000000000000');
+      comment.md           = row.pagetext;
+      comment.html         = '<p>' + _.escape(row.pagetext) + '</p>';
+      comment.ts           = new Date(row.dateline * 1000);
+      comment.params_ref   = params_id;
+      comment.attach       = []; // an array in DB is required by parser
+      comment.path         = []; // make all comments root (no reply-to data available in mysql)
 
       let ip = row.ipaddress;
 

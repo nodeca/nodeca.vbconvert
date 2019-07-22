@@ -169,15 +169,16 @@ module.exports = async function (N) {
         }
 
         let new_post = {
-          _id:        id,
-          topic:      topic._id,
-          club:       topic.club,
+          _id:          id,
+          topic:        topic._id,
+          topic_exists: discussion.state === 'visible',
+          club:         topic.club,
           hid,
           ts,
-          md:         post.pagetext,
-          html:       '<p>' + _.escape(post.pagetext) + '</p>',
-          params_ref: params_id,
-          attach:     [] // an array in DB is required by parser
+          md:           post.pagetext,
+          html:         '<p>' + _.escape(post.pagetext) + '</p>',
+          params_ref:   params_id,
+          attach:       [] // an array in DB is required by parser
         };
 
         let ip = post.ipaddress;
