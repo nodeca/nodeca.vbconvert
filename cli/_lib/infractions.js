@@ -56,7 +56,11 @@ module.exports = async function (N) {
     }
 
     if (row.infractionlevelid) {
-      infraction.type = N.config.vbconvert.infraction_types[row.infractionlevelid];
+      if (N.config.vbconvert.infraction_types[row.infractionlevelid]) {
+        infraction.type = N.config.vbconvert.infraction_types[row.infractionlevelid];
+      } else {
+        infraction.reason = N.config.vbconvert.infraction_texts[row.infractionlevelid];
+      }
     }
 
     if (row.customreason) {
