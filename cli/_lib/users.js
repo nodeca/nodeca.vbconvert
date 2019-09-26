@@ -3,10 +3,11 @@
 
 'use strict';
 
-const Promise       = require('bluebird');
-const mongoose      = require('mongoose');
-const html_unescape = require('nodeca.vbconvert/lib/html_unescape_entities');
-const progress      = require('./utils').progress;
+const Promise        = require('bluebird');
+const mongoose       = require('mongoose');
+const html_unescape  = require('nodeca.vbconvert/lib/html_unescape_entities');
+const nick_transform = require('nodeca.vbconvert/lib/nick_transform');
+const progress       = require('./utils').progress;
 
 const UNCONFIRMED = 3;
 const MEMBERS     = 11;
@@ -14,6 +15,10 @@ const VIOLATORS   = 12;
 
 
 module.exports = async function (N) {
+  let bot = await N.models.users.User.findOne()
+                      .where('hid').equals(N.config.bots.default_bot_hid)
+                      .lean(true);
+
   let usergroups = await N.models.vbconvert.UserGroupMapping.find().lean(true);
 
   let mongoid = {};
@@ -24,6 +29,24 @@ module.exports = async function (N) {
 
   let conn = await N.vbconvert.getConnection();
 
+  let rows = (await conn.query('SELECT userid, username FROM user ORDER BY userid ASC'))[0];
+  let username_mapping = {};
+  let nicks_seen = new Set(rows.map(row => nick_transform.normalize(row.username)));
+
+  for (let { userid, username } of rows) {
+    let nick = html_unescape(username);
+
+    if (!nick_transform.valid(nick)) {
+      username_mapping[userid] = nick_transform(nick, nicks_seen, nick_transform.rules);
+    }
+  }
+
+  N.logger.info('Username mapping created ' +
+    `(changing ${Object.keys(username_mapping).length} out of ${rows.length} nicknames)`);
+
+  // remove old records of name change in case import is restarted
+  await N.models.users.UserNickChange.deleteMany({});
+
   let gi_rows = (await conn.query('SELECT value FROM setting WHERE varname = "globalignore" LIMIT 1'))[0];
 
   let hellbanned_ids = [];
@@ -32,7 +55,7 @@ module.exports = async function (N) {
     hellbanned_ids = gi_rows[0].value.split(' ').map(Number);
   }
 
-  let rows = (await conn.query(`
+  rows = (await conn.query(`
     SELECT userid,usergroupid,membergroupids,username,email,password,salt,
            passworddate,ipaddress,joindate,lastactivity,icq,skype,
            CAST(birthday_search as char) as birthday,
@@ -58,7 +81,7 @@ module.exports = async function (N) {
     }
 
     user.hid            = row.userid;
-    user.nick           = html_unescape(row.username);
+    user.nick           = username_mapping[row.userid] || html_unescape(row.username);
     user.email          = row.email;
     user.joined_ts      = new Date(row.joindate * 1000);
     user.joined_ip      = row.ipaddress;
@@ -123,6 +146,15 @@ module.exports = async function (N) {
     }
 
     await user.save();
+
+    if (username_mapping[row.userid]) {
+      await new N.models.users.UserNickChange({
+        from:     bot._id,
+        user:     user._id,
+        old_nick: html_unescape(row.username),
+        new_nick: username_mapping[row.userid]
+      }).save();
+    }
 
     let authProvider = new N.models.users.AuthProvider();
 
