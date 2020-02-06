@@ -73,7 +73,7 @@ module.exports = async function (N) {
     let old_topic = await N.models.forum.Topic.findOneAndUpdate(
                       { hid: thread.threadid },
                       { $setOnInsert: topic },
-                      { 'new': false, upsert: true }
+                      { new: false, upsert: true }
                     ).lean(true);
 
     if (old_topic) {

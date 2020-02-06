@@ -74,14 +74,14 @@ module.exports = async function (N) {
       bulk.find({
         from:  from_user._id,
         to:    to_user._id,
-        'for': post_mapping.post_id,
+        for: post_mapping.post_id,
         type:  N.shared.content_type.FORUM_POST
       }).upsert().update({
         $setOnInsert: {
           _id:   new mongoose.Types.ObjectId(row.date),
           from:  from_user._id,
           to:    to_user._id,
-          'for': post_mapping.post_id,
+          for: post_mapping.post_id,
           type:  N.shared.content_type.FORUM_POST,
           hb:    from_user.hb,
           value: Number(row.vote)
@@ -157,14 +157,14 @@ module.exports = async function (N) {
       bulk.find({
         from:  from_user._id,
         to:    to_user._id,
-        'for': post_mapping.post_id,
+        for: post_mapping.post_id,
         type:  N.shared.content_type.CLUB_POST
       }).upsert().update({
         $setOnInsert: {
           _id:   new mongoose.Types.ObjectId(row.date),
           from:  from_user._id,
           to:    to_user._id,
-          'for': post_mapping.post_id,
+          for: post_mapping.post_id,
           type:  N.shared.content_type.CLUB_POST,
           hb:    from_user.hb,
           value: Number(row.vote)

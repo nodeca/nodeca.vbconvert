@@ -18,9 +18,9 @@ module.exports = async function (N) {
     { $match: { type: N.shared.content_type.FORUM_POST } },
     {
       $project: {
-        'for': '$for',
+        for: '$for',
         votes_hb: '$value',
-        votes: { $cond: { 'if': { $eq: [ '$hb', true ] }, then: 0, 'else': '$value' } }
+        votes: { $cond: { if: { $eq: [ '$hb', true ] }, then: 0, else: '$value' } }
       }
     },
     {

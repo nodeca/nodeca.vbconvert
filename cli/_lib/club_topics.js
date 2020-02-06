@@ -58,7 +58,7 @@ module.exports = async function (N) {
     let old_topic = await N.models.clubs.Topic.findOneAndUpdate(
                       { hid: discussion.discussionid },
                       { $setOnInsert: topic },
-                      { 'new': false, upsert: true }
+                      { new: false, upsert: true }
                     ).lean(true);
 
     if (old_topic) {

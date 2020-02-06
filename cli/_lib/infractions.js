@@ -44,7 +44,7 @@ module.exports = async function (N) {
     let infraction = {
       _id:    new mongoose.Types.ObjectId(row.dateline),
       from:   (await get_user_by_hid(row.whoadded))._id,
-      'for':  user._id,
+      for:  user._id,
       type:   'custom',
       points: row.points,
       ts:     new Date(row.dateline * 1000),

@@ -96,7 +96,7 @@ module.exports = async function (N) {
       let tag = await N.models.blogs.BlogTag.findOneAndUpdate(
                   { hid },
                   { $set: { is_category: true } },
-                  { 'new': true }
+                  { new: true }
                 ).lean(true);
 
       await N.models.vbconvert.BlogCategoryMapping.findOneAndUpdate(
