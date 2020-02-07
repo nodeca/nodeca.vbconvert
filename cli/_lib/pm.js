@@ -45,7 +45,7 @@ module.exports = async function (N) {
   });
 
 
-  // Import a single message from user A to user B into user A's dialog
+  // Import a single message between user A and user B into user A's dialog
   //
   async function import_message(pm, common_id, fromuserid, touserid, dialogs, batch) {
     let user1 = await get_user_by_hid(fromuserid);
@@ -62,13 +62,13 @@ module.exports = async function (N) {
     let dialog = dialogs[key];
 
     if (!dialog) {
-      dialog = await N.models.users.Dialog.findOne({ user: user1._id, to: user2._id }).lean(true);
+      dialog = await N.models.users.Dialog.findOne({ user: user1._id, with: user2._id }).lean(true);
 
       if (!dialog) {
         dialog = {
           _id:    new mongoose.Types.ObjectId(pm.dateline),
           user:   user1._id,
-          to:     user2._id,
+          with:   user2._id,
           unread: 0
         };
       }
@@ -98,7 +98,9 @@ module.exports = async function (N) {
       ts:         new Date(pm.dateline * 1000),
       exists:     true,
       parent:     dialog._id,
-      user:       poster._id,
+      user:       user1._id,
+      with:       user2._id,
+      incoming:   String(poster._id) !== String(user1._id),
       html:       '<p>' + _.escape(message_text) + '</p>',
       md:         message_text,
       params_ref: params_id,
