@@ -69,7 +69,7 @@ module.exports = async function (N) {
           _id:    new mongoose.Types.ObjectId(pm.dateline),
           user:   user1._id,
           with:   user2._id,
-          unread: 0
+          unread: false
         };
       }
 
@@ -115,7 +115,7 @@ module.exports = async function (N) {
       preview: message_text
     };
 
-    if (pm.messageread === 0) dialog.unread = (dialog.unread || 0) + 1;
+    if (pm.messageread === 0) dialog.unread = true;
 
     batch.messages.insert(message);
     batch.mappings.insert({
