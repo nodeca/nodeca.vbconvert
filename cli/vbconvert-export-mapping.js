@@ -19,7 +19,7 @@ const BATCH_SIZE = 10000;
 
 
 module.exports.parserParameters  = {
-  addHelp:      true,
+  add_help:     true,
   help:         'export mappings into levelDB',
   description:  'Export old to new forum id mappings into levelDB'
 };

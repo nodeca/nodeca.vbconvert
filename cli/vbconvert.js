@@ -8,7 +8,7 @@
 
 
 module.exports.parserParameters  = {
-  addHelp:      true,
+  add_help:     true,
   help:         'import data from vBulletin',
   description:  'Import data from vBulletin'
 };
