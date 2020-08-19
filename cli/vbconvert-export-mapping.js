@@ -9,7 +9,7 @@ const level       = require('level');
 const mkdirp      = require('mkdirp');
 const path        = require('path');
 const stream      = require('stream');
-const pump        = require('util').promisify(require('pump'));
+const pipeline    = require('util').promisify(stream.pipeline);
 const progress    = require('./_lib/utils').progress;
 
 const BATCH_SIZE = 10000;
@@ -87,7 +87,7 @@ module.exports.run = async function (N, args) {
   total = await N.models.vbconvert.PostMapping.estimatedDocumentCount();
   bar = progress(' posts :current/:total :percent', total);
 
-  await pump(
+  await pipeline(
     N.models.vbconvert.PostMapping.find()
         .select('mysql topic_id post_hid')
         .lean(true)
@@ -146,7 +146,7 @@ module.exports.run = async function (N, args) {
   total = await N.models.vbconvert.AlbumMapping.estimatedDocumentCount();
   bar = progress(' albums :current/:total :percent', total);
 
-  await pump(
+  await pipeline(
     N.models.vbconvert.AlbumMapping.aggregate([ {
       $lookup: {
         from: 'users.albums',
@@ -187,7 +187,7 @@ module.exports.run = async function (N, args) {
   total = await N.models.vbconvert.FileMapping.estimatedDocumentCount();
   bar = progress(' files :current/:total :percent', total);
 
-  await pump(
+  await pipeline(
     N.models.vbconvert.FileMapping.aggregate([ {
       $lookup: {
         from: 'users.mediainfos',
@@ -255,7 +255,7 @@ module.exports.run = async function (N, args) {
   total = await N.models.users.User.estimatedDocumentCount();
   bar = progress(' users :current/:total :percent', total);
 
-  await pump(
+  await pipeline(
     N.models.users.User.find()
         .select('hid nick')
         .lean(true)
@@ -315,7 +315,7 @@ module.exports.run = async function (N, args) {
   total = await N.models.vbconvert.BlogTextMapping.estimatedDocumentCount();
   bar = progress(' blog comments :current/:total :percent', total);
 
-  await pump(
+  await pipeline(
     N.models.vbconvert.BlogTextMapping.aggregate([ {
       $lookup: {
         from: 'blogs.blogcomments',
@@ -359,7 +359,7 @@ module.exports.run = async function (N, args) {
   total = await N.models.vbconvert.BlogCategoryMapping.estimatedDocumentCount();
   bar = progress(' blog categories :current/:total :percent', total);
 
-  await pump(
+  await pipeline(
     N.models.vbconvert.BlogCategoryMapping.aggregate([ {
       $lookup: {
         from: 'blogs.blogtags',
@@ -430,7 +430,7 @@ module.exports.run = async function (N, args) {
   total = await N.models.vbconvert.ClubPostMapping.estimatedDocumentCount();
   bar = progress(' club posts :current/:total :percent', total);
 
-  await pump(
+  await pipeline(
     N.models.vbconvert.ClubPostMapping.find()
         .select('mysql topic_id post_hid')
         .lean(true)

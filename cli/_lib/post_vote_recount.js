@@ -5,8 +5,8 @@
 
 const batch    = require('batch-stream');
 const Mongoose = require('mongoose');
-const pump     = require('pump');
 const stream   = require('stream');
+const pipeline = require('util').promisify(stream.pipeline);
 const progress = require('./utils').progress;
 const Schema   = Mongoose.Schema;
 
@@ -60,33 +60,26 @@ module.exports = async function (N) {
   let count = await AggregationResult.estimatedDocumentCount();
   let bar = progress(' post vote recount :current/:total :percent', count);
 
-  await new Promise((resolve, reject) => {
-    pump(
-      AggregationResult.find()
-          .sort('_id')
-          .lean(true)
-          .cursor(),
+  await pipeline(
+    AggregationResult.find()
+        .sort('_id')
+        .lean(true)
+        .cursor(),
 
-      batch({ size: BATCH_SIZE }),
+    batch({ size: BATCH_SIZE }),
 
-      new stream.Writable({
-        objectMode: true,
-        highWaterMark: 2, // buffer 2 chunks at most
-        write(chunk, __, callback) {
-          process_chunk(chunk)
-            .then(() => {
-              bar.tick(chunk.length);
-              callback();
-            }, err => { callback(err); });
-        }
-      }),
-
-      err => {
-        if (err) reject(err);
-        else resolve();
+    new stream.Writable({
+      objectMode: true,
+      highWaterMark: 2, // buffer 2 chunks at most
+      write(chunk, __, callback) {
+        process_chunk(chunk)
+          .then(() => {
+            bar.tick(chunk.length);
+            callback();
+          }, err => { callback(err); });
       }
-    );
-  });
+    })
+  );
 
   bar.terminate();
 
