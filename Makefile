@@ -24,19 +24,21 @@ test:
 	cd ../.. && NODECA_APP=${NPM_PACKAGE} $(MAKE) test
 
 
+deps-ci: ;
+
+
 test-ci:
 	git clone git://github.com/nodeca/nodeca.git ${TMP_PATH}
-	mkdir -p ${TMP_PATH}/nodeca_modules
-	cp -r . ${TMP_PATH}/nodeca_modules/${NPM_PACKAGE}
 
-	test -n "${TRAVIS_BRANCH}" && test "${TRAVIS_BRANCH}" != "master" && \
+	test -n "${GITHUB_BRANCH}" && test "${GITHUB_BRANCH}" != "master" && \
 		cd ${TMP_PATH} && \
-		git rev-parse --verify "origin/${TRAVIS_BRANCH}" && \
-		git checkout -b "${TRAVIS_BRANCH}" "origin/${TRAVIS_BRANCH}" || true
+		git rev-parse --verify "origin/${GITHUB_BRANCH}" && \
+		git checkout -b "${GITHUB_BRANCH}" "origin/${GITHUB_BRANCH}" || true
 
 	cd ${TMP_PATH} && $(MAKE) deps-ci
-	echo 'applications:\n - nodeca.vbconvert' > ${TMP_PATH}/config/additional.yml
-	cd ${TMP_PATH} && NODECA_APP=${NPM_PACKAGE} $(MAKE) test
+	cd ${TMP_PATH} && rm -rf ${TMP_PATH}/nodeca_modules/${NPM_PACKAGE}
+	cp -r . ${TMP_PATH}/nodeca_modules/${NPM_PACKAGE}
+	cd ${TMP_PATH} && NODECA_APP=${NPM_PACKAGE} $(MAKE) test-ci
 	rm -rf ${TMP_PATH}
 
 
@@ -44,5 +46,5 @@ todo:
 	grep 'TODO' -n -r --exclude-dir=assets --exclude-dir=\.git --exclude=Makefile . 2>/dev/null || test true
 
 
-.PHONY: publish lint test todo
+.PHONY: lint test todo
 .SILENT: help lint test todo
