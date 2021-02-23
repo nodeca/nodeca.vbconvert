@@ -144,7 +144,7 @@ module.exports = async function (N) {
     let rows;
     let userid = row.userid;
 
-    let already_imported = await N.redis.zscoreAsync('vbconvert:files', userid);
+    let already_imported = await N.redis.zscore('vbconvert:files', userid);
 
     // if all files for this user were already imported,
     // amount of those files is stored in redis, so we can skip faster
@@ -236,11 +236,11 @@ module.exports = async function (N) {
       await file_mapping.save();
     }
 
-    await N.redis.zaddAsync('vbconvert:files', rows.length, userid);
+    await N.redis.zadd('vbconvert:files', rows.length, userid);
   }, { concurrency: 100 });
 
   bar.terminate();
   conn.release();
-  await N.redis.delAsync('vbconvert:files');
+  await N.redis.del('vbconvert:files');
   N.logger.info('File import finished');
 };

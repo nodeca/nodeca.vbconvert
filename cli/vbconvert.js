@@ -80,14 +80,14 @@ module.exports.run = async function (N, args) {
     let modules = module_list;
 
     for (let m of modules) {
-      if (await N.redis.sismemberAsync('vbconvert:all', m)) continue;
+      if (await N.redis.sismember('vbconvert:all', m)) continue;
 
       await require('./_lib/' + m)(N);
 
-      await N.redis.saddAsync('vbconvert:all', m);
+      await N.redis.sadd('vbconvert:all', m);
     }
 
-    await N.redis.delAsync('vbconvert:all');
+    await N.redis.del('vbconvert:all');
   }
 
   return N.wire.emit('exit.shutdown');
