@@ -22,6 +22,8 @@ module.exports = async function (N) {
                             .where('hid', row.map_id)
                             .lean(true);
 
+    if (!section) return;
+
     let existing_group = await N.models.nntp.Group.findOne()
                                    .where('source', section._id)
                                    .lean(true);
