@@ -151,20 +151,6 @@ module.exports = async function (N) {
     return {};
   });
 
-  // announces
-  await set_permissions(106, function (usergroup) {
-    if (usergroup.short_name !== 'administrators') {
-      return {
-        forum_can_view: true,
-        forum_can_reply: false,
-        forum_can_start_topics: false,
-        forum_can_close_topic: false
-      };
-    }
-
-    return {};
-  });
-
   // internal section
   await set_permissions(102, function (usergroup) {
     if (usergroup.short_name !== 'administrators' && usergroup.short_name !== 'moderators') {
