@@ -58,7 +58,6 @@ module.exports = async function (N) {
   rows = (await conn.query(`
     SELECT userid,usergroupid,membergroupids,username,email,password,salt,
            passworddate,ipaddress,joindate,lastactivity,icq,skype,
-           CAST(birthday_search as char) as birthday,
            field5 as firstname,field6 as lastname
     FROM user JOIN userfield USING(userid)
     ORDER BY userid ASC
@@ -91,7 +90,7 @@ module.exports = async function (N) {
     user.usergroups     = [];
     user.about          = {};
 
-    // force users to resubmit birthday and location
+    // force users to resubmit location
     user.incomplete_profile = true;
 
     if (row.icq && Number(row.icq)) user.about.icq = row.icq;
