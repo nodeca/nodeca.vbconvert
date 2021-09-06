@@ -35,7 +35,7 @@ module.exports = async function (N) {
   await global_store.set({ forum_markup_heading: { value: false } });
 
   //
-  // Disable is_searchable flag for market sections
+  // Disable market sections
   //
   if (N.config.vbconvert.market_section) {
     let section = await N.models.forum.Section.findOne()
@@ -48,7 +48,7 @@ module.exports = async function (N) {
 
     await N.models.forum.Section.updateMany(
       { _id: { $in: ids } },
-      { $set: { is_searchable: false } }
+      { $set: { is_enabled: false, is_searchable: false, is_counted: false } }
     );
   }
 
