@@ -20,7 +20,7 @@ module.exports.commandLineArguments = [
     options: {
       dest:   'module',
       help:   'Run specified import scripts only (for debugging)',
-      type:   'string',
+      type:   'str',
       action: 'append'
     }
   }

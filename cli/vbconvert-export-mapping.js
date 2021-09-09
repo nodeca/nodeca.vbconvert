@@ -30,7 +30,7 @@ module.exports.commandLineArguments = [
     args: [ '-d', '--dest' ],
     options: {
       help:     'Database path',
-      type:     'string',
+      type:     'str',
       required: true
     }
   }
