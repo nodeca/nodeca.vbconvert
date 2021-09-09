@@ -50,6 +50,7 @@ const module_list = [
   'subscriptions',
   'votes',
   'post_vote_recount',
+  'old_rcd_pm_log',
   'albums',
   'avatars',
   'files',
