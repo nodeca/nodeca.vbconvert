@@ -123,7 +123,7 @@ module.exports = async function (N) {
             );
     } else if (row.contenttypeid === BLOG_ENTRY) {
       await N.models.vbconvert.BlogTextMapping.updateOne(
-              { mysql: row.contentid, is_comment: false },
+              { blogid: row.contentid, is_comment: false },
               { $push: { attach: row.attachmentid } }
             );
     }
