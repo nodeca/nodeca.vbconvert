@@ -11,9 +11,6 @@ module.exports = async function (N) {
 
   if (!global_store) throw 'Settings store `global` is not registered.';
 
-  //
-  // Disable headings in forum posts
-  //
   if (N.config.vbconvert.project_name) {
     await global_store.set({ general_project_name: { value: N.config.vbconvert.project_name } });
   }
@@ -28,11 +25,6 @@ module.exports = async function (N) {
 
     await global_store.set({ general_abuse_report_section: { value: section._id.toString() } });
   }
-
-  //
-  // Disable headings in forum posts
-  //
-  await global_store.set({ forum_markup_heading: { value: false } });
 
   //
   // Disable market sections
