@@ -9,7 +9,7 @@ const level       = require('level');
 const mkdirp      = require('mkdirp');
 const path        = require('path');
 const stream      = require('stream');
-const pipeline    = require('util').promisify(stream.pipeline);
+const { pipeline } = require('stream/promises');
 const progress    = require('./_lib/utils').progress;
 
 const BATCH_SIZE = 10000;

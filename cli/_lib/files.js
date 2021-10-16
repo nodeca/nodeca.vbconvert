@@ -5,7 +5,7 @@
 
 const _           = require('lodash');
 const Promise     = require('bluebird');
-const stat        = require('util').promisify(require('fs').stat);
+const { stat }    = require('fs/promises');
 const mime        = require('mime-types').lookup;
 const mongoose    = require('mongoose');
 const path        = require('path');

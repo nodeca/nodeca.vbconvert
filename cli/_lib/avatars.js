@@ -5,7 +5,7 @@
 
 const _           = require('lodash');
 const Promise     = require('bluebird');
-const unlink      = require('util').promisify(require('fs').unlink);
+const { unlink }  = require('fs/promises');
 const sharp       = require('sharp');
 const path        = require('path');
 const progress    = require('./utils').progress;

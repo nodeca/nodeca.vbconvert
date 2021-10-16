@@ -6,7 +6,7 @@
 const batch    = require('batch-stream');
 const Mongoose = require('mongoose');
 const stream   = require('stream');
-const pipeline = require('util').promisify(stream.pipeline);
+const { pipeline } = require('stream/promises');
 const progress = require('./utils').progress;
 const Schema   = Mongoose.Schema;
 
