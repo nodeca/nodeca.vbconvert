@@ -202,6 +202,7 @@ module.exports.run = async function (N, args) {
         pictureaid_legacy: 1,
         blogaid_legacy:    1,
         media_id:          1,
+        file_id:           { $arrayElemAt: [ '$media.media_id', 0 ] },
         user:              { $arrayElemAt: [ '$media.user', 0 ] }
       }
     } ]).cursor({ useMongooseAggCursor: true }).exec(),
@@ -230,7 +231,7 @@ module.exports.run = async function (N, args) {
 
           let user_hid = users_by_id[file.user].hid;
 
-          b_attachments.put(file.attachmentid, { user: user_hid, media: file.media_id });
+          b_attachments.put(file.attachmentid, { user: user_hid, media: file.media_id, file: file.file_id });
         }
 
         bar.tick(chunk.length);
