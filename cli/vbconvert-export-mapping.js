@@ -219,6 +219,11 @@ module.exports.run = async function (N, args) {
         let b_attachments = ldb.attachments.batch();
 
         for (let file of chunk) {
+          if (!file.user) {
+            N.logger.warn(`No user found for file with media_id=${file.media_id}, attachmentid=${file.attachmentid}`);
+            continue;
+          }
+
           b_filedataids.put(file.filedataid, { attachment: file.attachmentid });
 
           if (file.pictureaid_legacy) {
